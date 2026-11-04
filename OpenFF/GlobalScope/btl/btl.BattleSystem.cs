@@ -121,6 +121,7 @@ internal static partial class GlobalScope
 			public void terminate()
 			{
 				OpenFF.Client.BattleSync.BattleEnds();
+				OpenFF.Client.BattleFlow.End();   // PORT: turn-by-turn battles
 				dgs.CCtrlCodeInterface.instance().clear();
 				characterManager().terminate();
 				pl.PlayerParty.instance().clearBattleCondition();

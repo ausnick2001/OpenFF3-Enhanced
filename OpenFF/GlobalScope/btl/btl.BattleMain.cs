@@ -45,6 +45,10 @@ internal static partial class GlobalScope
 			{
 				registerBattleMain();
 				initializePhase();
+				// PORT: turn-by-turn battles (OpenFF.Client.BattleFlow): decided once, as the rounds begin; the turn execution
+				// asks for each hero's command, and decides each monster's action, at their turn.
+				OpenFF.Client.BattleFlow.Begin();
+				turnExecute_.attach(setupPlayer_, setupEnemy_);
 				setBattleMainState(BATTLE_MAIN_STATE.SETUP_PLAYER);
 				B.turnCount_ = 0u;
 			}

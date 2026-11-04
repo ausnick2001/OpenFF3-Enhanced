@@ -70,8 +70,33 @@ internal static partial class GlobalScope
 
 			private BattleNpcManager npcManager_ = new BattleNpcManager();
 
+			// PORT: turn by turn (OpenFF.Client.BattleFlow). The round's speed order is worked out first; each combatant
+			// is dealt with at their own turn: a hero's command window opens (the game's own, BattleSetupPlayer for one
+			// hero), a monster chooses its action (BattleSetupEnemy.decide), and the turn plays at once.
+			private BattleSetupPlayer setupPlayer_;
+
+			private BattleSetupEnemy setupEnemy_;
+
+			/// <summary>A hero's command window is open.</summary>
+			private bool commandRunning_;
+
+			/// <summary>Who has had their choice made this turn (a hero's window, a monster's pick), so it is not asked twice.</summary>
+			private BaseBattleCharacter decidedFor_;
+
+			/// <summary>How the battle opened for this round: a back attack takes the heroes' turn, a first strike the monsters'.</summary>
+			private BATTLE_OPENING_TYPE roundOpening_;
+
+			public void attach(BattleSetupPlayer setupPlayer, BattleSetupEnemy setupEnemy)
+			{
+				setupPlayer_ = setupPlayer;
+				setupEnemy_ = setupEnemy;
+			}
+
 			public override void initialize(BattleSystem B)
 			{
+				commandRunning_ = false;
+				decidedFor_ = null;
+				roundOpening_ = OutsideToBattle.getInstance().battleOpeningType();
 				turn_.initializeAll();
 				turnPhase_ = TURN_PHASE.TURN_SORT_PHASE;
 				actionCharacterNumber_ = 0;
@@ -86,11 +111,105 @@ internal static partial class GlobalScope
 				turn_.setCharacterManager(B.characterManager());
 				// PORT: the glide from the command view to the fight's; auto battle kept the camera on the fight already
 				// (the glide moves by steps from the command view, and from elsewhere it would overshoot).
-				if (!OutsideToBattle.getInstance().isFreeMode() && OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.MAIN_CAMERA)
+				// (Turn by turn, the camera glides to the fight's view when a turn is about to play - ensureMainCamera - not here.)
+				if (!OpenFF.Client.BattleFlow.Active && !OutsideToBattle.getInstance().isFreeMode() && OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.MAIN_CAMERA)
 				{
 					OutsideToBattle.getInstance().setBattleCamera(BATTLE_CAMERA.MOVE_CAMERA);
 					battleDisplay.setMoveFrame(18);
 				}
+			}
+
+			/// <summary>
+			/// PORT: turn by turn: the glide from the command view to the fight's, begun when a turn is about to play (the game
+			/// does it once, as the round's turns begin). True when the camera is on the fight.
+			/// </summary>
+			private bool ensureMainCamera()
+			{
+				OutsideToBattle outside = OutsideToBattle.getInstance();
+				if (outside.isFreeMode())
+				{
+					return true;
+				}
+				BATTLE_CAMERA camera = outside.battleCamera();
+				if (camera == BATTLE_CAMERA.MAIN_CAMERA)
+				{
+					return true;
+				}
+				if (camera == BATTLE_CAMERA.COMMAND_CAMERA)
+				{
+					outside.setBattleCamera(BATTLE_CAMERA.MOVE_CAMERA);
+					battleDisplay.setMoveFrame(18);
+				}
+				return false;
+			}
+
+			/// <summary>PORT: whether the round's cover fire or the guest's appearance - the phases before the turns - can show something on the fight's camera.</summary>
+			private bool phaseNeedsMainCamera()
+			{
+				if (turnPhase_ == TURN_PHASE.TURN_COVER_FIRE)
+				{
+					return wld.CWorldOutSideData.getInstance().VehicleData().getPreRidingOnVehicleNo() == pl.PLAYER_VEHICLE_TYPE.PLAYER_VEHICLE_TYPE_INVINSIBLE;
+				}
+				if (turnPhase_ == TURN_PHASE.TURN_NPC_PHASE)
+				{
+					return pl.PlayerParty.instance().npc().isEnable();
+				}
+				return false;
+			}
+
+			/// <summary>
+			/// PORT: turn by turn: between turns, deals with whoever is next in the order - a hero is asked for their command
+			/// (a frame of their window each call), a monster chooses its action. True while a hero's window has the frame.
+			/// </summary>
+			private bool turnBasedStep(BattleSystem B)
+			{
+				if (commandRunning_)
+				{
+					setupPlayer_.executeSingle(B);
+					if (setupPlayer_.SingleDone)
+					{
+						setupPlayer_.finishSingle(B);
+						commandRunning_ = false;
+					}
+					return true;
+				}
+				if (turnPhase_ != TURN_PHASE.TURN_EXECUTE_PHASE || turn_.phase() != TurnSystem.Phase.Initialize || turn_.counterCharacter() != null || actionCharacterNumber_ == nowActionCharacter_)
+				{
+					return false;
+				}
+				BaseBattleCharacter next = B.characterManager().order(nowActionCharacter_);
+				if (next == null || next == decidedFor_)
+				{
+					return false;
+				}
+				decidedFor_ = next;
+				if (next.breed() == 0)
+				{
+					BattlePlayer hero = static_cast<BattlePlayer>(next);
+					if (roundOpening_ == BATTLE_OPENING_TYPE.BACK_ATTACK)
+					{
+						// Struck from behind: the heroes lose this round (the game's setup gave them no command).
+						if (setupPlayer_.isCommand(hero))
+						{
+							hero.setActionId(0);
+						}
+						return false;
+					}
+					if (B.characterManager().monsterParty().aliveNumber() == 0)
+					{
+						return false;   // the fight is won: nothing to ask
+					}
+					int slot = setupPlayer_.slotOf(B, hero);
+					if (slot < 0 || !setupPlayer_.isCommand(hero))
+					{
+						return false;   // cannot choose (down, asleep, in the air, confused...): their turn plays as it stands
+					}
+					setupPlayer_.beginSingle(B, slot);
+					commandRunning_ = true;
+					return true;
+				}
+				setupEnemy_.decide(static_cast<BattleMonster>(next), roundOpening_);
+				return false;
 			}
 
 			public override void terminate(BattleSystem B)
@@ -99,7 +218,20 @@ internal static partial class GlobalScope
 
 			public override void execute(BattleSystem B)
 			{
-				if (OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.MAIN_CAMERA && !OutsideToBattle.getInstance().isFreeMode())
+				if (OpenFF.Client.BattleFlow.Active)
+				{
+					// PORT: turn by turn: a hero's window may have the frame; the fight's camera is asked for as a turn (or the
+					// cover fire / the guest, if they can show anything) is about to play - not for the sorting, nor while a window is up.
+					if (turnBasedStep(B))
+					{
+						return;
+					}
+					if (turnPhase_ != TURN_PHASE.TURN_SORT_PHASE && (turnPhase_ == TURN_PHASE.TURN_EXECUTE_PHASE || phaseNeedsMainCamera()) && !ensureMainCamera())
+					{
+						return;
+					}
+				}
+				else if (OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.MAIN_CAMERA && !OutsideToBattle.getInstance().isFreeMode())
 				{
 					return;
 				}
@@ -158,7 +290,7 @@ internal static partial class GlobalScope
 					orderParameter._id = i;
 					orderParameter.dex = moveOrderFormula.moveDexterityPlayer(battleParty.battlePlayer(i));
 					orderParameter.dex += (int)ds.RandomNumber.logic32((uint)(orderParameter.dex + 1));
-					if (battleParty.battlePlayer(i).actionId() == 3 || battleParty.battlePlayer(i).actionId() == 13 || battleParty.battlePlayer(i).actionId() == 12 || battleParty.battlePlayer(i).actionId() == 23 || battleParty.battlePlayer(i).actionId() == 20)
+					if (!OpenFF.Client.BattleFlow.Active && (battleParty.battlePlayer(i).actionId() == 3 || battleParty.battlePlayer(i).actionId() == 13 || battleParty.battlePlayer(i).actionId() == 12 || battleParty.battlePlayer(i).actionId() == 23 || battleParty.battlePlayer(i).actionId() == 20))   // PORT: turn by turn, the commands are not chosen yet when the order is made: no first place for Guard, Cover and the like - speed alone
 					{
 						orderParameter.dex += 10000;
 					}
@@ -289,6 +421,7 @@ internal static partial class GlobalScope
 						if (turn_.nowCharacter().isActionEnd())
 						{
 							nowActionCharacter_++;
+							decidedFor_ = null;   // PORT: turn by turn: the next in the order is asked afresh
 						}
 						else if (turn_.nowCharacter().breed() == 1)
 						{
@@ -300,6 +433,7 @@ internal static partial class GlobalScope
 					else
 					{
 						nowActionCharacter_++;
+						decidedFor_ = null;
 					}
 					if (turn_.isPlayerEscape())
 					{

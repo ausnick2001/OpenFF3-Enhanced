@@ -52,33 +52,46 @@ internal static partial class GlobalScope
 
 			public override void execute(BattleSystem B)
 			{
-				BattleMonsterParty battleMonsterParty = B.characterManager().monsterParty();
-				for (int i = 0; i < 6; i++)
+				// PORT: turn by turn (OpenFF.Client.BattleFlow), the monsters choose at their turn (decide), not all at the round's start.
+				if (!OpenFF.Client.BattleFlow.Active)
 				{
-					BattleMonster battleMonster = battleMonsterParty.battleMonster(i);
-					if (battleMonster != null && battleMonster.isBattle())
+					BattleMonsterParty battleMonsterParty = B.characterManager().monsterParty();
+					for (int i = 0; i < 6; i++)
 					{
-						if (OutsideToBattle.getInstance().battleOpeningType() == BATTLE_OPENING_TYPE.INITIATLVE_ATTACK)
-						{
-							battleMonster.setActionId(0);
-							battleMonster.onIsActionEnd();
-						}
-						else if (battleMonster.condition().isConfusion())
-						{
-							battleMonster.setActionId(1);
-						}
-						else if (!battleMonster.condition().isCanTargetSelect())
-						{
-							battleMonster.setActionId(0);
-						}
-						else
-						{
-							selectAction(battleMonster);
-						}
+						decide(battleMonsterParty.battleMonster(i), OutsideToBattle.getInstance().battleOpeningType());
 					}
 				}
 				setPhase(Phase.Terminate);
 				static_cast<BattleMain>(B.battle()).setNextBattleMainState(BATTLE_MAIN_STATE.TURN_EXECUTE);
+			}
+
+			/// <summary>
+			/// A monster's choice for the turn - what the round's start made for each of them, as it was: none at all when the
+			/// party struck first, a plain attack when confused, nothing when it cannot choose, else its own pick (selectAction).
+			/// </summary>
+			public void decide(BattleMonster battleMonster, BATTLE_OPENING_TYPE opening)
+			{
+				if (battleMonster == null || !battleMonster.isBattle())
+				{
+					return;
+				}
+				if (opening == BATTLE_OPENING_TYPE.INITIATLVE_ATTACK)
+				{
+					battleMonster.setActionId(0);
+					battleMonster.onIsActionEnd();
+				}
+				else if (battleMonster.condition().isConfusion())
+				{
+					battleMonster.setActionId(1);
+				}
+				else if (!battleMonster.condition().isCanTargetSelect())
+				{
+					battleMonster.setActionId(0);
+				}
+				else
+				{
+					selectAction(battleMonster);
+				}
 			}
 
 			public void selectAction(BattleMonster monster)

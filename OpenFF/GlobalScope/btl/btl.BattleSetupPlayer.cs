@@ -233,8 +233,22 @@ internal static partial class GlobalScope
 
 			public override void initialize(BattleSystem B)
 			{
+				if (OpenFF.Client.BattleFlow.Active)
+				{
+					// PORT: turn by turn (OpenFF.Client.BattleFlow): the round's bookkeeping only - no windows, no command view;
+					// each hero's window opens at their own turn (beginSingle), from BattleTurnExecute.
+					B.playerWindow().create();   // the party's list, up for the round as the game's own start makes it
+					roundInit(B);
+					return;
+				}
 				nowPlayer_ = 0;
-				OpenFF.Client.AutoBattle.Ending = false;   // PORT: a round begins: the hint may show again
+				initializeWindows(B);
+				roundInit(B);
+			}
+
+			/// <summary>The command windows, the state machine and the camera's cut to the command view (the game's own initialize, less the round's bookkeeping).</summary>
+			private void initializeWindows(BattleSystem B)
+			{
 				state(PLAYER_STATE.MOVE_FRONT_READY);
 				commandState_ = COMMAND_STATE.SELECT_COMMAND;
 				prevCommandState_ = commandState_;
@@ -276,6 +290,19 @@ internal static partial class GlobalScope
 				changeWindow_.createTargetWindow(array[1], size2);
 				allWindow_.createTargetWindow(array[2], size2);
 				groupWindow_.createTargetWindow(array[3], size2);
+				// PORT: under auto battle the camera stays on the fight (OpenFF.Client.AutoBattle.HoldsCamera): no cut back to
+				// the command view between rounds, nobody choosing there.
+				if (!OutsideToBattle.getInstance().isFreeMode() && OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.COMMAND_CAMERA
+					&& !OpenFF.Client.AutoBattle.HoldsCamera)
+				{
+					OutsideToBattle.getInstance().setBattleCamera(BATTLE_CAMERA.COMMAND_CAMERA);
+				}
+			}
+
+			/// <summary>A round's bookkeeping for the heroes (the game's own initialize, less the windows): the commands cleared, the conditions' time counted, the parameters made again.</summary>
+			private void roundInit(BattleSystem B)
+			{
+				OpenFF.Client.AutoBattle.Ending = false;   // PORT: a round begins: the hint may show again
 				if (opt.COptionManager.getSingleton().cursorOption().cursorPosition() != opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY)
 				{
 					for (int j = 0; j < 4; j++)
@@ -286,13 +313,6 @@ internal static partial class GlobalScope
 							pl.PlayerParty.instance().clearBattleCommandPlayer(j);
 						}
 					}
-				}
-				// PORT: under auto battle the camera stays on the fight (OpenFF.Client.AutoBattle.HoldsCamera): no cut back to
-				// the command view between rounds, nobody choosing there.
-				if (!OutsideToBattle.getInstance().isFreeMode() && OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.COMMAND_CAMERA
-					&& !OpenFF.Client.AutoBattle.HoldsCamera)
-				{
-					OutsideToBattle.getInstance().setBattleCamera(BATTLE_CAMERA.COMMAND_CAMERA);
 				}
 				for (int k = 0; k < 4; k++)
 				{
@@ -328,6 +348,10 @@ internal static partial class GlobalScope
 
 			public override void terminate(BattleSystem B)
 			{
+				if (OpenFF.Client.BattleFlow.Active)
+				{
+					return;   // PORT: turn by turn: no windows were opened here; each hero's closed with their command (finishSingle)
+				}
 				for (int i = 0; i < 4; i++)
 				{
 					BattlePlayer battlePlayer = B.characterManager().playerParty().battlePlayer(i);
@@ -340,8 +364,105 @@ internal static partial class GlobalScope
 				releaseData();
 			}
 
+			// ---- PORT: turn by turn (OpenFF.Client.BattleFlow) ----
+			// One hero's command phase at a time, in the game's own windows and states (move front, the command list,
+			// targets, move back), run by BattleTurnExecute when the hero's turn comes: beginSingle, executeSingle each
+			// frame until SingleDone, then finishSingle. There is no stepping back to a hero before - they have acted.
+
+			private int single_ = -1;
+
+			private bool singleDone_;
+
+			/// <summary>Whether the hero whose command phase is under way has chosen (or auto battle has chosen for them).</summary>
+			public bool SingleDone => singleDone_;
+
+			/// <summary>The party slot (0..3) of a hero, or -1.</summary>
+			public int slotOf(BattleSystem B, BattlePlayer player)
+			{
+				BattleParty party = B.characterManager().playerParty();
+				for (int i = 0; i < 4; i++)
+				{
+					if (party.battlePlayer(i) == player)
+					{
+						return i;
+					}
+				}
+				return -1;
+			}
+
+			/// <summary>A hero's command phase begins: their windows made, the camera cut to the command view (as the game's round start does).</summary>
+			public void beginSingle(BattleSystem B, int slot)
+			{
+				nowPlayer_ = (sbyte)slot;
+				single_ = slot;
+				singleDone_ = false;
+				initializeWindows(B);
+			}
+
+			/// <summary>A frame of the hero's command phase: what the game's own execute does for the hero it is on.</summary>
+			public void executeSingle(BattleSystem B)
+			{
+				if (OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.COMMAND_CAMERA && !OutsideToBattle.getInstance().isFreeMode()
+					&& !OpenFF.Client.AutoBattle.HoldsCamera)
+				{
+					return;
+				}
+				BattlePlayer player = B.characterManager().playerParty().battlePlayer(single_);
+				battleWindow_.commandWindow().execute();
+				for (int j = 0; j < 8; j++)
+				{
+					targetWindow_[j].execute();
+				}
+				if (!isCommand(player))
+				{
+					singleDone_ = true;
+					return;
+				}
+				OpenFF.Client.AutoBattle.CommandTurn = true;
+				if (OpenFF.Client.AutoBattle.Takes(player, state_ == PLAYER_STATE.MOVE_FRONT_READY))
+				{
+					OpenFF.Client.AutoBattle.Decide(this, player, B);
+					singleDone_ = true;
+					return;
+				}
+				playerState_[(int)state_].playerState(player, B);
+				OpenFF.Client.AutoBattle.ListOpen = commandState_ == COMMAND_STATE.SELECT_MAGIC || commandState_ == COMMAND_STATE.SELECT_ITEM || commandState_ == COMMAND_STATE.SELECT_SONG;
+				OS_AssignBackButton(cancelWindow_.isShowTarget() ? 1 : 0);
+				if (nowPlayer_ != single_)
+				{
+					// The state machine's last step moves on to the next hero (poise start): this hero is done.
+					nowPlayer_ = (sbyte)single_;
+					singleDone_ = true;
+				}
+			}
+
+			/// <summary>The hero's command phase is over: what the game's own end of the setup does - the windows closed, the item or spell held for the choice given back (the turn takes it as it is used).</summary>
+			public void finishSingle(BattleSystem B)
+			{
+				OpenFF.Client.AutoBattle.CommandTurn = false;
+				OpenFF.Client.AutoBattle.ListOpen = false;
+				cancelWindow_.setShowTarget(show: false);
+				B.playerWindow().nowPlayer_set(-1);
+				BattlePlayer player = B.characterManager().playerParty().battlePlayer(single_);
+				if (player != null && player.isEnable())
+				{
+					player.rebornItemOrMagicNumber(deleteItem: true);
+				}
+				battleWindow_.release();
+				releaseData();
+				single_ = -1;
+				singleDone_ = false;
+			}
+
 			public override void execute(BattleSystem B)
 			{
+				if (OpenFF.Client.BattleFlow.Active)
+				{
+					// PORT: turn by turn: nothing to ask at the round's start; the heroes are asked as their turns come.
+					setPhase(Phase.Terminate);
+					static_cast<BattleMain>(B.battle()).setNextBattleMainState(BATTLE_MAIN_STATE.SETUP_ENEMY);
+					return;
+				}
 				if (OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.COMMAND_CAMERA && !OutsideToBattle.getInstance().isFreeMode()
 					&& !OpenFF.Client.AutoBattle.HoldsCamera)
 				{
@@ -711,7 +832,7 @@ internal static partial class GlobalScope
 				pl.Command command = battlePlayer.player().jobManager().command();
 				bool flag = false;
 				bool flag2 = false;
-				if (nowPlayer_ != B.characterManager().playerParty().getMinBattlePlayerId())
+				if (nowPlayer_ != B.characterManager().playerParty().getMinBattlePlayerId() && single_ < 0)   // PORT: turn by turn: no hero before to go back to
 				{
 					cancelWindow_.setShowTarget(show: true);
 					cancelWindow_.createTargetMessage(50021);
@@ -933,7 +1054,7 @@ internal static partial class GlobalScope
 			{
 				menu.MenuManager.getSingleton().playSECancel();
 				// PORT: in a shared battle a command once decided has gone over the wire; there is no stepping back to the hero before.
-				if (nowPlayer_ != B.characterManager().playerParty().getMinBattlePlayerId() && OpenFF.Client.BattleSync.Shared == null)
+				if (nowPlayer_ != B.characterManager().playerParty().getMinBattlePlayerId() && OpenFF.Client.BattleSync.Shared == null && single_ < 0)
 				{
 					Battle2DManager.instance().cursor().nondisplayAll();
 					isCancel_ = true;
@@ -3065,7 +3186,7 @@ internal static partial class GlobalScope
 				player.clearTargetId();
 				if (commandState_ == COMMAND_STATE.SELECT_COMMAND)
 				{
-					if (nowPlayer_ != party.getMinBattlePlayerId())
+					if (nowPlayer_ != party.getMinBattlePlayerId() && single_ < 0)   // PORT: turn by turn: no hero before to go back to
 					{
 						battleWindow_.setOnOff(player);
 						Battle2DManager.instance().cursor().nondisplayAll();
