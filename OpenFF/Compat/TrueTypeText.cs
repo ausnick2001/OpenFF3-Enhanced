@@ -490,8 +490,10 @@ namespace OpenFF.Client
 			}
 
 			// Windows' own Arial as the last resort: it covers Latin, and the others cover the rest.
+			// PORT: always added after the rest (it was only added when nothing else was found): a face of a mod's own, or an
+			// install without the game's faces, would otherwise leave the glyphs it lacks (symbols) blank.
 			string windows = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
-			if (!string.IsNullOrEmpty(windows) && found.Count == 0)
+			if (!string.IsNullOrEmpty(windows))
 			{
 				Add(Path.Combine(windows, "arial.ttf"));
 				Add(Path.Combine(windows, "segoeui.ttf"));

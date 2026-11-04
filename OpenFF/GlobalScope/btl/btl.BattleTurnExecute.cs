@@ -111,50 +111,12 @@ internal static partial class GlobalScope
 				turn_.setCharacterManager(B.characterManager());
 				// PORT: the glide from the command view to the fight's; auto battle kept the camera on the fight already
 				// (the glide moves by steps from the command view, and from elsewhere it would overshoot).
-				// (Turn by turn, the camera glides to the fight's view when a turn is about to play - ensureMainCamera - not here.)
+				// (Turn by turn, the camera does not glide: it stays on the command view throughout.)
 				if (!OpenFF.Client.BattleFlow.Active && !OutsideToBattle.getInstance().isFreeMode() && OutsideToBattle.getInstance().battleCamera() != BATTLE_CAMERA.MAIN_CAMERA)
 				{
 					OutsideToBattle.getInstance().setBattleCamera(BATTLE_CAMERA.MOVE_CAMERA);
 					battleDisplay.setMoveFrame(18);
 				}
-			}
-
-			/// <summary>
-			/// PORT: turn by turn: the glide from the command view to the fight's, begun when a turn is about to play (the game
-			/// does it once, as the round's turns begin). True when the camera is on the fight.
-			/// </summary>
-			private bool ensureMainCamera()
-			{
-				OutsideToBattle outside = OutsideToBattle.getInstance();
-				if (outside.isFreeMode())
-				{
-					return true;
-				}
-				BATTLE_CAMERA camera = outside.battleCamera();
-				if (camera == BATTLE_CAMERA.MAIN_CAMERA)
-				{
-					return true;
-				}
-				if (camera == BATTLE_CAMERA.COMMAND_CAMERA)
-				{
-					outside.setBattleCamera(BATTLE_CAMERA.MOVE_CAMERA);
-					battleDisplay.setMoveFrame(18);
-				}
-				return false;
-			}
-
-			/// <summary>PORT: whether the round's cover fire or the guest's appearance - the phases before the turns - can show something on the fight's camera.</summary>
-			private bool phaseNeedsMainCamera()
-			{
-				if (turnPhase_ == TURN_PHASE.TURN_COVER_FIRE)
-				{
-					return wld.CWorldOutSideData.getInstance().VehicleData().getPreRidingOnVehicleNo() == pl.PLAYER_VEHICLE_TYPE.PLAYER_VEHICLE_TYPE_INVINSIBLE;
-				}
-				if (turnPhase_ == TURN_PHASE.TURN_NPC_PHASE)
-				{
-					return pl.PlayerParty.instance().npc().isEnable();
-				}
-				return false;
 			}
 
 			/// <summary>
@@ -220,13 +182,9 @@ internal static partial class GlobalScope
 			{
 				if (OpenFF.Client.BattleFlow.Active)
 				{
-					// PORT: turn by turn: a hero's window may have the frame; the fight's camera is asked for as a turn (or the
-					// cover fire / the guest, if they can show anything) is about to play - not for the sorting, nor while a window is up.
+					// PORT: turn by turn: a hero's window may have the frame. The camera never moves: the command view (the one the
+					// battle opens into) stays for the menus and for the turns alike, so a turn starts the moment it is chosen.
 					if (turnBasedStep(B))
-					{
-						return;
-					}
-					if (turnPhase_ != TURN_PHASE.TURN_SORT_PHASE && (turnPhase_ == TURN_PHASE.TURN_EXECUTE_PHASE || phaseNeedsMainCamera()) && !ensureMainCamera())
 					{
 						return;
 					}
@@ -409,6 +367,11 @@ internal static partial class GlobalScope
 				{
 					turn_.terminateTurn();
 					turn_.clearCheckFlagAll();
+					if (OpenFF.Client.BattleFlow.Active && !OutsideToBattle.getInstance().isFreeMode())
+					{
+						// PORT: turn by turn: back on the command view after a turn (a summon's last shot leaves the camera on the fight's view).
+						battleDisplay.stateBattleCamera();
+					}
 					if (turn_.counterCharacter() != null)
 					{
 						if (turn_.counterCharacter().isActionEnd())
