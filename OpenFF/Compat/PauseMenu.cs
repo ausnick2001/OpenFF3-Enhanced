@@ -111,7 +111,7 @@ namespace OpenFF.Client
 		private static bool _escForGameMenu;
 
 		/// <summary>How long the pad's Start is held to open the menu, in milliseconds.</summary>
-		private const long StartHold = 600;
+		private const long StartHold = 0;
 		private static long _startSince = -1;
 
 		public static void Open()
