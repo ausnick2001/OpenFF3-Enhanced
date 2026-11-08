@@ -180,26 +180,26 @@ namespace OpenFF.Client
 			px = Math.Max(8, px);
 			if (_icons.TryGetValue((icon, px), out Texture2D have) && !have.IsDisposed) return have;
 			float[] a = new float[px * px];
-			float s = px, c = (px - 1) / 2f, t = Math.Max(1.2f, px * 0.11f);   // stroke width
+			float s = px, c = (px - 1) / 2f, t = Math.Max(1.2f, px * 0.11f), mt = Math.Max(1.4f, px * 0.14f);   // stroke width; the PlayStation marks are drawn bolder
 			switch (icon)
 			{
 				case Icon.Cross:
-					Stroke(a, px, c - s * 0.26f, c - s * 0.26f, c + s * 0.26f, c + s * 0.26f, t);
-					Stroke(a, px, c + s * 0.26f, c - s * 0.26f, c - s * 0.26f, c + s * 0.26f, t);
+					Stroke(a, px, c - s * 0.22f, c - s * 0.22f, c + s * 0.22f, c + s * 0.22f, mt);
+					Stroke(a, px, c + s * 0.22f, c - s * 0.22f, c - s * 0.22f, c + s * 0.22f, mt);
 					break;
 				case Icon.Circle:
-					Ring(a, px, c, c, s * 0.30f, t);
+					Ring(a, px, c, c, s * 0.25f, mt);
 					break;
 				case Icon.Square:
-					Stroke(a, px, c - s * 0.27f, c - s * 0.27f, c + s * 0.27f, c - s * 0.27f, t);
-					Stroke(a, px, c + s * 0.27f, c - s * 0.27f, c + s * 0.27f, c + s * 0.27f, t);
-					Stroke(a, px, c + s * 0.27f, c + s * 0.27f, c - s * 0.27f, c + s * 0.27f, t);
-					Stroke(a, px, c - s * 0.27f, c + s * 0.27f, c - s * 0.27f, c - s * 0.27f, t);
+					Stroke(a, px, c - s * 0.22f, c - s * 0.22f, c + s * 0.22f, c - s * 0.22f, mt);
+					Stroke(a, px, c + s * 0.22f, c - s * 0.22f, c + s * 0.22f, c + s * 0.22f, mt);
+					Stroke(a, px, c + s * 0.22f, c + s * 0.22f, c - s * 0.22f, c + s * 0.22f, mt);
+					Stroke(a, px, c - s * 0.22f, c + s * 0.22f, c - s * 0.22f, c - s * 0.22f, mt);
 					break;
 				case Icon.Triangle:
-					Stroke(a, px, c, c - s * 0.31f, c + s * 0.30f, c + s * 0.22f, t);
-					Stroke(a, px, c + s * 0.30f, c + s * 0.22f, c - s * 0.30f, c + s * 0.22f, t);
-					Stroke(a, px, c - s * 0.30f, c + s * 0.22f, c, c - s * 0.31f, t);
+					Stroke(a, px, c, c - s * 0.31f, c + s * 0.30f, c + s * 0.22f, mt);
+					Stroke(a, px, c + s * 0.30f, c + s * 0.22f, c - s * 0.30f, c + s * 0.22f, mt);
+					Stroke(a, px, c - s * 0.30f, c + s * 0.22f, c, c - s * 0.31f, mt);
 					break;
 				case Icon.Menu:
 					for (int i = -1; i <= 1; i++) Stroke(a, px, c - s * 0.26f, c + i * s * 0.2f, c + s * 0.26f, c + i * s * 0.2f, t);
@@ -334,20 +334,37 @@ namespace OpenFF.Client
 			}
 		}
 
+		private static readonly Color PsDark = new Color(30, 34, 50, 255);
+		private static readonly Color PsInk = new Color(232, 236, 248, 255);
+		private static readonly Color PsRim = new Color(205, 212, 232, 255);
+
 		/// <summary>The glyph's letter or mark, and its colour, for the pad in hand (the PlayStation colours, or a neutral plate for letters).</summary>
 		public static (string Mark, Color Face, Color Ink) Glyph(PadButton button)
 		{
 			bool ps = PlayStationPad;
 			switch (button)
 			{
-				case PadButton.A: return ps ? ("×", new Color(112, 160, 226), Color.White) : ("A", new Color(96, 176, 96), Color.White);
-				case PadButton.B: return ps ? ("○", new Color(230, 100, 100), Color.White) : ("B", new Color(214, 84, 84), Color.White);
-				case PadButton.X: return ps ? ("□", new Color(220, 132, 196), Color.White) : ("X", new Color(84, 140, 214), Color.White);
-				case PadButton.Y: return ps ? ("△", new Color(114, 204, 132), Color.White) : ("Y", new Color(220, 190, 70), Color.White);
-				case PadButton.Start: return (ps ? "≡" : "≡", new Color(150, 160, 190), Color.White);
-				case PadButton.L: return (ps ? "L1" : "LB", new Color(150, 160, 190), Color.White);
-				default: return (ps ? "R1" : "RB", new Color(150, 160, 190), Color.White);
+				case PadButton.A: return ps ? ("×", PsDark, new Color(124, 178, 255)) : ("A", new Color(96, 176, 96), Color.White);
+				case PadButton.B: return ps ? ("○", PsDark, new Color(255, 102, 102)) : ("B", new Color(214, 84, 84), Color.White);
+				case PadButton.X: return ps ? ("□", PsDark, new Color(255, 140, 214)) : ("X", new Color(84, 140, 214), Color.White);
+				case PadButton.Y: return ps ? ("△", PsDark, new Color(92, 214, 148)) : ("Y", new Color(220, 190, 70), Color.White);
+				case PadButton.Start: return ps ? ("≡", PsDark, PsInk) : ("≡", new Color(150, 160, 190), Color.White);
+				case PadButton.L: return ps ? ("L1", PsDark, PsInk) : ("LB", new Color(150, 160, 190), Color.White);
+				default: return ps ? ("R1", PsDark, PsInk) : ("RB", new Color(150, 160, 190), Color.White);
 			}
+		}
+
+		/// <summary>A pad button as a chip at a point (text space): on a PlayStation pad a dark disc in a pale rim, else a plain grey one. Its label is drawn by the caller in Chip's ink.</summary>
+		public static Color Chip(SpriteBatch b, float cx, float cy, float size, Viewport v)
+		{
+			if (PlayStationPad)
+			{
+				GlyphDisc(b, cx, cy, size, PsRim, v);
+				GlyphDisc(b, cx, cy, size * 0.86f, PsDark, v);
+				return PsInk;
+			}
+			GlyphDisc(b, cx, cy, size, new Color(150, 160, 190, 255), v);
+			return Color.White;
 		}
 
 		/// <summary>Whether a pad is connected: the hints show its buttons; with none, the keyboard's keys.</summary>
@@ -406,8 +423,14 @@ namespace OpenFF.Client
 				return;
 			}
 			(string _, Color face, Color ink) = Glyph(button);
-			GlyphDisc(b, x + disc / 2, cy, disc, face, v);
 			Icon? icon = IconFor(button, PlayStationPad);
+			if (face == PsDark)
+			{
+				// A PlayStation face button: a dark disc in a pale rim, its mark in its own colour.
+				GlyphDisc(b, x + disc / 2, cy, disc, PsRim, v);
+				GlyphDisc(b, x + disc / 2, cy, disc * 0.86f, face, v);
+			}
+			else GlyphDisc(b, x + disc / 2, cy, disc, face, v);
 			if (icon.HasValue) IconAt(b, icon.Value, x + disc / 2, cy, disc * 0.92f, ink, v);
 		}
 

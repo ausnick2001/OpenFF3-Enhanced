@@ -189,7 +189,7 @@ internal static partial class GlobalScope
 									int x = -1;
 									int y = -1;
 									// PORT: a mod has taken the field's buttons down (Game.Hud.FieldButtons): out of sight, and no touch reaches them.
-									if (!OpenFF.Game.Hud.FieldButtons)
+									if (!OpenFF.Game.Hud.FieldButtons || OpenFF.Client.Options.Get("show-field-buttons") == null)
 									{
 										getCell().SetShow(show: false);
 										_isTouch = false;

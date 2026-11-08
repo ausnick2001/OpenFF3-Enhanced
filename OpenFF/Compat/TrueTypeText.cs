@@ -132,7 +132,7 @@ namespace OpenFF.Client
 				{
 					try
 					{
-						_system.AddFont(File.ReadAllBytes(file));
+						_system.AddFont(ReadFace(file));
 						_loaded.Add(file);
 					}
 					catch (Exception ex)
@@ -187,10 +187,10 @@ namespace OpenFF.Client
 			try
 			{
 				FontSystem system = NewSystem();
-				system.AddFont(File.ReadAllBytes(file));
+				system.AddFont(ReadFace(file));
 				foreach (string fallback in _loaded.OrderBy(f => Path.GetFileName(f).StartsWith("TBUDRGo", StringComparison.OrdinalIgnoreCase) ? 0 : 1))
 				{
-					system.AddFont(File.ReadAllBytes(fallback));
+					system.AddFont(ReadFace(fallback));
 				}
 				_titleSystem = system;
 				Log.Write(LogChannel.General, "text: title face " + Path.GetFileName(file));
@@ -312,8 +312,8 @@ namespace OpenFF.Client
 			{
 				if (!File.Exists(key)) { _missing.Add(key); Log.Write(LogChannel.General, "text: no face " + key); return null; }
 				system = NewSystem();
-				system.AddFont(File.ReadAllBytes(key));
-				foreach (string fallback in _loaded) system.AddFont(File.ReadAllBytes(fallback));
+				system.AddFont(ReadFace(key));
+				foreach (string fallback in _loaded) system.AddFont(ReadFace(fallback));
 				_faces[key] = system;
 				Log.Write(LogChannel.General, "text: face " + Path.GetFileName(key) + " for a menu's style");
 				return system;
@@ -424,6 +424,68 @@ namespace OpenFF.Client
 			return text.Replace('', ' ').Replace(' ', ' ').Replace('­', ' ');
 		}
 
+		/// <summary>
+		/// A face's bytes. PORT: a .ttc is a collection of faces (Windows' msgothic.ttc holds MS Gothic, MS UI Gothic and MS PGothic),
+		/// and the font library takes the first of a collection; a file named like <c>msgothic#1.ttc</c> takes face 1 of it instead
+		/// (counting from 0) - cut out of the collection as a stand-alone font. The log's "text:" lines say which face was loaded.
+		/// </summary>
+		private static byte[] ReadFace(string file)
+		{
+			byte[] data = File.ReadAllBytes(file);
+			if (!file.EndsWith(".ttc", StringComparison.OrdinalIgnoreCase)) return data;
+			int index = 0;
+			string name = Path.GetFileNameWithoutExtension(file);
+			int hash = name.LastIndexOf('#');
+			if (hash >= 0 && int.TryParse(name.Substring(hash + 1), out int asked)) index = asked;
+			byte[] face = ExtractFace(data, index);
+			if (face == null)
+			{
+				Log.Write(LogChannel.General, "text: " + Path.GetFileName(file) + " has no face " + index + "; its first is used");
+				face = ExtractFace(data, 0);
+			}
+			else
+			{
+				Log.Write(LogChannel.General, "text: " + Path.GetFileName(file) + " face " + index);
+			}
+			return face ?? data;
+		}
+
+		private static int Be32(byte[] d, int at) => (d[at] << 24) | (d[at + 1] << 16) | (d[at + 2] << 8) | d[at + 3];
+
+		/// <summary>One face of a TrueType collection as a stand-alone font file, or null when the data is no collection or has no such face.</summary>
+		private static byte[] ExtractFace(byte[] data, int index)
+		{
+			if (data.Length < 16 || data[0] != 't' || data[1] != 't' || data[2] != 'c' || data[3] != 'f') return null;
+			int count = Be32(data, 8);
+			if (index < 0 || index >= count) return null;
+			int at = Be32(data, 12 + 4 * index);
+			int tables = (data[at + 4] << 8) | data[at + 5];
+			int header = 12 + 16 * tables;
+			// Lay the tables out one after another, each padded to four bytes.
+			int[] length = new int[tables], source = new int[tables];
+			int total = header;
+			for (int i = 0; i < tables; i++)
+			{
+				source[i] = Be32(data, at + 12 + 16 * i + 8);
+				length[i] = Be32(data, at + 12 + 16 * i + 12);
+				total += (length[i] + 3) & ~3;
+			}
+			byte[] face = new byte[total];
+			Array.Copy(data, at, face, 0, 12);
+			int put = header;
+			for (int i = 0; i < tables; i++)
+			{
+				Array.Copy(data, at + 12 + 16 * i, face, 12 + 16 * i, 16);
+				face[12 + 16 * i + 8] = (byte)(put >> 24);
+				face[12 + 16 * i + 9] = (byte)(put >> 16);
+				face[12 + 16 * i + 10] = (byte)(put >> 8);
+				face[12 + 16 * i + 11] = (byte)put;
+				Array.Copy(data, source[i], face, put, length[i]);
+				put += (length[i] + 3) & ~3;
+			}
+			return face;
+		}
+
 		/// <summary>The faces to load, most specific first.</summary>
 		private static List<string> FindFaces()
 		{
@@ -446,7 +508,7 @@ namespace OpenFF.Client
 				string fonts = Path.Combine(directory, "fonts");
 				if (!Directory.Exists(fonts)) continue;
 				foreach (string file in Directory.EnumerateFiles(fonts).Where(f =>
-					f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+					f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ttc", StringComparison.OrdinalIgnoreCase)).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
 				{
 					Add(file);
 				}
@@ -459,7 +521,7 @@ namespace OpenFF.Client
 				{
 					foreach (string name in usual) Add(Path.Combine(configured, name));
 					foreach (string file in Directory.EnumerateFiles(configured).Where(f =>
-						f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase)))
+						f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ttc", StringComparison.OrdinalIgnoreCase)))
 					{
 						Add(file);
 					}

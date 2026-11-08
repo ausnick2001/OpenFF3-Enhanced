@@ -429,7 +429,7 @@ namespace OpenFF.Client
 			EnsureKeys();
 
 			string words = "Auto battle";
-			string key = DesktopInput.PadConnected ? "R3" : "F";
+			string key = DesktopInput.PadConnected ? (Ui.PlayStationPad ? "R3" : "RS") : "F";
 			float wordsWidth = TrueTypeText.Width(words, TextSize) / TextSpaceWidth * 480f;
 			float wordsX = RightX - wordsWidth;
 			float capX = wordsX - Gap - CapSize;
@@ -437,7 +437,17 @@ namespace OpenFF.Client
 
 			Viewport view = GraphicsDevice.Viewport;
 			float sx = view.Width / 480f, sy = view.Height / 320f;
-			if (_keys != null)
+			bool pad = DesktopInput.PadConnected;
+			Color chipInk = Color.White;
+			if (pad)
+			{
+				Ui.Ensure(GraphicsDevice);
+				_batch ??= new SpriteBatch(GraphicsDevice);
+				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
+				chipInk = Ui.Chip(_batch, (capX + CapSize / 2f) / 480f * Ui.W, (capY + CapSize / 2f) / 320f * Ui.H, CapSize / 480f * Ui.W * 1.25f, view);
+				_batch.End();
+			}
+			else if (_keys != null)
 			{
 				_batch ??= new SpriteBatch(GraphicsDevice);
 				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
@@ -451,12 +461,12 @@ namespace OpenFF.Client
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
 			// The key's name on the cap, in the title's serif as Steam's key caps are lettered.
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = !pad;
 			try
 			{
 				float kw = TrueTypeText.Width(key, TextSize) / TextSpaceWidth * 480f;
-				graphics.SetColor(255, 255, 255, 255);
-				graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f) / 320f * TextSpaceHeight, TextSize);
+				graphics.SetColor(chipInk.R, chipInk.G, chipInk.B, 255);
+				graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f) / 320f * TextSpaceHeight, TextSize - (pad ? 1 : 0));
 			}
 			finally
 			{

@@ -43,6 +43,7 @@ namespace OpenFF.Client
 			("ff4-battle-motions", null, "", "Logs each motion an FF4 battle gives a fighter (the step, the motion, where it stands) - to set beside the Steam hook's chars.tsv"),
 			("ff4-battle-wait", null, "", "FF4's battles in the wait mode: the gauges stand while a member has a list open (the active mode otherwise)"),
 				("classic-battle", "FF3_CLASSIC_BATTLE", "", "FF3: the game's own order of play - every hero's command first, then the round plays out - instead of turn by turn (each hero chooses when their turn comes)"),
+			("show-field-buttons", "FF3_SHOW_FIELD_BUTTONS", "", "Shows the field's on-screen Map and Menu (touch screen) buttons, which are hidden by default; the keys and pad still open them"),
 			("screenshot-dir", "FF3_SCREENSHOT_DIR", "<dir>", "Where F12 screenshots are written"),
 			("screenshot-every", "FF3_SCREENSHOT_EVERY", "<seconds>", "Capture a screenshot automatically every N seconds"),
 			("screenshot-steps", "FF3_SCREENSHOT_STEPS", "<n>[,<from>,<to>]", "Capture a screenshot at every n-th game step (named stepNNNNNN.png)"),
