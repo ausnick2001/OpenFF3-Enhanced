@@ -101,7 +101,7 @@ namespace OpenFF.Client
 			else if ((ModMenus.GameMenuUp || MoviePlayer.Current != null || SceneSkip.Skippable || SceneSkip.PromptOpen) && !IsOpen) _escForGameMenu = true;   // a movie's or a skippable scene's Esc is theirs
 			if (esc && !_escForGameMenu) return true;
 			// The pad's own Start, as the defaults have it: a rebinding is for the game, not for this menu.
-			bool start = (DesktopInput.PadOnlyBits(defaultPad: true) & 8) != 0;
+			bool start = (DesktopInput.PadOnlyBits(defaultPad: true) & 12) != 0;   // Start (8) or Select (4, Share): held, either opens the menu
 			long now = Environment.TickCount64;
 			if (!start) { _startSince = -1; return false; }
 			if (_startSince < 0) _startSince = now;
