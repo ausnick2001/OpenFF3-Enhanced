@@ -29,6 +29,9 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>The command list as one navy panel (the PSP's look) rather than a green box a row. `--classic-windows` keeps the game's.</summary>
+		public static bool PanelLook => !GameProfile.IsFf4 && Options.Get("classic-windows") == null;
+
 		/// <summary>BattleMain.initialize: the battle's rounds begin; decide how they will be played.</summary>
 		public static void Begin()
 		{

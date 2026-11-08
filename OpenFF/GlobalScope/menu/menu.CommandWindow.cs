@@ -76,6 +76,11 @@ internal static partial class GlobalScope
 
 			private BasicWindow[] commandWindow_ = new BasicWindow[4];
 
+			// PORT: the command list as one panel (OpenFF.Client.BattleFlow.PanelLook).
+			private BasicWindow panel_ = new BasicWindow();
+
+			private bool panelMade_;
+
 			private int[] messageId_ = new int[pl.BATTLE_COMMAND_MAX];
 
 			private int pushState_;
@@ -154,6 +159,31 @@ internal static partial class GlobalScope
 					commandWindow_[i].bwCreateUL(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, commandWindowData(i).Position, commandWindowData(i).Size, 3);
 					commandWindow_[i].SetShow(show: true, user: true);
 				}
+				// PORT: one navy panel behind the list in place of a box a row - the rows' own windows drawn at no opacity.
+				if (panelMade_) { panel_.Release(); panelMade_ = false; }
+				if (OpenFF.Client.BattleFlow.PanelLook)
+				{
+					int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
+					for (int j = 0; j < 4; j++)
+					{
+						cwDATA d = commandWindowData(j);
+						left = Math.Min(left, d.Position.vx);
+						top = Math.Min(top, d.Position.vy);
+						right = Math.Max(right, d.Position.vx + d.Size.vx);
+						bottom = Math.Max(bottom, d.Position.vy + d.Size.vy);
+						commandWindow_[j].SetLook(0f, null);
+					}
+					ds.Vector2<short> at = new ds.Vector2<short>();
+					ds.Vector2<short> size = new ds.Vector2<short>();
+					at.vx = (short)(left - 2);
+					at.vy = (short)(top - 2);
+					size.vx = (short)(right - left + 4);
+					size.vy = (short)(bottom - top + 4);
+					panel_.bwCreateUL(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, at, size, 3);
+					panel_.SetPanelStyle(0x783A2Eu, 29);
+					panel_.SetShow(show: true, user: true);
+					panelMade_ = true;
+				}
 			}
 
 			public void createCommandMessage(pl.ABILITY_ID _id, int i)
@@ -199,6 +229,7 @@ internal static partial class GlobalScope
 				{
 					commandWindow_[i].SetShow(show, user: true);
 				}
+				if (panelMade_) panel_.SetShow(show, user: true);
 				if (!show)
 				{
 					releaseCommandMessageAll();
@@ -272,6 +303,7 @@ internal static partial class GlobalScope
 				{
 					commandWindow_[i].Release();
 				}
+				if (panelMade_) { panel_.Release(); panelMade_ = false; }
 				releaseCommandMessageAll();
 				if (m_MessageId != -1)
 				{

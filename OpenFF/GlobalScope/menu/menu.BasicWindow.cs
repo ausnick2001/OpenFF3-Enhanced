@@ -509,6 +509,16 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: a solid coloured fill (0xBBGGRR) at the sprite alpha's five bits, the frame's art left as it is - the battle's command panel.</summary>
+			public void SetPanelStyle(uint fill, byte alpha)
+			{
+				for (int i = 0; i < 2; i++)
+				{
+					if (m_pWindow1dArray[i] != null) m_pWindow1dArray[i].SetColor(fill);
+				}
+				SetAlpha(alpha);
+			}
+
 			public void SetAlpha(byte alpha)
 			{
 				m_Alpha = alpha;
