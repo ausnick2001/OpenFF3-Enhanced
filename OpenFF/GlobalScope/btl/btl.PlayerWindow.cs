@@ -55,27 +55,29 @@ internal static partial class GlobalScope
 				{
 					if (pl.PlayerParty.instance().player((byte)i).isEnable())
 					{
-						// PORT: soft rows (OpenFF.Client.BattleFlow.PanelLook): the band fades out to the right in slices of falling opacity, the hero whose turn it is in a warm gold.
+						// PORT: soft rows (OpenFF.Client.BattleFlow.PanelLook): a solid band across the row with a short, fluffy fade at each vertical edge, the hero whose turn it is in a warm gold.
 						if (OpenFF.Client.BattleFlow.PanelLook)
 						{
 							ds.Vector2<short> origin = CoasterPosition(i, 0);
 							ds.Vector2<short> to = CoasterPosition(i, 1);
-							int slices = 14;
-							int step = Math.Max(1, (to.vx - origin.vx) / slices);
 							bool active = i == nowPlayer_;
-							for (int k = 0; k < slices; k++)
+							int total = to.vx - origin.vx;
+							int edge = Math.Max(4, total / 14);   // how far in each fade reaches
+							float top = active ? 22f : 12f;
+							ushort tone = active ? ds.setGXRgb(31, 27, 8) : ds.setGXRgb(0, 0, 4);
+							for (int x = 0; x < total; x += 2)
 							{
-								float fall = 1f - (float)k / slices;
-								int alpha = (int)Math.Round((active ? 22f : 9f) * fall * fall);
+								int fromEdge = Math.Min(x, total - 2 - x);
+								float k = Math.Min(1f, (fromEdge + 1f) / edge);
+								int alpha = (int)Math.Round(top * k * k * (3f - 2f * k));
 								if (alpha < 1) continue;
 								ds.Vector2<short> left = new ds.Vector2<short>();
 								ds.Vector2<short> right = new ds.Vector2<short>();
-								left.set((short)(origin.vx + k * step), origin.vy);
-								right.set((short)(k == slices - 1 ? to.vx : origin.vx + (k + 1) * step), to.vy);
+								left.set((short)(origin.vx + x), origin.vy);
+								right.set((short)Math.Min(to.vx, origin.vx + x + 2), to.vy);
 								sys2d.PrimitiveQuadDraw soft = new sys2d.PrimitiveQuadDraw();
 								soft.setPosition(left, right);
 								soft.setDepth(0);
-								ushort tone = active ? ds.setGXRgb(31, 27, 8) : ds.setGXRgb(0, 0, 4);
 								soft.setColor(tone, tone, tone, tone);
 								soft.setAlpha((byte)alpha);
 								soft.draw();

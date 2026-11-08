@@ -44,6 +44,7 @@ namespace OpenFF.Client
 			("ff4-battle-wait", null, "", "FF4's battles in the wait mode: the gauges stand while a member has a list open (the active mode otherwise)"),
 				("classic-battle", "FF3_CLASSIC_BATTLE", "", "FF3: the game's own order of play - every hero's command first, then the round plays out - instead of turn by turn (each hero chooses when their turn comes)"),
 			("classic-windows", "FF3_CLASSIC_WINDOWS", "", "FF3: the battle's command list as the game draws it (a box a row) instead of one navy panel"),
+			("show-logos", "FF3_SHOW_LOGOS", "", "FF3: play the company logos and prologue before the title (the start goes straight to the title otherwise)"),
 			("show-field-buttons", "FF3_SHOW_FIELD_BUTTONS", "", "Shows the field's on-screen Map and Menu (touch screen) buttons, which are hidden by default; the keys and pad still open them"),
 			("screenshot-dir", "FF3_SCREENSHOT_DIR", "<dir>", "Where F12 screenshots are written"),
 			("screenshot-every", "FF3_SCREENSHOT_EVERY", "<seconds>", "Capture a screenshot automatically every N seconds"),

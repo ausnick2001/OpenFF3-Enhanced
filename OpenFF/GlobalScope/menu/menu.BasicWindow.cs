@@ -509,6 +509,11 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: the battle's windows' fill (0xBBGGRR) - a light navy; the sprite's art multiplies it, so it is set bright.</summary>
+			public const uint NavyFill = 0xFF967Du;
+
+			private bool Navy => OpenFF.Client.BattleFlow.Active && OpenFF.Client.BattleFlow.PanelLook && !m_BarStyle;
+
 			/// <summary>PORT: a solid coloured fill (0xBBGGRR) at the sprite alpha's five bits, the frame's art left as it is - the battle's command panel.</summary>
 			public void SetPanelStyle(uint fill, byte alpha)
 			{
@@ -528,6 +533,11 @@ internal static partial class GlobalScope
 					{
 						// PORT: a menu style's opacity and tint (SetLook) on the fill as well.
 						m_pWindow1dArray[i].SetAlpha(m_Opacity >= 1f ? alpha : (byte)Math.Round(alpha * m_Opacity));
+						if (Navy)
+						{
+							m_pWindow1dArray[i].SetColor(NavyFill);
+							m_pWindow1dArray[i].SetAlpha((byte)Math.Round(29 * m_Opacity));
+						}
 						if (m_Tint.HasValue) m_pWindow1dArray[i].SetColor(m_Tint.Value);   // a bar's fill (black) takes the tint's colour
 					}
 				}
@@ -632,6 +642,10 @@ internal static partial class GlobalScope
 								// The wallpaper cell Ff4Assets gives it is a white texel; tint it.
 								pSprite.SetColor(m_BarStyle ? BarColor : 0x4A2214u); // stored blue-green-red
 								if (m_BarStyle) pSprite.SetAlpha(BarAlpha);
+							}
+							else if (Navy)
+							{
+								pSprite.SetColor(NavyFill);   // PORT: the battle's windows - the lists, the enemy, Back, Player - navy, not green
 							}
 						}
 					}

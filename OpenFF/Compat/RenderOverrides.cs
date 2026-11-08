@@ -47,6 +47,11 @@ namespace OpenFF.Client
 			string want = Options.Get("start");
 			if (string.IsNullOrEmpty(want))
 			{
+				// FF3 starts on the title, past the company logos and prologue (`--show-logos` plays them).
+				if (!GameProfile.IsFf4 && Options.Get("show-logos") == null)
+				{
+					return GlobalScope.GAMEPART.GAMEPART_TITLE;
+				}
 				return fallback;
 			}
 			foreach (GlobalScope.GAMEPART part in Enum.GetValues(typeof(GlobalScope.GAMEPART)))
