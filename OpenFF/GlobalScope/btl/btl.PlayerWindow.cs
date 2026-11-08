@@ -55,6 +55,33 @@ internal static partial class GlobalScope
 				{
 					if (pl.PlayerParty.instance().player((byte)i).isEnable())
 					{
+						// PORT: soft rows (OpenFF.Client.BattleFlow.PanelLook): the band fades out to the right in slices of falling opacity, the hero whose turn it is in a warm gold.
+						if (OpenFF.Client.BattleFlow.PanelLook)
+						{
+							ds.Vector2<short> origin = CoasterPosition(i, 0);
+							ds.Vector2<short> to = CoasterPosition(i, 1);
+							int slices = 14;
+							int step = Math.Max(1, (to.vx - origin.vx) / slices);
+							bool active = i == nowPlayer_;
+							for (int k = 0; k < slices; k++)
+							{
+								float fall = 1f - (float)k / slices;
+								int alpha = (int)Math.Round((active ? 22f : 9f) * fall * fall);
+								if (alpha < 1) continue;
+								ds.Vector2<short> left = new ds.Vector2<short>();
+								ds.Vector2<short> right = new ds.Vector2<short>();
+								left.set((short)(origin.vx + k * step), origin.vy);
+								right.set((short)(k == slices - 1 ? to.vx : origin.vx + (k + 1) * step), to.vy);
+								sys2d.PrimitiveQuadDraw soft = new sys2d.PrimitiveQuadDraw();
+								soft.setPosition(left, right);
+								soft.setDepth(0);
+								ushort tone = active ? ds.setGXRgb(31, 27, 8) : ds.setGXRgb(0, 0, 4);
+								soft.setColor(tone, tone, tone, tone);
+								soft.setAlpha((byte)alpha);
+								soft.draw();
+							}
+							continue;
+						}
 						sys2d.PrimitiveQuadDraw primitiveQuadDraw = new sys2d.PrimitiveQuadDraw();
 						primitiveQuadDraw.setPosition(CoasterPosition(i, 0), CoasterPosition(i, 1));
 						primitiveQuadDraw.setDepth(0);
