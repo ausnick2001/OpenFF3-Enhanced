@@ -67,6 +67,8 @@ namespace OpenFF.Client
 
         private Layer _layers = Layer.Boxes | Layer.World | Layer.Stats;
         private readonly bool _logStalls = Options.Get("log-stalls") != null;
+        private int _gc0, _gc1, _gc2;
+        private TimeSpan _gcPause;
         private double _stepsPerSecond;
         private long _stepsAtLastFps;
         private double _pacingLoggedAt;
@@ -193,9 +195,17 @@ namespace OpenFF.Client
                 }
             }
             // --log-stalls: a frame that took over 50 ms is written to the log with what was going on, to find where a hitch comes from.
-            if (_logStalls && _frameMs > 50 && _lastFrameAt > 5000)
+            if (_logStalls)
             {
-                Log.Write(LogChannel.General, "stall: " + _frameMs.ToString("0") + " ms" + (Environment.TickCount64 - ScreenCapture.LastCaptureTick < 300 ? " - a screenshot was written" : ""));
+                // PORT: what the garbage collector did since the last frame (collections of gen 0 / 1 / 2, and the time it held the game still), to tell a collection's pause from a hitch of the game's own.
+                int g0 = GC.CollectionCount(0), g1 = GC.CollectionCount(1), g2 = GC.CollectionCount(2);
+                TimeSpan paused = GC.GetTotalPauseDuration();
+                string gc = " - gc " + (g0 - _gc0) + "/" + (g1 - _gc1) + "/" + (g2 - _gc2) + ", paused " + (paused - _gcPause).TotalMilliseconds.ToString("0") + " ms, heap " + (GC.GetTotalMemory(false) >> 20) + " MB";
+                _gc0 = g0; _gc1 = g1; _gc2 = g2; _gcPause = paused;
+                if (_frameMs > 50 && _lastFrameAt > 5000)
+                {
+                    Log.Write(LogChannel.General, "stall: " + _frameMs.ToString("0") + " ms" + (Environment.TickCount64 - ScreenCapture.LastCaptureTick < 300 ? " - a screenshot was written" : "") + gc);
+                }
             }
             _lastDrawCalls = DrawCalls;
             _lastVertices = Vertices;
