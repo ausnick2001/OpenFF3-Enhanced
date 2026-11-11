@@ -59,6 +59,7 @@ internal static partial class GlobalScope
 
 				public void draw(bool bVBlank)
 				{
+					OpenFF.Client.StepProbe.Mark();
 					for (int i = 0; i < _dlayer[0].size(); i++)
 					{
 						if (_dlayer[0][i].getPriority() == -1)
@@ -105,19 +106,23 @@ internal static partial class GlobalScope
 							}
 						}
 					}
+					OpenFF.Client.StepProbe.Lap("scene-layers");
 					_graph.drawObjects();
+					OpenFF.Client.StepProbe.Lap("scene-graph-objects");
 					// PORT: the mods' own effects, right after the game's - in the scene the game's effects are drawn in (the effect
 					// server's), not in the other one of the frame's two, which would draw them twice (OpenFF.Client.ModEffects).
 					if (eld.g_elsvr.scene() == this)
 					{
 						OpenFF.Client.ModEffects.DrawScene();
 					}
+					OpenFF.Client.StepProbe.Lap("mod-effects");
 					if (bVBlank && CDevice.singleton().getFPS() == CDevice.enFPS.enFPS_30)
 					{
 						ulong num = (ulong)OS_GetTick() - CDevice.singleton().getPreVBlankTick();
 						if (num <= 8000)
 						{
 							CDevice.singleton().waitVBlank();
+							OpenFF.Client.StepProbe.Lap("waitVBlank");
 						}
 					}
 				}
