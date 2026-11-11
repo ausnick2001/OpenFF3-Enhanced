@@ -89,6 +89,7 @@ namespace OpenFF.Client
 		/// </summary>
 		public static void Frame(Microsoft.Xna.Framework.Graphics.GraphicsDevice device)
 		{
+			StepMs = GameMs = EngineMs = ReplayMs = 0;   // PORT: this frame's own timings (the stall log)
 			int steps = FramePacer.Steps();
 			int speed = Math.Clamp(Speed, 1, FramePacer.MostSpeed);
 			if (!FrameCapture.Supported)
@@ -107,8 +108,13 @@ namespace OpenFF.Client
 			{
 				Step(Math.Max(1, steps) * speed);
 			}
+			long replayAt = System.Diagnostics.Stopwatch.GetTimestamp();
 			FrameCapture.Replay(device, GlobalScope.m_Graphics, FramePacer.Blend());
+			ReplayMs = System.Diagnostics.Stopwatch.GetElapsedTime(replayAt).TotalMilliseconds;
 		}
+
+		/// <summary>PORT: how long this frame's game step took as a whole, the legacy game's part of it, the engine's part, and the drawing of the recorded frame - what the stall log says (--log-stalls).</summary>
+		public static double StepMs, GameMs, EngineMs, ReplayMs;
 
 		/// <summary>Steps of the game taken so far (the overlay's steps-a-second).</summary>
 		public static long StepsTaken;
@@ -116,6 +122,8 @@ namespace OpenFF.Client
 		/// <summary>So many steps of the game, which render() runs as one frame of its own (drawing the last, skipping the rest's drawing as its catch-up does), recorded into FrameCapture when the native renderer is on; then the client's own per-step work and the engine's frame.</summary>
 		private static void Step(int steps)
 		{
+			long stepAt = System.Diagnostics.Stopwatch.GetTimestamp();
+			long gameAt = stepAt;
 			StepsTaken += steps;
 			FramePacer.PendingSteps = steps;
 			Drive.Update();
@@ -132,6 +140,7 @@ namespace OpenFF.Client
 			{
 				if (record) FrameCapture.End();
 				FramePacer.PendingSteps = 1;
+				GameMs = System.Diagnostics.Stopwatch.GetElapsedTime(gameAt).TotalMilliseconds;
 			}
 			Banner.Tick();   // the place-name window a mod asked for this step stays; one not asked for goes
 			FrameProbe.Tick();
@@ -139,7 +148,10 @@ namespace OpenFF.Client
 			ProgressionLayer.Tick();
 			Trace.Tick();
 			// The engine's frame, after the legacy one.
+			long engineAt = System.Diagnostics.Stopwatch.GetTimestamp();
 			EngineHost.Tick();
+			EngineMs = System.Diagnostics.Stopwatch.GetElapsedTime(engineAt).TotalMilliseconds;
+			StepMs = System.Diagnostics.Stopwatch.GetElapsedTime(stepAt).TotalMilliseconds;
 		}
 	}
 }
