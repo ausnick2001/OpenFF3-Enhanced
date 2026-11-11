@@ -574,7 +574,7 @@ namespace OpenFF.Client
 
 			// The values' places: a stepper's box and a switch, sized to what they show.
 			Rectangle[] valueBox = new Rectangle[count];
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
 				for (int row = 0; row < count; row++)
@@ -597,7 +597,7 @@ namespace OpenFF.Client
 			// The hints, right-aligned at the foot (at the left on the short pages), measured in the menu's face.
 			(Ui.PadButton, string)[] hints = Hints();
 			float[] hintX = new float[hints.Length];
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
 				float hx = panel.Right - 30;
@@ -629,7 +629,7 @@ namespace OpenFF.Client
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
 				string title = _page == Page.Main ? "OpenFF" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : "Exit game?";

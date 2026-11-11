@@ -354,6 +354,17 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>Draws a named pad picture centred on a text-space point, if there is one on a PlayStation pad. False otherwise (the caller falls back to Chip).</summary>
+		public static bool PadPictureCentred(SpriteBatch b, string name, float cx, float cy, float size, Viewport v)
+		{
+			if (!PlayStationPad) return false;
+			Texture2D tex = PadPicture(name);
+			if (tex == null) return false;
+			(float w, float h) = PadPictureSize(tex, size);
+			DrawPadPicture(b, tex, cx - w / 2, cy, size, v);
+			return true;
+		}
+
 		/// <summary>A pad button as a chip at a point (text space): on a PlayStation pad a dark disc in a pale rim, else a plain grey one. Its label is drawn by the caller in Chip's ink.</summary>
 		public static Color Chip(SpriteBatch b, float cx, float cy, float size, Viewport v)
 		{
@@ -407,9 +418,83 @@ namespace OpenFF.Client
 			finally { TrueTypeText.TitleFace = was; }
 		}
 
-		/// <summary>The width a hint takes in text space: the disc (a keycap, with no pad connected), a gap, the word.</summary>
-		public static float HintWidth(GlobalScope.Graphics g, string word, int size, float disc, PadButton? button = null)
-			=> (button.HasValue && !PadConnected ? CapWidth(button.Value, disc, size) : disc) + 8 + Width(g, word, size);
+		// ---- the supplied PlayStation button pictures (PNGs in a pad-icons folder beside the game) ----
+		//
+		// Used when a PlayStation pad is in play and the picture is there; otherwise the drawn glyphs above.
+
+		private static readonly System.Collections.Generic.Dictionary<string, Texture2D> _padPics = new System.Collections.Generic.Dictionary<string, Texture2D>();
+
+		private static string PadPicName(PadButton button)
+		{
+			switch (button)
+			{
+				case PadButton.A: return "cross";
+				case PadButton.B: return "circle";
+				case PadButton.X: return "square";
+				case PadButton.Y: return "triangle";
+				case PadButton.Start: return "start";
+				case PadButton.L: return "l1";
+				default: return "r1";
+			}
+		}
+
+		/// <summary>A picture from the pad-icons folder by name (cross, circle, square, triangle, l1, r1, l2, r2, l3, r3, start, select), or null when it is not there.</summary>
+		public static Texture2D PadPicture(string name)
+		{
+			if (_device == null) return null;
+			if (_padPics.TryGetValue(name, out Texture2D cached)) return cached;
+			Texture2D tex = null;
+			try
+			{
+				string file = System.IO.Path.Combine(AppContext.BaseDirectory, "pad-icons", name + ".png");
+				if (System.IO.File.Exists(file))
+					using (System.IO.FileStream fs = System.IO.File.OpenRead(file)) tex = Texture2D.FromStream(_device, fs);
+			}
+			catch (Exception) { tex = null; }
+			_padPics[name] = tex;
+			return tex;
+		}
+
+		private static Texture2D PadPictureFor(PadButton button) => PlayStationPad ? PadPicture(PadPicName(button)) : null;
+
+		/// <summary>A picture's size in text space for a hint of the given disc size: round ones fill the disc, the wide shoulder and menu pills are a little shorter.</summary>
+		private static (float W, float H) PadPictureSize(Texture2D tex, float disc)
+		{
+			float h = tex.Height >= tex.Width * 0.8f ? disc : disc * 0.8f;
+			return (h * tex.Width / tex.Height, h);
+		}
+
+		/// <summary>Draws a pad picture with its left edge at x, centred on cy (text space), at the disc size. False when there is none to draw.</summary>
+		public static bool PadPictureAt(SpriteBatch b, string name, float x, float cy, float disc, Viewport v)
+		{
+			Texture2D tex = PadPicture(name);
+			if (tex == null) return false;
+			DrawPadPicture(b, tex, x, cy, disc, v);
+			return true;
+		}
+
+		private static void DrawPadPicture(SpriteBatch b, Texture2D tex, float x, float cy, float disc, Viewport v)
+		{
+			(float w, float h) = PadPictureSize(tex, disc);
+			float sx = v.Width / W, sy = v.Height / H;
+			b.Draw(tex, new Rectangle((int)Math.Round(x * sx), (int)Math.Round((cy - h / 2) * sy), (int)Math.Round(w * sx), (int)Math.Round(h * sy)), Color.White);
+		}
+
+		/// <summary>The width a hint takes in text space: the disc (a keycap, with no pad connected; a picture's own width on a PlayStation pad), a gap, the word.</summary>
+		public static float HintWidth(GlobalScope.Graphics g, string word, int size, float disc, PadButton? button = null, bool keys = true)
+		{
+			float shape = disc;
+			if (button.HasValue)
+			{
+				if (keys && !PadConnected) shape = CapWidth(button.Value, disc, size);
+				else
+				{
+					Texture2D pic = PadPictureFor(button.Value);
+					if (pic != null) shape = PadPictureSize(pic, disc).W;
+				}
+			}
+			return shape + 8 + Width(g, word, size);
+		}
 
 		/// <summary>Shape pass of a hint: the button's disc at (x, cy), and its icon when it has one (the PlayStation marks, the menu lines); with no pad connected, a keycap for the keyboard's key.</summary>
 		public static void HintShape(SpriteBatch b, PadButton button, float x, float cy, float disc, Viewport v, bool keys = true)
@@ -422,6 +507,8 @@ namespace OpenFF.Client
 				RoundPlate(b, new Rectangle(cap.X + 1, cap.Y + 1, cap.Width - 2, cap.Height - 3), new Color(38, 52, 92, 255), v);
 				return;
 			}
+			Texture2D pic = PadPictureFor(button);
+			if (pic != null) { DrawPadPicture(b, pic, x, cy, disc, v); return; }
 			(string _, Color face, Color ink) = Glyph(button);
 			Icon? icon = IconFor(button, PlayStationPad);
 			if (face == PsDark)
@@ -446,6 +533,13 @@ namespace OpenFF.Client
 				finally { TrueTypeText.TitleFace = was; }
 				Left(g, word, x + w + 8, cy - disc / 2, disc, size, Muted);
 				return x + w + 8 + Width(g, word, size) + 26;
+			}
+			Texture2D pic = PadPictureFor(button);
+			if (pic != null)
+			{
+				float pw = PadPictureSize(pic, disc).W;
+				Left(g, word, x + pw + 8, cy - disc / 2, disc, size, Muted);
+				return x + pw + 8 + Width(g, word, size) + 26;
 			}
 			(string mark, Color _, Color ink) = Glyph(button);
 			if (!IconFor(button, PlayStationPad).HasValue)

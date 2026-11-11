@@ -439,12 +439,15 @@ namespace OpenFF.Client
 			float sx = view.Width / 480f, sy = view.Height / 320f;
 			bool pad = DesktopInput.PadConnected;
 			Color chipInk = Color.White;
+			bool picture = false;
 			if (pad)
 			{
 				Ui.Ensure(GraphicsDevice);
 				_batch ??= new SpriteBatch(GraphicsDevice);
 				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
-				chipInk = Ui.Chip(_batch, (capX + CapSize / 2f) / 480f * Ui.W, (capY + CapSize / 2f) / 320f * Ui.H, CapSize / 480f * Ui.W * 1.25f, view);
+				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.25f;
+				picture = Ui.PadPictureCentred(_batch, "r3", chipX, chipY, chipSize, view);
+				if (!picture) chipInk = Ui.Chip(_batch, chipX, chipY, chipSize, view);
 				_batch.End();
 			}
 			else if (_keys != null)
@@ -466,7 +469,7 @@ namespace OpenFF.Client
 			{
 				float kw = TrueTypeText.Width(key, TextSize) / TextSpaceWidth * 480f;
 				graphics.SetColor(chipInk.R, chipInk.G, chipInk.B, 255);
-				graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f) / 320f * TextSpaceHeight, TextSize - (pad ? 1 : 0));
+				if (!picture) graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f) / 320f * TextSpaceHeight, TextSize - (pad ? 1 : 0));
 			}
 			finally
 			{

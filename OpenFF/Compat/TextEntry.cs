@@ -310,7 +310,7 @@ namespace OpenFF.Client
 				foreach ((Ui.PadButton button, string word) in Hints())
 				{
 					Ui.HintShape(_batch, button, hx, hy, 18, view, keys: false);   // typed keys are its own: the pad's glyphs
-					hx += HintAdvance(word, hintSize);
+					hx += HintAdvance(button, word, hintSize);
 				}
 			}
 			_batch.End();
@@ -346,7 +346,7 @@ namespace OpenFF.Client
 				foreach ((Ui.PadButton button, string word) in Hints())
 				{
 					Ui.HintText(graphics, button, word, hx, hy, 18, hintSize, keys: false);
-					hx += HintAdvance(word, hintSize);
+					hx += HintAdvance(button, word, hintSize);
 				}
 			}
 			else
@@ -361,7 +361,7 @@ namespace OpenFF.Client
 			(Ui.PadButton.A, "Select"), (Ui.PadButton.B, "Backspace"), (Ui.PadButton.X, "Space"), (Ui.PadButton.Y, "Shift"), (Ui.PadButton.Start, "Done")
 		};
 
-		private float HintAdvance(string word, int size) => Ui.HintWidth(GlobalScope.m_Graphics, word, size, 18) + 22;
+		private float HintAdvance(Ui.PadButton button, string word, int size) => Ui.HintWidth(GlobalScope.m_Graphics, word, size, 18, button, false) + 22;
 
 		private void EnsureResources()
 		{
