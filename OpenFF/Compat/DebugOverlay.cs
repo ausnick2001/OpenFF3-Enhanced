@@ -204,7 +204,7 @@ namespace OpenFF.Client
                 _gc0 = g0; _gc1 = g1; _gc2 = g2; _gcPause = paused;
                 if (_frameMs > 50 && _lastFrameAt > 5000)
                 {
-                    Log.Write(LogChannel.General, "stall: " + _frameMs.ToString("0") + " ms" + (Environment.TickCount64 - ScreenCapture.LastCaptureTick < 300 ? " - a screenshot was written" : "") + gc + ", step " + GameHost.StepMs.ToString("0") + " ms (game " + GameHost.GameMs.ToString("0") + ", engine " + GameHost.EngineMs.ToString("0") + "), draw " + GameHost.ReplayMs.ToString("0") + " ms");
+                    Log.Write(LogChannel.General, "stall: " + _frameMs.ToString("0") + " ms" + (Environment.TickCount64 - ScreenCapture.LastCaptureTick < 300 ? " - a screenshot was written" : "") + gc + ", step " + GameHost.StepMs.ToString("0") + " ms (game " + GameHost.GameMs.ToString("0") + ", engine " + GameHost.EngineMs.ToString("0") + "), draw " + GameHost.ReplayMs.ToString("0") + " ms" + StepProbe.Describe());
                 }
             }
             _lastDrawCalls = DrawCalls;

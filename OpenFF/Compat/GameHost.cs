@@ -89,6 +89,7 @@ namespace OpenFF.Client
 		/// </summary>
 		public static void Frame(Microsoft.Xna.Framework.Graphics.GraphicsDevice device)
 		{
+			StepProbe.Reset();
 			StepMs = GameMs = EngineMs = ReplayMs = 0;   // PORT: this frame's own timings (the stall log)
 			int steps = FramePacer.Steps();
 			int speed = Math.Clamp(Speed, 1, FramePacer.MostSpeed);

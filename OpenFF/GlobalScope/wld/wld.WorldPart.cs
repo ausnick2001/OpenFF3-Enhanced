@@ -302,6 +302,7 @@ internal static partial class GlobalScope
 
 			protected override void onDrawPart()
 			{
+				OpenFF.Client.StepProbe.Mark();
 				dgs.CCurtain.Bottom().draw();
 				if (GX_GetPrioriry3D() != 0)
 				{
@@ -311,7 +312,9 @@ internal static partial class GlobalScope
 				}
 				eff.CEffectMng.instance().draw();
 				int drawn = ds.sys3d.CRenderObject.Drawn;
+				OpenFF.Client.StepProbe.Lap("draw-2d-and-effects");
 				m_Scene.draw(bVBlank: true);
+				OpenFF.Client.StepProbe.Lap("draw-scene");
 				// PORT: the mod's own models (glTF), with the scene's camera, before the curtains and the 2D.
 				// Not on a catch-up frame (render() draws only the last of the frames it runs), as the game's models;
 				// nor while the scene drew none of its own (a menu over the field - its question, a screen coming up).
@@ -343,16 +346,24 @@ internal static partial class GlobalScope
 
 			protected override void onExecutePart()
 			{
+				OpenFF.Client.StepProbe.Mark();
 				characterMng.execute();
+				OpenFF.Client.StepProbe.Lap("characters");
 				stageMng.execute();
+				OpenFF.Client.StepProbe.Lap("stage");
 				AreaChange.getInstance().execute();
+				OpenFF.Client.StepProbe.Lap("areachange");
 				if (!characterMng.isLoadingVramAsync())
 				{
 					m_WorldSystem.execute();
+					OpenFF.Client.StepProbe.Lap("world-execute");
 					m_WorldSystem.update();
+					OpenFF.Client.StepProbe.Lap("world-update");
 				}
 				sys2d.DS2DManager.d2dGetInstance().d2dExecute();
+				OpenFF.Client.StepProbe.Lap("2d");
 				eff.CEffectMng.instance().execute();
+				OpenFF.Client.StepProbe.Lap("effects");
 				if (m_WorldSystem.isEnd())
 				{
 					abort();
