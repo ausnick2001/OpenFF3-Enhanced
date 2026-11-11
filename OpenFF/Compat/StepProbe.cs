@@ -14,6 +14,14 @@ namespace OpenFF.Client
 		private static readonly Dictionary<string, double> Parts = new Dictionary<string, double>();
 		private static long _mark;
 
+		/// <summary>A piece of the step that timed itself: kept under its name if it took 3 ms or more.</summary>
+		public static void Add(string name, double ms)
+		{
+			if (ms < 3.0) return;
+			Parts.TryGetValue(name, out double before);
+			Parts[name] = before + ms;
+		}
+
 		public static void Reset() { Parts.Clear(); }
 
 		public static void Mark() { _mark = Stopwatch.GetTimestamp(); }

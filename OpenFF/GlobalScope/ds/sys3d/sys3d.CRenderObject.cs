@@ -276,7 +276,10 @@ internal static partial class GlobalScope
 						}
 						else
 						{
+							long drawAt = System.Diagnostics.Stopwatch.GetTimestamp();
 							NNS_G3dDraw(m_Object);
+							// PORT: --log-stalls: a model whose draw took a few ms, by the model's identity and where it stands.
+							OpenFF.Client.StepProbe.Add("model#" + (m_MdlRes == null ? 0 : System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(m_MdlRes) % 10000) + "@" + (m_Position.x >> 12) + "," + (m_Position.z >> 12), System.Diagnostics.Stopwatch.GetElapsedTime(drawAt).TotalMilliseconds);
 						}
 					}
 					VecFx32 sys3d_reuse_zero_vec = sys3d.sys3d_reuse_zero_vec;
