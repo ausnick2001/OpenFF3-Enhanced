@@ -896,6 +896,14 @@ internal static partial class GlobalScope
                         menu.MenuManager.getSingleton().playSEBeep();
                     }
                 }
+                else if ((ds.g_Pad.edge() & (ds.PAD_L | ds.PAD_R | ds.PAD_LEFT | ds.PAD_RIGHT)) != 0)
+                {
+                    // PORT: the Sell tab was a touch button; L / R / left / right on a pad now switch to it.
+                    menu.MenuManager.getSingleton().playSEMoveCursor();
+                    m_Buy = SHOP_BUY.SHOP_BUY_COMMAND;
+                    setPhase(SHOP_STATE_PHASE.SHOP_STATE_PHASE_END);
+                    dummyCursor_.SetShow(show: false);
+                }
                 else if (CShopManager.Instance().getTouchCommand() == 1)
                 {
                     menu.MenuManager.getSingleton().playSEMoveCursor();
@@ -1054,6 +1062,14 @@ internal static partial class GlobalScope
                     {
                         menu.MenuManager.getSingleton().playSEBeep();
                     }
+                }
+                else if ((ds.g_Pad.edge() & (ds.PAD_L | ds.PAD_R | ds.PAD_LEFT | ds.PAD_RIGHT)) != 0)
+                {
+                    // PORT: the Buy tab was a touch button; L / R / left / right on a pad now switch back to it.
+                    menu.MenuManager.getSingleton().playSEMoveCursor();
+                    m_Sell = SHOP_SELL.SHOP_SELL_COMMAND;
+                    setPhase(SHOP_STATE_PHASE.SHOP_STATE_PHASE_END);
+                    dummyCursor_.SetShow(show: false);
                 }
                 else if (CShopManager.Instance().getTouchCommand() == 0)
                 {
