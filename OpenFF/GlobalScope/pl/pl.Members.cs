@@ -516,7 +516,8 @@ internal static partial class GlobalScope
 
 		private static int COMMON_COMMAND_MAX = 2;
 
-		public static int BATTLE_COMMAND_MAX = 4;
+		/// <summary>PORT: the rows of the battle's command list: Steam's build shows five (tighter), the phone's four windows.</summary>
+		public static int BATTLE_COMMAND_MAX => OpenFF.Client.SteamLayout.Active ? 5 : 4;
 
 		public static int PLAYER_EFFEXTS_MAX = 2;
 

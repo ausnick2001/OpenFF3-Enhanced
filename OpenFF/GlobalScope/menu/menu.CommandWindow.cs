@@ -74,14 +74,14 @@ internal static partial class GlobalScope
 
 			private BasicWindow m_PushWindow = new BasicWindow();
 
-			private BasicWindow[] commandWindow_ = new BasicWindow[4];
+			private BasicWindow[] commandWindow_ = new BasicWindow[8];
 
 			// PORT: the command list as one panel (OpenFF.Client.BattleFlow.PanelLook).
 			private BasicWindow panel_ = new BasicWindow();
 
 			private bool panelMade_;
 
-			private int[] messageId_ = new int[pl.BATTLE_COMMAND_MAX];
+			private int[] messageId_ = new int[8];
 
 			private int pushState_;
 
@@ -123,7 +123,7 @@ internal static partial class GlobalScope
 				m_CommandId = pl.ABILITY_ID.ABILITY_ERR_ID;
 				SetShow(show: false, user: true);
 				pushState_ = 0;
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
 					commandWindow_[i].Initialize();
 				}
@@ -141,7 +141,7 @@ internal static partial class GlobalScope
 					return;
 				}
 				ds.g_TouchPanel.getPoint(out var x, out var y);
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
 					ds.Vector2<short> positionUL = commandWindow_[i].GetPositionUL();
 					ds.Vector2<short> size = commandWindow_[i].GetSize();
@@ -154,7 +154,7 @@ internal static partial class GlobalScope
 
 			public void createCommandWindow()
 			{
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
 					commandWindow_[i].bwCreateUL(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, commandWindowData(i).Position, commandWindowData(i).Size, 3);
 					commandWindow_[i].SetShow(show: true, user: true);
@@ -164,7 +164,7 @@ internal static partial class GlobalScope
 				if (OpenFF.Client.BattleFlow.PanelLook)
 				{
 					int left = int.MaxValue, top = int.MaxValue, right = int.MinValue, bottom = int.MinValue;
-					for (int j = 0; j < 4; j++)
+					for (int j = 0; j < pl.BATTLE_COMMAND_MAX; j++)
 					{
 						cwDATA d = commandWindowData(j);
 						left = Math.Min(left, d.Position.vx);
@@ -225,7 +225,7 @@ internal static partial class GlobalScope
 			public void setShowCommand(bool show)
 			{
 				base.SetShow(show, user: true);
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
 					commandWindow_[i].SetShow(show, user: true);
 				}
@@ -299,7 +299,7 @@ internal static partial class GlobalScope
 				m_PushWindow.Release();
 				m_Window.Release();
 				sys2d.DS2DManager.d2dGetInstance().d2dDeleteSprite(m_Window);
-				for (int i = 0; i < 4; i++)
+				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
 					commandWindow_[i].Release();
 				}

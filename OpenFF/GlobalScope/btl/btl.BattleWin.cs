@@ -341,6 +341,7 @@ internal static partial class GlobalScope
 			public bool getPhaseEnd(BattleSystem B)
 			{
 				BattleBGM.instance().stop(15);
+				OpenFF.Client.Notices.Clear();   // PORT: the spoils' ABP lines go with the battle
 				setGetPhase(GET_PHASE.END);
 				return true;
 			}

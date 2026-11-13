@@ -48,6 +48,14 @@ namespace OpenFF.Client
 			lock (Instance._waiting) Instance._waiting.Enqueue(text);
 		}
 
+		/// <summary>Takes every line down at once (a battle's fade-out: its ABP lines do not follow into the field).</summary>
+		public static void Clear()
+		{
+			if (Instance == null) return;
+			lock (Instance._waiting) Instance._waiting.Clear();
+			Instance._shown.Clear();
+		}
+
 		public override void Update(GameTime gameTime)
 		{
 			float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;

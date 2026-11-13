@@ -165,6 +165,12 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: the window is open or opening (not closed).</summary>
+			public bool isActive()
+			{
+				return helpWindow_.GetState() != sys2d.Window.WINDOW_STATE.wsCLOSED;
+			}
+
 			public bool isCreate()
 			{
 				return isCreate_;

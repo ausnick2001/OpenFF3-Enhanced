@@ -74,11 +74,12 @@ namespace OpenFF.Content
 			XElement menu = new XElement("menu", new XElement("name", Screen));
 			// A window draws a unit and a bit inside its frame on each side, so the frames are 2 larger than the
 			// windows Steam shows (106 x 28 at x 52, from y 199); an even 30 apart, Steam's gap between them.
-			for (int i = 0; i < 4; i++)
+			// PORT: five rows 24 apart fill the same 120 units the four of 30 did - the words closer, a fifth command in the list.
+			for (int i = 0; i < 5; i++)
 			{
-				menu.Add(Frame(i < 3 ? "cmd" + i : "run_away", 51, 198 + i * 30, 108, 30,
-					Frame("text", 7, 9, 97, 16),
-					Frame("cursor", -3, 15, 0, 0)));
+				menu.Add(Frame(i < 4 ? "cmd" + i : "run_away", 51, 198 + i * 24, 108, 24,
+					Frame("text", 7, 5, 97, 16),
+					Frame("cursor", -3, 12, 0, 0)));
 			}
 			menu.Add(Frame("help", 4, 4, 472, 24));
 			menu.Add(Frame("help_small", 84, 4, 392, 24));

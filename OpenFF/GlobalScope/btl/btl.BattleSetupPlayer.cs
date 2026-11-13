@@ -952,6 +952,28 @@ internal static partial class GlobalScope
 				command.loopNowCommand();
 				Battle2DManager.instance().cursor().setPositionCommand(0, cursorLine_);
 				pl.PlayerParty.instance().setSaveCommandPosition(battlePlayer.playerId(), cursorLine_);
+				// PORT: what the command under the hand does, in the help line across the top (gone once a choice is made).
+				if (edgeDecide() || edgeCancel() || ds.g_TouchPanel.isTap())
+				{
+					OpenFF.Client.CommandHelp.Release();
+				}
+				else
+				{
+					int helpId = command.commandId(command.nowCommand());
+					string helpName = null;
+					try
+					{
+						if (OpenFF.Data.ModJobs.IsOwnCommand(helpId)) helpName = OpenFF.Client.BattleCommands.NameOf(helpId);
+						else
+						{
+							pl.ABILITY_ID helpAbility = battleWindow_.abilityID(battlePlayer, (sbyte)helpId);
+							helpId = (int)helpAbility;
+							helpName = dgs.msg.CMessageSys.getInstance().Main().getMessage((uint)pl.PlayerParty.instance().abilityList(helpId).nameId_);
+						}
+					}
+					catch (Exception) { }
+					OpenFF.Client.CommandHelp.Update(helpId, helpName?.Trim());
+				}
 				if (flag2)
 				{
 					return false;

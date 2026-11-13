@@ -99,15 +99,18 @@ namespace OpenFF.Client
 		// ---- what the game's code asks ----
 
 		/// <summary>Command row i (0..2), or the Run Away window (3).</summary>
-		public static Rect CommandRow(int i) => i < 3
+		public static Rect CommandRow(int i) => i < CmdRows
 			? Frame("cmd" + i, GlobalScope.BATTLE_COMMAND_X(), GlobalScope.BATTLE_COMMAND_Y() + (i + 1) * 40, 128, 40)
 			: Frame("run_away", 400, 0, 80, 40);
+
+		/// <summary>How many of the list's windows are 'cmd' rows: the last is Run Away's (Steam's list has five rows, the phone's four windows).</summary>
+		private static int CmdRows => GlobalScope.pl.BATTLE_COMMAND_MAX - 1;
 
 		/// <summary>Where a row's name sits, relative to the row.</summary>
 		public static (int X, int Y) CommandTextOffset(int i)
 		{
 			Rect row = CommandRow(i);
-			Rect text = Frame((i < 3 ? "cmd" + i : "run_away") + "/text");
+			Rect text = Frame((i < CmdRows ? "cmd" + i : "run_away") + "/text");
 			return text.Found ? (text.X - row.X, text.Y - row.Y) : (8, 14);
 		}
 
@@ -115,9 +118,9 @@ namespace OpenFF.Client
 		public static (int X, int Y) CommandCursor(int i)
 		{
 			Rect row = CommandRow(i);
-			Rect cursor = Frame((i < 3 ? "cmd" + i : "run_away") + "/cursor");
+			Rect cursor = Frame((i < CmdRows ? "cmd" + i : "run_away") + "/cursor");
 			if (cursor.Found) return (cursor.X, cursor.Y);
-			return i < 3 ? (row.X + 8, row.Y + 20) : (408, 20);
+			return i < CmdRows ? (row.X + 8, row.Y + 20) : (408, 20);
 		}
 
 		/// <summary>The scroll triangle: 0 the up one, 1 the down one.</summary>
