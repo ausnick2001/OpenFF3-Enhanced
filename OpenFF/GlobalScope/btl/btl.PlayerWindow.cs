@@ -195,6 +195,7 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplaySpeed(byte.MaxValue);
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
+						if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.NameFace.Style;   // PORT: the heroes' names in the speaker-name face
 					}
 				}
 			}
