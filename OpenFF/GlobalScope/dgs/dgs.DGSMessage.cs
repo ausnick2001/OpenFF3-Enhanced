@@ -651,11 +651,18 @@ internal static partial class GlobalScope
 				}
 				else
 				{
-					if ((m_Flag & 0x10) == 0 && (m_Flag & 2) == 0)
+					// PORT: the lettering of its own (a centred story line) holds for tagged text too.
+					OpenFF.Content.MenuText canvasLettering = m_TextCanvas.style;
+					if (Lettering != null) m_TextCanvas.style = Lettering;
+					try
 					{
-						NNS_G2dTextCanvasDrawTaggedText(m_TextCanvas, m_PositionX + 1, m_PositionY + 1, 2, m_Buffer, funcDummyTagCallback, null);
+						if ((m_Flag & 0x10) == 0 && (m_Flag & 2) == 0)
+						{
+							NNS_G2dTextCanvasDrawTaggedText(m_TextCanvas, m_PositionX + 1, m_PositionY + 1, 2, m_Buffer, funcDummyTagCallback, null);
+						}
+						NNS_G2dTextCanvasDrawTaggedText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, m_Buffer, funcTagCallback, paramTagCallback);
 					}
-					NNS_G2dTextCanvasDrawTaggedText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, m_Buffer, funcTagCallback, paramTagCallback);
+					finally { m_TextCanvas.style = canvasLettering; }
 				}
 				m_Flag |= 2;
 				m_Flag &= 251;

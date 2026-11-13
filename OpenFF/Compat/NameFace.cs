@@ -27,6 +27,7 @@ namespace OpenFF.Client
 				if (name == null) return null;
 				_story = new OpenFF.Content.MenuText { Scale = 0.85f };
 				_story.Families.AddRange(name.Families);
+				Log.Write(LogChannel.General, "text: centred story lines in the name font");
 				return _story;
 			}
 		}

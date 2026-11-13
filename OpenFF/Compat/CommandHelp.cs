@@ -28,13 +28,13 @@ namespace OpenFF.Client
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_COVER, "Reduces physical damage taken for the turn, more strongly than Guard." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_TAKE_A_POWDER, "A more reliable attempt to escape from battle." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_OVERISSUE, "Attacks four random enemies four times." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ROLL_UP, "Stores power to boost the next attack; backfires if used three times in a row." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ROLL_UP, "Builds power for the next attack; backfires on a third use in a row." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PROVOCATION, "Taunts enemies into attacking you and lowers their defense." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_POISE, "Reduces damage taken from incoming physical attacks, and responds with powerful counterattacks." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_POISE, "Reduces physical damage taken, responds with powerful counterattacks." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_DARK, "Sacrifices 20% of current HP to damage all enemies." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_CHECK, "Reveals a target's weaknesses and HP, and removes its positive status effects." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_CHECK, "Reveals a target's weaknesses and HP, and strips its positive effects." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_GEOGRAPHY, "Casts a random Terrain spell based on the surrounding area." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PITCH, "Hurls a weapon from your inventory at an enemy for major damage; the weapon is lost." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PITCH, "Hurls a weapon from your inventory at an enemy; the weapon is lost." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_EQUIP, "Switches out currently-equipped weapons and shields." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_FRONT, "Move to the front row: hit harder, take more damage." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_BACK, "Move to the back row: take less damage, hit softer." },
@@ -43,7 +43,7 @@ namespace OpenFF.Client
 		// The mods' own commands, by the name their ladder shows.
 		private static readonly Dictionary<string, string> OwnByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
-			{ "Zeninage", "Throws gil at every enemy: the more thrown, the harder it hits. The party pays." },
+			{ "Zeninage", "Throws gil at every enemy: more gil, more damage. The party pays." },
 		};
 
 		private static Dictionary<string, string> _byName;
