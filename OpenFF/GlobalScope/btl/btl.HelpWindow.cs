@@ -116,7 +116,7 @@ internal static partial class GlobalScope
 			}
 
 			/// <summary>PORT: how far up (in the 480 x 320 text space) the help text sits from the bar's centre, so a font that rides low in its line still sits inside the bar.</summary>
-			private const int HelpLift = 3;
+			private const int HelpLift = 2;
 
 			public void createHelpMessage(int msdHandle)
 			{

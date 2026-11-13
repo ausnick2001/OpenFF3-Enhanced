@@ -140,6 +140,7 @@ internal static partial class GlobalScope
 				{
 					return;
 				}
+				if (panelMade_ && commandWindow_[0].IsShow()) DrawRowLines();
 				ds.g_TouchPanel.getPoint(out var x, out var y);
 				for (int i = 0; i < pl.BATTLE_COMMAND_MAX; i++)
 				{
@@ -148,6 +149,31 @@ internal static partial class GlobalScope
 					if (ds.g_TouchPanel.isTouch() && ds.g_TouchPanel.getDispPoint().drag == 0 && positionUL.vx <= x && x <= positionUL.vx + size.vx && positionUL.vy <= y && y <= positionUL.vy + size.vy)
 					{
 						NNS_G2dDragHilight(positionUL.vx, positionUL.vy, size.vx, size.vy, 0);
+					}
+				}
+			}
+
+			/// <summary>PORT: a line between the rows of the panel, as the party menu's list has - a dark line with a faint light one under it, drawn each frame.</summary>
+			private void DrawRowLines()
+			{
+				ushort dark = ds.setGXRgb(0, 1, 6);
+				ushort light = ds.setGXRgb(20, 24, 31);
+				for (int j = 1; j < pl.BATTLE_COMMAND_MAX; j++)
+				{
+					cwDATA d = commandWindowData(j);
+					for (int k = 0; k < 2; k++)
+					{
+						ds.Vector2<short> from = new ds.Vector2<short>();
+						ds.Vector2<short> to = new ds.Vector2<short>();
+						from.set(d.Position.vx, (short)(d.Position.vy + k));
+						to.set((short)(d.Position.vx + d.Size.vx), (short)(d.Position.vy + k + 1));
+						sys2d.PrimitiveQuadDraw line = new sys2d.PrimitiveQuadDraw();
+						line.setPosition(from, to);
+						line.setDepth(0);
+						ushort tone = k == 0 ? dark : light;
+						line.setColor(tone, tone, tone, tone);
+						line.setAlpha((byte)(k == 0 ? 14 : 5));
+						line.draw();
 					}
 				}
 			}

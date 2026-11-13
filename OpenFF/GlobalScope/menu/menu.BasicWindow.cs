@@ -509,8 +509,8 @@ internal static partial class GlobalScope
 				}
 			}
 
-			/// <summary>PORT: the battle's windows' fill (0xBBGGRR) - a light navy; the sprite's art multiplies it, so it is set bright.</summary>
-			public const uint NavyFill = 0xFF967Du;
+			/// <summary>PORT: the battle's windows' fill (0xBBGGRR) - the party menu's blue (measured: 42, 53, 86 on screen); the sprite's art multiplies it, so it is set bright.</summary>
+			public const uint NavyFill = 0xFFF3FFu;
 
 			private bool Navy => OpenFF.Client.BattleFlow.Active && OpenFF.Client.BattleFlow.PanelLook && !m_BarStyle;
 
