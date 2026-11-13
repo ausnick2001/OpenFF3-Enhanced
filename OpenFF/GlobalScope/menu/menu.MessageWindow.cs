@@ -396,8 +396,7 @@ internal static partial class GlobalScope
 				}
 				mwResetMessageWait_();
 				if (m_NextWanted) mwShowNext(false);   // PORT: a new text: its arrow once it is all there, not the last one's
-				if (!OpenFF.Client.GameProfile.IsFf4 && !m_Bar && m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER) dGSMessage.Lettering = OpenFF.Client.NameFace.Story;   // PORT: the cutscenes' centred lines in the name font
-				else if (!OpenFF.Client.GameProfile.IsFf4 && !m_Bar) dGSMessage.NameLettering = OpenFF.Client.NameFace.Style;   // PORT: FF3's speaker name, the text's first line
+				if (!OpenFF.Client.GameProfile.IsFf4 && !m_Bar) dGSMessage.NameLettering = OpenFF.Client.NameFace.Style;   // PORT: FF3's speaker name, the text's first line
 				m_MessageNo = msg_no;
 				m_StartCount = 0u;
 				m_EndCount = 0u;

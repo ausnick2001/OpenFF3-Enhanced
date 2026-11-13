@@ -253,11 +253,10 @@ namespace OpenFF.Client
 		{
 			(string key, bool bold, bool italic) = Resolve(Style);
 			FontSystem system = Face(key) ?? _system;
-			string cacheKey = Style.Scale == 1f ? key : key + "@" + Style.Scale;
-			if (!_styled.TryGetValue((cacheKey, size), out DynamicSpriteFont font))
+			if (!_styled.TryGetValue((key, size), out DynamicSpriteFont font))
 			{
-				font = system.GetFont(size * Style.Scale * SizeFactor * _viewportScale);
-				_styled[(cacheKey, size)] = font;
+				font = system.GetFont(size * SizeFactor * _viewportScale);
+				_styled[(key, size)] = font;
 			}
 			return (font, Style.Bold && !bold, Style.Italic && !italic);
 		}
