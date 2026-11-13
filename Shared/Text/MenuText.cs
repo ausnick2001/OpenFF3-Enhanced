@@ -52,6 +52,8 @@ namespace OpenFF.Content
 		public List<string> Families = new List<string>();
 		public bool Bold, Italic;
 		public float LetterSpacing;
+		/// <summary>PORT: the glyph size relative to the text's own (1 = as asked); not a style-sheet property.</summary>
+		public float Scale = 1f;
 		/// <summary>Menu units from one line to the next, or a factor of the size (LineFactor); null for the game's own.</summary>
 		public float? LineHeight;
 		public bool LineFactor;
