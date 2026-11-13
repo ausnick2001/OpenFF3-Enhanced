@@ -604,6 +604,9 @@ internal static partial class GlobalScope
 			/// FF4's message window (OpenFF.Client.Ff4Dialogue).</summary>
 			public bool Silent;
 
+			/// <summary>PORT: a lettering of this message's own (the speaker's name: OpenFF.Client.NameFace), drawn in place of the canvas's.</summary>
+			public OpenFF.Content.MenuText Lettering;
+
 			public void draw()
 			{
 				erase();
@@ -619,7 +622,10 @@ internal static partial class GlobalScope
 				}
 				if (funcTagCallback == null)
 				{
-					NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0), m_Priority, m_Buffer);
+					OpenFF.Content.MenuText canvasLettering = m_TextCanvas.style;
+					if (Lettering != null) m_TextCanvas.style = Lettering;
+					try { NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0), m_Priority, m_Buffer); }
+					finally { m_TextCanvas.style = canvasLettering; }
 				}
 				else
 				{

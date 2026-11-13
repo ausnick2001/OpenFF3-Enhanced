@@ -481,7 +481,7 @@ internal static partial class GlobalScope
 					// PORT: where it is asked for (the field_hud layout's dialogue/name), not the phone build's 24, 139.
 					// FF4 writes the name in the message's own font (NameWindow::nwDrawMessage_), in a window of its own.
 					bool ff4 = OpenFF.Client.GameProfile.IsFf4;
-					m_NameId = mm[m_Display].createMessage((uint)who, (ushort)name_message_pos.vx, (ushort)name_message_pos.vy, dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, ff4 ? dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_12x12 : dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
+					m_NameId = mm[m_Display].createMessage((uint)who, (ushort)name_message_pos.vx, (ushort)(name_message_pos.vy - (ff4 ? 0 : OpenFF.Client.NameFace.Lift)), dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, ff4 ? dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_12x12 : dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 					if (ff4 && LaidOut) mm[m_Display].Message(m_NameId).Silent = true;
 					else if (ff4) mwOpenNameWindow(name_message_pos, who);
 					m_NameWho = who;
@@ -489,6 +489,7 @@ internal static partial class GlobalScope
 				dGSMessage = mm[m_Display].Message(m_NameId);
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
 				dGSMessage.setDisplayWait(0);
+				if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.NameFace.Style;   // PORT: the speaker's name in its own face
 				OpenFF.Client.FieldHud.DialogueName(dGSMessage);   // PORT: the layout's dialogue/name look
 				m_Who = who;
 				return true;
