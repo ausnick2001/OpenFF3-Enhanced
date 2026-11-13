@@ -607,6 +607,9 @@ internal static partial class GlobalScope
 			/// <summary>PORT: a lettering of this message's own (the speaker's name: OpenFF.Client.NameFace), drawn in place of the canvas's.</summary>
 			public OpenFF.Content.MenuText Lettering;
 
+			/// <summary>PORT: the face for a first line that is a speaker's name (FF3's own texts); null for none.</summary>
+			public OpenFF.Content.MenuText NameLettering;
+
 			public void draw()
 			{
 				erase();
@@ -624,7 +627,26 @@ internal static partial class GlobalScope
 				{
 					OpenFF.Content.MenuText canvasLettering = m_TextCanvas.style;
 					if (Lettering != null) m_TextCanvas.style = Lettering;
-					try { NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0), m_Priority, m_Buffer); }
+					try
+					{
+						uint drawStyle = m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0);
+						string buffer = m_Buffer;
+						// PORT: FF3 puts the speaker's name first, indented, on a line of its own: that line in its own face and a little higher.
+						if (NameLettering != null && buffer != null && buffer.Length > 0 && (buffer[0] == ' ' || buffer[0] == '\u3000'))
+						{
+							int cut = buffer.IndexOf('\n');
+							string name = cut < 0 ? buffer : buffer.Substring(0, cut);
+							if (name.Trim().Length > 0)
+							{
+								m_TextCanvas.style = NameLettering;
+								NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY - OpenFF.Client.NameFace.Lift, msg_color, drawStyle, m_Priority, name);
+								m_TextCanvas.style = canvasLettering;
+								// the rest keeps its place: the name's line left blank.
+								buffer = cut < 0 ? "" : "\n" + buffer.Substring(cut + 1);
+							}
+						}
+						if (buffer.Length > 0) NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY, msg_color, drawStyle, m_Priority, buffer);
+					}
 					finally { m_TextCanvas.style = canvasLettering; }
 				}
 				else
