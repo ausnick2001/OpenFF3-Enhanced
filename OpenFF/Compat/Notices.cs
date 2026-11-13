@@ -70,6 +70,9 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>The party menu's blue (measured on screen: 42, 53, 86), so the notes match the game's windows.</summary>
+		private static readonly Color PartyBlue = new Color(42, 53, 86, 242);
+
 		public override void Draw(GameTime gameTime)
 		{
 			if (_shown.Count == 0 || RenderTest.Active) return;
@@ -86,7 +89,7 @@ namespace OpenFF.Client
 			{
 				float w = Ui.Width(graphics, _shown[i].Text, Size) + 24;
 				Rectangle r = new Rectangle((int)(right - w), (int)(top + i * (rowH + 4)), (int)w, (int)rowH);
-				Ui.RoundPlate(_batch, Ui.Scale(r, view), Alpha(Ui.Panel, _shown[i].Age), view);
+				Ui.RoundPlate(_batch, Ui.Scale(r, view), Alpha(PartyBlue, _shown[i].Age), view);
 			}
 			_batch.End();
 

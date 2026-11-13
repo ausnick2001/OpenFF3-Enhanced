@@ -156,8 +156,8 @@ internal static partial class GlobalScope
 			/// <summary>PORT: a line between the rows of the panel, as the party menu's list has - a dark line with a faint light one under it, drawn each frame.</summary>
 			private void DrawRowLines()
 			{
-				ushort dark = ds.setGXRgb(0, 0, 2);
-				ushort light = ds.setGXRgb(22, 26, 31);
+				ushort dark = ds.setGXRgb(0, 0, 1);
+				ushort light = ds.setGXRgb(24, 28, 31);
 				for (int j = 1; j < pl.BATTLE_COMMAND_MAX; j++)
 				{
 					cwDATA d = commandWindowData(j);
@@ -169,10 +169,10 @@ internal static partial class GlobalScope
 						to.set((short)(d.Position.vx + d.Size.vx), (short)(d.Position.vy + k + 1));
 						sys2d.PrimitiveQuadDraw line = new sys2d.PrimitiveQuadDraw();
 						line.setPosition(from, to);
-						line.setDepth(0);
+						line.setDepth(-4177920);   // the quad's own front-most depth: over the panel, not under its fill
 						ushort tone = k == 0 ? dark : light;
 						line.setColor(tone, tone, tone, tone);
-						line.setAlpha((byte)(k == 0 ? 26 : 10));
+						line.setAlpha((byte)(k == 0 ? 20 : 7));
 						line.draw();
 					}
 				}
