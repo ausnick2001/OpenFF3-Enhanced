@@ -656,7 +656,7 @@ namespace OpenFF.Client
 					switch (kind)
 					{
 						case Kind.Stepper:
-							Ui.Centred(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]), rowSize, lit ? UiTheme.GoldBright : UiTheme.Ink);
+							Ui.Centred(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]), FitSize(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]).Width - 10, rowSize), lit ? UiTheme.GoldBright : UiTheme.Ink);
 							break;
 						case Kind.Switch:
 							Ui.Centred(graphics, on ? "On" : "Off", UiTheme.SwitchWord(valueBox[row]), rowSize - 1, on ? UiTheme.Ink : UiTheme.Hint);
@@ -671,11 +671,19 @@ namespace OpenFF.Client
 						Ui.Left(graphics, hint, valueBox[row].X - 12 - w, r.Y, r.Height, rowSize - 1, UiTheme.Hint);
 					}
 				}
-				if (layout.Note && !string.IsNullOrEmpty(_note)) Ui.Left(graphics, _note, note.X + 14, note.Y, note.Height, noteSize, UiTheme.Ink);
+				if (layout.Note && !string.IsNullOrEmpty(_note)) Ui.Left(graphics, _note, note.X + 14, note.Y, note.Height, FitSize(graphics, _note, note.Width - 28, noteSize), UiTheme.Ink);
 				for (int i = 0; i < hints.Length; i++) Ui.HintText(graphics, hints[i].Item1, hints[i].Item2, hintX[i], hintY, 22, hintSize);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();
+		}
+
+		/// <summary>The largest size (down to a floor) at which the text is no wider than the room: a face wider than the one the menu was laid out for must not run out of its box.</summary>
+		private static int FitSize(GlobalScope.Graphics graphics, string text, float room, int size)
+		{
+			int fit = size;
+			while (fit > 7 && Ui.Width(graphics, text, fit) > room) fit--;
+			return fit;
 		}
 
 		private (Ui.PadButton, string)[] Hints()
@@ -695,12 +703,12 @@ namespace OpenFF.Client
 			{
 				// Any rate but sixty said so: the nearest even rate above it on a display sixty does not
 				// divide or a swap interval cannot hold, the clock's even rate when VSync gave way.
-				if (hz != null && Math.Abs(p.Rate - 60) > 60 * PresentPlan.Tolerance) return "60 - smoothed, " + p.Rate.ToString("0.#") + " a second at " + hz;
+				if (hz != null && Math.Abs(p.Rate - 60) > 60 * PresentPlan.Tolerance) return "60 - smoothed, " + p.Rate.ToString("0.#") + " at " + hz;
 				return "60 - smoothed";
 			}
 			// VSync off, "max" is the clock's rate, not the display's.
-			if (p.Swap == 0) return "Display's rate - smoothed, " + p.Rate.ToString("0") + " a second (VSync off)";
-			return hz == null ? "Display's rate - smoothed" : "Display's rate - smoothed (" + hz + ")";
+			if (p.Swap == 0) return "Display's rate - " + p.Rate.ToString("0") + " a second";
+			return hz == null ? "Display's rate - smoothed" : "Display's rate - " + hz;
 		}
 
 		/// <summary>The note under the settings when the Frame rate or VSync changes: what the plan does, and why when it is not what the setting asks.</summary>
@@ -709,7 +717,7 @@ namespace OpenFF.Client
 			PresentPlan p = FramePacer.PlanFor(fps);
 			string hz = p.RefreshHz > 0 ? Math.Round(p.RefreshHz).ToString("0") + " Hz" : null;
 			string rate = p.Rate.ToString("0.#");
-			const string Runs = "; the game itself runs as it always has";
+			const string Runs = "; game logic unchanged";
 			if (fps == "30")
 			{
 				if (p.Swap == 0) return "the game's frames as they are, thirty a second by the clock (VSync off)";
