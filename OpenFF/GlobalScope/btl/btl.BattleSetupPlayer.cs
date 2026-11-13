@@ -672,10 +672,25 @@ internal static partial class GlobalScope
 					{
 						OpenFF.Client.BattleSync.LocalDecided(player);   // PORT: a shared battle's other side hears what this hero will do
 					}
+					if (OpenFF.Client.BattleFlow.Active && OpenFF.Client.BattleFlow.QuickSteps && !isCancel_)
+					{
+						// PORT: turn by turn: no step back and forward again - the hero stays where they stepped to and acts from there;
+						// the turn steps them back when it is over (BattleTurnExecute). What the end of the poise start does, less the motions.
+						player.setIdleType(player.actionId() == 5 ? 0 : 1);
+						player.setNextPlayerActionId(BATTLE_ACTION_TYPE.DBA_CONDITION_MOTION);
+						forward_ = player;
+						nowPlayer_++;
+						state(PLAYER_STATE.MOVE_FRONT_READY);
+						commandState_ = COMMAND_STATE.SELECT_COMMAND;
+						return;
+					}
 					player.setNextPlayerActionId(BATTLE_ACTION_TYPE.DBA_BACK);
 					state(PLAYER_STATE.MOVE_BACK);
 				}
 			}
+
+			/// <summary>The hero who stepped forward to choose and has not stepped back (turn by turn).</summary>
+			public static BattlePlayer forward_;
 
 			public void playerStateMoveBack(BattlePlayer player, BattleSystem B)
 			{

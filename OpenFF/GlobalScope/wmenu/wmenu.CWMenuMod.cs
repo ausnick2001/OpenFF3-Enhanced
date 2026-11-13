@@ -45,7 +45,12 @@ internal static partial class GlobalScope
 				CWMenuManager.Instance().SetPrimaryBGVisibility(backdrop >= 0);
 				OpenFF.Client.ModMenus.BackdropSettled();
 				// The party's faces off (the main menu's panel), unless a hero was picked - then that one's, as Status shows it.
-				for (int i = 0; i < 4; i++) CWMenuManager.Instance().SetShowPcFace(i, show: false);
+				for (int i = 0; i < 4; i++)
+				{
+					CWMenuManager.Instance().SetShowPcFace(i, show: false);
+					// PORT: every hero's face to the top-left slot (the first hero's place on the main menu), as Status and Equip move theirs - else the one picked shows where their own slot on the main menu was.
+					try { CWMenuManager.Instance().SetCharScrMovement(1, 1, i); } catch (Exception) { }
+				}
 				if (OpenFF.Client.ModMenus.CurrentWantsCharacterSelect())
 				{
 					try { CWMenuManager.Instance().SetShowPcFace(pl.PlayerParty.instance().player((byte)menu.MenuManager.getSingleton().GetTargetCharNo()).playerId(), show: true); } catch (Exception) { }

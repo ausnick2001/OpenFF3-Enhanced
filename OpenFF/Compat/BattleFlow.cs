@@ -29,6 +29,9 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>Turn by turn: a hero stays forward from choosing to acting and steps back after, rather than back, forward, back. `--step-back` keeps the game's own.</summary>
+		public static bool QuickSteps => Options.Get("step-back") == null;
+
 		/// <summary>The command list as one navy panel (the PSP's look) rather than a green box a row. `--classic-windows` keeps the game's.</summary>
 		public static bool PanelLook => !GameProfile.IsFf4 && Options.Get("classic-windows") == null;
 

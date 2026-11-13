@@ -123,6 +123,50 @@ internal static partial class GlobalScope
 			/// PORT: turn by turn: between turns, deals with whoever is next in the order - a hero is asked for their command
 			/// (a frame of their window each call), a monster chooses its action. True while a hero's window has the frame.
 			/// </summary>
+			private BattlePlayer stepBack_;
+
+			/// <summary>PORT: turn by turn: the hero who acted from where they stepped forward to choose steps back, once the turn is over, if the action left them there. True while that plays.</summary>
+			private bool stepBackWait()
+			{
+				if (stepBack_ != null)
+				{
+					if (!stepBack_.isPlayerActionEnd())
+					{
+						return true;
+					}
+					stepBack_ = null;
+					return false;
+				}
+				BattlePlayer forward = BattleSetupPlayer.forward_;
+				if (forward == null || !OpenFF.Client.BattleFlow.Active || !OpenFF.Client.BattleFlow.QuickSteps)
+				{
+					return false;
+				}
+				if (turn_.counterCharacter() != null || (object)turn_.nowCharacter() != (object)forward)
+				{
+					return false;
+				}
+				if (!forward.isPlayerActionEnd())
+				{
+					return false;
+				}
+				BattleSetupPlayer.forward_ = null;
+				if (!forward.isEnable() || forward.condition().isDeath())
+				{
+					return false;
+				}
+				VecFx32 now = new VecFx32();
+				characterMng.getPosition(forward.characterMngId(), now);
+				VecFx32 home = forward.rootPosition();
+				if (Math.Abs(now.x - home.x) < 2048 && Math.Abs(now.z - home.z) < 2048)
+				{
+					return false;   // the action brought them home (an attack runs back)
+				}
+				forward.setNextPlayerActionId(BATTLE_ACTION_TYPE.DBA_BACK);
+				stepBack_ = forward;
+				return true;
+			}
+
 			private bool turnBasedStep(BattleSystem B)
 			{
 				if (commandRunning_)
@@ -365,6 +409,10 @@ internal static partial class GlobalScope
 				}
 				else if (turn_.phase() == TurnSystem.Phase.Terminate)
 				{
+					if (stepBackWait())
+					{
+						return;
+					}
 					turn_.terminateTurn();
 					turn_.clearCheckFlagAll();
 					if (OpenFF.Client.BattleFlow.Active && !OutsideToBattle.getInstance().isFreeMode())
