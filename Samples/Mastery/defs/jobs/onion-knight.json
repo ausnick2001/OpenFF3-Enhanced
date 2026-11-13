@@ -2,7 +2,7 @@
   "id": "onion-knight",
   "job": "onion-knight",
   "name": "Onion Knight",
-  "commands": ["attack", "*", "*", "item"],
+  "commands": ["attack", "magic", "*", "item"],
   "inherits": true,
   "abilities": [
   ]
