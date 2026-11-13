@@ -676,7 +676,7 @@ internal static partial class GlobalScope
 					{
 						// PORT: turn by turn: no step back and forward again - the hero stays where they stepped to and acts from there;
 						// the turn steps them back when it is over (BattleTurnExecute). What the end of the poise start does, less the motions.
-						player.setIdleType(player.actionId() == 5 ? 0 : 1);
+						player.setIdleType((sbyte)(player.actionId() == 5 ? 0 : 1));
 						player.setNextPlayerActionId(BATTLE_ACTION_TYPE.DBA_CONDITION_MOTION);
 						forward_ = player;
 						nowPlayer_++;
