@@ -153,29 +153,16 @@ internal static partial class GlobalScope
 				}
 			}
 
-			/// <summary>PORT: a line between the rows of the panel, as the party menu's list has - a dark line with a faint light one under it, drawn each frame.</summary>
+			/// <summary>PORT: where the rows meet, handed to the overlay that draws a line there (OpenFF.Client.ListLines), each step the list is up.</summary>
 			private void DrawRowLines()
 			{
-				ushort dark = ds.setGXRgb(0, 0, 1);
-				ushort light = ds.setGXRgb(24, 28, 31);
+				System.Collections.Generic.List<(int, int, int)> lines = new System.Collections.Generic.List<(int, int, int)>();
 				for (int j = 1; j < pl.BATTLE_COMMAND_MAX; j++)
 				{
 					cwDATA d = commandWindowData(j);
-					for (int k = 0; k < 2; k++)
-					{
-						ds.Vector2<short> from = new ds.Vector2<short>();
-						ds.Vector2<short> to = new ds.Vector2<short>();
-						from.set(d.Position.vx, (short)(d.Position.vy + k));
-						to.set((short)(d.Position.vx + d.Size.vx), (short)(d.Position.vy + k + 1));
-						sys2d.PrimitiveQuadDraw line = new sys2d.PrimitiveQuadDraw();
-						line.setPosition(from, to);
-						line.setDepth(-4177920);   // the quad's own front-most depth: over the panel, not under its fill
-						ushort tone = k == 0 ? dark : light;
-						line.setColor(tone, tone, tone, tone);
-						line.setAlpha((byte)(k == 0 ? 20 : 7));
-						line.draw();
-					}
+					lines.Add((d.Position.vx, d.Position.vx + d.Size.vx, d.Position.vy));
 				}
+				OpenFF.Client.ListLines.Set(lines);
 			}
 
 			public void createCommandWindow()
