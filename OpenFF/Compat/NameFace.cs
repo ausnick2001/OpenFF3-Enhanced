@@ -15,6 +15,22 @@ namespace OpenFF.Client
 		private static bool _looked;
 		private static OpenFF.Content.MenuText _style;
 
+		private static OpenFF.Content.MenuText _story;
+
+		/// <summary>The lettering for the centred story text over a picture (the cutscenes' lines), in the same font; null with no name-font.</summary>
+		public static OpenFF.Content.MenuText Story
+		{
+			get
+			{
+				if (_story != null) return _story;
+				OpenFF.Content.MenuText name = Style;
+				if (name == null) return null;
+				_story = new OpenFF.Content.MenuText { Scale = 0.85f };
+				_story.Families.AddRange(name.Families);
+				return _story;
+			}
+		}
+
 		/// <summary>The lettering for a speaker's name, or null when there is no name-font to use.</summary>
 		public static OpenFF.Content.MenuText Style
 		{
