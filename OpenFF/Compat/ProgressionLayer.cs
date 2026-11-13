@@ -907,9 +907,13 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>The game is loading a slot: the ladders' state from beside it (the bottom of every ladder where there is none).</summary>
+		/// <summary>True while the Save/Load screen reads a slot only to show its preview: the live state must be left alone.</summary>
+		public static bool Previewing;
+
 		public static void OnLoad(int slot)
 		{
 			if (!GameProfile.Ff3Party) return;
+			if (Previewing) return;
 			try
 			{
 				Reset();
