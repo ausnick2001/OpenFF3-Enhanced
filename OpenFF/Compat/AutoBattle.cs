@@ -445,9 +445,10 @@ namespace OpenFF.Client
 				Ui.Ensure(GraphicsDevice);
 				_batch ??= new SpriteBatch(GraphicsDevice);
 				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
-				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.25f;
-				picture = Ui.PadPictureCentred(_batch, "r3", chipX, chipY, chipSize, view);
-				if (!picture) chipInk = Ui.Chip(_batch, chipX, chipY, chipSize, view);
+				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.05f;
+				// PORT: a soft dark disc lettered in the menu face - the game's own R3 picture is larger and its lettering heavy.
+				Ui.GlyphDisc(_batch, chipX, chipY, chipSize, new Color(46, 46, 50, 255), view);
+				chipInk = new Color(226, 228, 236, 255);
 				_batch.End();
 			}
 			else if (_keys != null)
