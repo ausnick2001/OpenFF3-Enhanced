@@ -21,8 +21,12 @@ namespace OpenFF.Client
 		private long _step = long.MinValue;
 		private SpriteBatch _batch;
 
-		private static readonly Color Dark = new Color(0, 0, 4, 175);
-		private static readonly Color Light = new Color(190, 215, 255, 50);
+		// The party menu's lines, measured from a screenshot at 1440 lines high: four pixels fading in and out dark,
+		// then four lighter, each pixel's opacity as below (a hard single stripe looks harsh beside them).
+		private static readonly float[] DarkFade = { 0.19f, 0.50f, 0.67f, 0.36f };
+		private static readonly float[] LightFade = { 0.06f, 0.14f, 0.16f, 0.08f };
+		private static readonly Color DarkInk = new Color(0, 0, 6, 255);
+		private static readonly Color LightInk = new Color(200, 225, 255, 255);
 
 		private ListLines(Game game) : base(game)
 		{
@@ -51,13 +55,15 @@ namespace OpenFF.Client
 			_batch ??= new SpriteBatch(GraphicsDevice);
 			Viewport view = GraphicsDevice.Viewport;
 			float sx = view.Width / 480f, sy = view.Height / 320f;
-			int thick = System.Math.Max(2, (int)System.Math.Round(view.Height / 480f));
+			int px1 = System.Math.Max(1, (int)System.Math.Round(view.Height / 1440f));   // one of the measured pixels
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
 			foreach ((int x0, int x1, int y) in _lines)
 			{
-				int px = (int)System.Math.Round(x0 * sx), pw = (int)System.Math.Round((x1 - x0) * sx), py = (int)System.Math.Round(y * sy) - thick;
-				Ui.Fill(_batch, new Rectangle(px, py, pw, thick), Dark);
-				Ui.Fill(_batch, new Rectangle(px, py + thick, pw, thick), Light);
+				int px = (int)System.Math.Round(x0 * sx), pw = (int)System.Math.Round((x1 - x0) * sx), py = (int)System.Math.Round(y * sy);
+				for (int k = 0; k < DarkFade.Length; k++)
+					Ui.Fill(_batch, new Rectangle(px, py - (DarkFade.Length - k) * px1, pw, px1), new Color(DarkInk.R, DarkInk.G, DarkInk.B, (byte)(DarkFade[k] * 255f)));
+				for (int k = 0; k < LightFade.Length; k++)
+					Ui.Fill(_batch, new Rectangle(px, py + k * px1, pw, px1), new Color(LightInk.R, LightInk.G, LightInk.B, (byte)(LightFade[k] * 255f)));
 			}
 			_batch.End();
 		}
