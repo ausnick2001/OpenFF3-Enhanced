@@ -522,7 +522,12 @@ internal static partial class GlobalScope
                                 msg_.setDisplaySpeed(byte.MaxValue);
                                 msg_.setDisplayWait(0);
                                 ds.Vector2<short> vector = new ds.Vector2<short>();
-                                msg_.getCompleteTextSize(vector);
+                                // PORT: the story's lines in the name font (measured in it too, to be centred as drawn).
+                                msg_.Lettering = OpenFF.Client.NameFace.Story;
+                                OpenFF.Content.MenuText was = OpenFF.Client.TrueTypeText.Style;
+                                OpenFF.Client.TrueTypeText.Style = msg_.Lettering ?? was;
+                                try { msg_.getCompleteTextSize(vector); }
+                                finally { OpenFF.Client.TrueTypeText.Style = was; }
                                 vector.vx = (short)(240 - vector.vx / 2);
                                 vector.vy = (short)(120 - vector.vy / 2);
                                 msg_.setPosition(vector.vx, vector.vy, erase: true);
