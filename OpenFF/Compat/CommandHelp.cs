@@ -16,16 +16,34 @@ namespace OpenFF.Client
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ATTACK, "Attack one enemy with your equipped weapon." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ESCAPE, "Try to run away from the battle." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_GUARD, "Brace for the turn to take less damage." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ITEM, "Use an item from your bag." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ITEM, "Use an item, or switch weapons and shields." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_BLACK_MAGIC, "Cast black magic: attack spells." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_WHITE_MAGIC, "Cast white magic: healing and support spells." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_MAGIC, "Cast a spell." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_STEAL, "Try to steal an item from an enemy." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_SUMMON, "Call a summoned monster to fight." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_SONG, "Play a song with your harp." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_JUMP, "Leap away, then strike one enemy from above." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_JUMP, "Leap out of battle, then strike next turn for heavy damage." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_KNOCK_OVER, "Stronger attacks at the cost of lower defense for the turn." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_COVER, "Reduces physical damage taken for the turn, more strongly than Guard." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_TAKE_A_POWDER, "A more reliable attempt to escape from battle." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_OVERISSUE, "Attacks four random enemies four times." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ROLL_UP, "Stores power to boost the next attack; backfires if used three times in a row." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PROVOCATION, "Taunts enemies into attacking you and lowers their defense." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_POISE, "Reduces damage taken from incoming physical attacks, and responds with powerful counterattacks." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_DARK, "Sacrifices 20% of current HP to damage all enemies." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_CHECK, "Reveals a target's weaknesses and HP, and removes its positive status effects." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_GEOGRAPHY, "Casts a random Terrain spell based on the surrounding area." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PITCH, "Hurls a weapon from your inventory at an enemy for major damage; the weapon is lost." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_EQUIP, "Switches out currently-equipped weapons and shields." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_FRONT, "Move to the front row: hit harder, take more damage." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_BACK, "Move to the back row: take less damage, hit softer." },
+		};
+
+		// The mods' own commands, by the name their ladder shows.
+		private static readonly Dictionary<string, string> OwnByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+		{
+			{ "Zeninage", "Throws gil at every enemy: the more thrown, the harder it hits. The party pays." },
 		};
 
 		private static Dictionary<string, string> _byName;
@@ -61,6 +79,7 @@ namespace OpenFF.Client
 		{
 			if (name != null && ByName.TryGetValue(name, out string own)) return own;
 			if (ById.TryGetValue(id, out string text)) return text;
+			if (name != null && OwnByName.TryGetValue(name, out string mine)) return mine;
 			if (name != null && _noted.Add(name)) Log.Write(LogChannel.General, "battle: no help line for the command '" + name + "' (ability " + id + "); add 'name=text' to command-help.txt");
 			return null;
 		}
