@@ -63,8 +63,8 @@ internal static partial class GlobalScope
 							bool active = i == nowPlayer_;
 							int total = to.vx - origin.vx;
 							int edge = Math.Max(4, total / 14);   // how far in each fade reaches
-							float top = active ? 22f : 12f;
-							ushort tone = active ? ds.setGXRgb(31, 27, 8) : ds.setGXRgb(0, 0, 4);
+							float top = active ? 21f : 12f;
+							ushort tone = active ? ds.setGXRgb(24, 17, 1) : ds.setGXRgb(0, 0, 4);   // a deep amber: white lettering reads on it
 							for (int x = 0; x < total; x += 2)
 							{
 								int fromEdge = Math.Min(x, total - 2 - x);
