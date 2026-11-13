@@ -445,7 +445,7 @@ namespace OpenFF.Client
 				Ui.Ensure(GraphicsDevice);
 				_batch ??= new SpriteBatch(GraphicsDevice);
 				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
-				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.25f;
+				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.05f;   // PORT: the R3 picture at a size that sits with the words beside it
 				picture = Ui.PadPictureCentred(_batch, "r3", chipX, chipY, chipSize, view);
 				if (!picture) chipInk = Ui.Chip(_batch, chipX, chipY, chipSize, view);
 				_batch.End();
