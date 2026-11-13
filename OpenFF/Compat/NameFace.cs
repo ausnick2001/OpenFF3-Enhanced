@@ -48,7 +48,7 @@ namespace OpenFF.Client
 					if (file == null) return null;
 					OpenFF.Content.MenuText style = new OpenFF.Content.MenuText();
 					style.Families.Add("file:" + file);
-					style.Scale = 0.78f;
+					style.Scale = 0.85f;
 					_style = style;
 					Log.Write(LogChannel.General, "text: speaker names in " + Path.GetFileName(file));
 				}
