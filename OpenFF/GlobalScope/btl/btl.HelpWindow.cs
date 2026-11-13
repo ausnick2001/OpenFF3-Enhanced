@@ -115,16 +115,19 @@ internal static partial class GlobalScope
 				pageIcon_.SetShow(show: false);
 			}
 
+			/// <summary>PORT: how far up (in the 480 x 320 text space) the help text sits from the bar's centre, so a font that rides low in its line still sits inside the bar.</summary>
+			private const int HelpLift = 3;
+
 			public void createHelpMessage(int msdHandle)
 			{
 				ds.Vector2<short> positionCC = helpWindow_.GetPositionCC();
 				if (messageId_ > 0)
 				{
-					messageManagerId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage((uint)messageId_, (ushort)positionCC.vx, (ushort)positionCC.vy, (dgs.msg.CMessageMng.MSD_HANDLE_KIND)msdHandle, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
+					messageManagerId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage((uint)messageId_, (ushort)positionCC.vx, (ushort)(positionCC.vy - HelpLift), (dgs.msg.CMessageMng.MSD_HANDLE_KIND)msdHandle, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 				}
 				else
 				{
-					messageManagerId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage(message_, (ushort)positionCC.vx, (ushort)positionCC.vy, (dgs.msg.CMessageMng.MSD_HANDLE_KIND)msdHandle, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
+					messageManagerId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage(message_, (ushort)positionCC.vx, (ushort)(positionCC.vy - HelpLift), (dgs.msg.CMessageMng.MSD_HANDLE_KIND)msdHandle, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 				}
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageManagerId_);
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
