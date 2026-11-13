@@ -260,7 +260,9 @@ internal static partial class GlobalScope
 					}
 					if (m_pLodObj != null)
 					{
+						long lodAt = System.Diagnostics.Stopwatch.GetTimestamp();
 						m_pLodObj.executeLod(this);
+						OpenFF.Client.StepProbe.Add("executeLod", System.Diagnostics.Stopwatch.GetElapsedTime(lodAt).TotalMilliseconds);
 					}
 					currentMtx2.copy(currentMtx);
 					// PORT: the model's draws are its own (FrameCapture pairs them with its draws of the step

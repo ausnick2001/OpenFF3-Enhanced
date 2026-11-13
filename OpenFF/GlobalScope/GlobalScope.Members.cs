@@ -22072,6 +22072,7 @@ internal static partial class GlobalScope
 								return;
 							}
 							GraphicsDevice graphicsDevice = m_Graphics.GetGraphicsDeviceManager().GraphicsDevice;
+							long uploadAt = System.Diagnostics.Stopwatch.GetTimestamp();   // PORT: --log-stalls: a texture upload that took a few ms
 							try
 							{
 								ArrayReader arrayReader = new ArrayReader(pixels);
@@ -22093,6 +22094,7 @@ internal static partial class GlobalScope
 								{
 									_old.Dispose();
 								}
+								OpenFF.Client.StepProbe.Add("glTexImage2D " + width + "x" + height, System.Diagnostics.Stopwatch.GetElapsedTime(uploadAt).TotalMilliseconds);
 							}
 							catch (Exception)
 							{

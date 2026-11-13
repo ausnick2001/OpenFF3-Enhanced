@@ -57,6 +57,14 @@ internal static partial class GlobalScope
 					initRenderObjectsInfo();
 				}
 
+				// PORT: --log-stalls: a layer object whose draw took a few ms, by what kind of object it is.
+				private static void probeDraw(SceneRenderObject obj)
+				{
+					long at = System.Diagnostics.Stopwatch.GetTimestamp();
+					obj.draw();
+					OpenFF.Client.StepProbe.Add("layer:" + obj.GetType().Name, System.Diagnostics.Stopwatch.GetElapsedTime(at).TotalMilliseconds);
+				}
+
 				public void draw(bool bVBlank)
 				{
 					OpenFF.Client.StepProbe.Mark();
@@ -64,7 +72,7 @@ internal static partial class GlobalScope
 					{
 						if (_dlayer[0][i].getPriority() == -1)
 						{
-							_dlayer[0][i].draw();
+							probeDraw(_dlayer[0][i]);
 						}
 					}
 					NNS_G3dSetDrawMask(1u);
@@ -72,7 +80,7 @@ internal static partial class GlobalScope
 					{
 						if (_dlayer[0][j].getPriority() == 0)
 						{
-							_dlayer[0][j].draw();
+							probeDraw(_dlayer[0][j]);
 						}
 					}
 					NNS_G3dSetDrawMask(0u);
@@ -82,7 +90,7 @@ internal static partial class GlobalScope
 						{
 							if (_dlayer[b][k].getPriority() == 0)
 							{
-								_dlayer[b][k].draw();
+								probeDraw(_dlayer[b][k]);
 							}
 						}
 					}
@@ -91,7 +99,7 @@ internal static partial class GlobalScope
 					{
 						if (_dlayer[0][l].getPriority() == 0)
 						{
-							_dlayer[0][l].draw();
+							probeDraw(_dlayer[0][l]);
 						}
 					}
 					NNS_G3dSetDrawMask(0u);
@@ -102,7 +110,7 @@ internal static partial class GlobalScope
 						{
 							if (_dlayer[b2][m].getPriority() == 1)
 							{
-								_dlayer[b2][m].draw();
+								probeDraw(_dlayer[b2][m]);
 							}
 						}
 					}
