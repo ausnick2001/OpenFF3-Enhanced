@@ -148,4 +148,11 @@ public class Game1 : Game
 		// it where VSync holds the loop.
 		OpenFF.Client.FramePacer.Hold();
 	}
+
+	protected override void EndDraw()
+	{
+		base.EndDraw();
+		// After the present: keeps the driver's frame queue empty so a texture upload's glFinish costs nothing.
+		OpenFF.Client.GpuDrain.Run();
+	}
 }
