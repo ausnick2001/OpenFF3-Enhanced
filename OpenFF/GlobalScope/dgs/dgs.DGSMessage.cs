@@ -640,7 +640,7 @@ internal static partial class GlobalScope
 							{
 								m_TextCanvas.style = NameLettering;
 								NNS_G2dTextCanvasDrawText(m_TextCanvas, m_PositionX, m_PositionY - OpenFF.Client.NameFace.Lift, msg_color, drawStyle, m_Priority, name);
-								m_TextCanvas.style = canvasLettering;
+								m_TextCanvas.style = Lettering ?? canvasLettering;
 								// the rest keeps its place: the name's line left blank.
 								buffer = cut < 0 ? "" : "\n" + buffer.Substring(cut + 1);
 							}
