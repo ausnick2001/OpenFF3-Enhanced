@@ -107,6 +107,12 @@ internal static partial class GlobalScope
 				GetPhaseExecute_[(int)getPhase_].__GetPhaseExecute(B);
 			}
 
+			/// <summary>PORT: O or X (and a touch) turns the spoils' page.</summary>
+			private static bool advancePressed(BattleSystem B)
+			{
+				return B.isEdgeAButtonAndTouchEdge() || (ds.g_Pad.edge() & ds.PAD_B) != 0;
+			}
+
 			public bool waitFadePhase(BattleSystem B)
 			{
 				if (dgs.CFade.Main().isFaded() && dgs.CFade.Sub().isFaded())
@@ -167,7 +173,7 @@ internal static partial class GlobalScope
 							}
 						}
 					}
-					changeBGMCounter_ = 90;
+					changeBGMCounter_ = 0;   // PORT: the spoils' banners open as the camera's zoom starts, not after it
 					setGetPhase(GET_PHASE.FADE_START);
 					battleDisplay.readyEndingCamera();
 					B.playerWindow().release();
@@ -225,7 +231,7 @@ internal static partial class GlobalScope
 
 			public bool getGoldPhase(BattleSystem B)
 			{
-				if (Battle2DManager.instance().helpWindow().isCreate() && B.isEdgeAButtonAndTouchEdge())
+				if (Battle2DManager.instance().helpWindow().isCreate() && advancePressed(B))
 				{
 					menu.MenuManager.getSingleton().playSEDecide();
 					dgs.CCtrlCodeInterface.instance().setExp(B.characterManager().getTrueExp());
@@ -238,7 +244,7 @@ internal static partial class GlobalScope
 
 			public bool getExpPhase(BattleSystem B)
 			{
-				if (B.isEdgeAButtonAndTouchEdge() || prevGetPhase_ == GET_PHASE.LEVEL_UP || prevGetPhase_ == GET_PHASE.SKILL_UP)
+				if (advancePressed(B) || prevGetPhase_ == GET_PHASE.LEVEL_UP || prevGetPhase_ == GET_PHASE.SKILL_UP)
 				{
 					menu.MenuManager.getSingleton().playSEDecide();
 					while (nowPlayerId_ < 4)
@@ -287,12 +293,10 @@ internal static partial class GlobalScope
 			public bool levelUpPhase(BattleSystem B)
 			{
 				BattlePlayer battlePlayer = B.characterManager().playerParty().battlePlayer(nowPlayerId_);
-				if (!battlePlayer.restartWinMotion())
+				bool motionDone = battlePlayer.restartWinMotion();
+				if (advancePressed(B))
 				{
-					return false;
-				}
-				if (B.isEdgeAButtonAndTouchEdge())
-				{
+					if (!motionDone) battlePlayer.setWinMotion();   // PORT: a quick press does not wait for the jump to end
 					if (pl.PlayerParty.instance().player(nowPlayerId_).jobManager()
 						.jobSkillExpPlusPoolSkillExp())
 					{
@@ -312,12 +316,10 @@ internal static partial class GlobalScope
 			public bool skillUpPhase(BattleSystem B)
 			{
 				BattlePlayer battlePlayer = B.characterManager().playerParty().battlePlayer(nowPlayerId_);
-				if (!battlePlayer.restartWinMotion())
+				bool motionDone = battlePlayer.restartWinMotion();
+				if (advancePressed(B))
 				{
-					return false;
-				}
-				if (B.isEdgeAButtonAndTouchEdge())
-				{
+					if (!motionDone) battlePlayer.setWinMotion();   // PORT: a quick press does not wait for the jump to end
 					nowPlayerId_++;
 					setGetPhase(GET_PHASE.GET_EXP);
 					return true;
@@ -327,7 +329,7 @@ internal static partial class GlobalScope
 
 			public bool getItemPahse(BattleSystem B)
 			{
-				if (B.isEdgeAButtonAndTouchEdge())
+				if (advancePressed(B))
 				{
 					menu.MenuManager.getSingleton().playSEDecide();
 					setGetPhase(GET_PHASE.GET_PHASE_END);
