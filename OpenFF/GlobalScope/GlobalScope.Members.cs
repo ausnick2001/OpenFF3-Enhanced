@@ -22064,6 +22064,8 @@ internal static partial class GlobalScope
 							m_afCoord = (float[])pointer;
 						}
 
+						private static readonly System.Collections.Generic.List<(long step, Texture2D texture)> m_DyingTextures = new System.Collections.Generic.List<(long step, Texture2D texture)>();
+
 						internal static void glTexImage2D(uint target, int level, int internalformat, int width, int height, int border, uint format, uint type, Array pixels)
 						{
 							OpenFF.Client.Log.First(OpenFF.Client.LogChannel.Gl, "glTexImage2D", 60, () => $"{width}x{height} fmt={format} type={type} bind={m_uiBindTexture} slot={(m_uiBindTexture < m_aGlTexture.Length && m_aGlTexture[m_uiBindTexture] != null ? "ok" : "NULL")} src={(pixels == null ? "null" : pixels.GetType().Name + "[" + pixels.Length + "]")}"); /*FF3LOG*/
@@ -22083,17 +22085,34 @@ internal static partial class GlobalScope
 								// now-orphaned texture - which renders black. Force a rebind, and release
 								// the texture being replaced rather than leaking it.
 								Texture2D _old = m_aGlTexture[m_uiBindTexture].m_Texture2D;
+								long newAt = System.Diagnostics.Stopwatch.GetTimestamp();
 								m_aGlTexture[m_uiBindTexture].m_Texture2D = new Texture2D(graphicsDevice, width, height);
+								OpenFF.Client.StepProbe.Add("tex-new", System.Diagnostics.Stopwatch.GetElapsedTime(newAt).TotalMilliseconds);
+								long dataAt = System.Diagnostics.Stopwatch.GetTimestamp();
 								m_aGlTexture[m_uiBindTexture].m_Texture2D.SetData(array);
+								OpenFF.Client.StepProbe.Add("tex-setdata", System.Diagnostics.Stopwatch.GetElapsedTime(dataAt).TotalMilliseconds);
 								if (m_uiApplyTexture == m_uiBindTexture)
 								{
 									m_uiApplyTexture = uint.MaxValue;
 									m_bApplyEffect = true;
 								}
+								// PORT: the replaced texture is let go a few steps later, not at once: deleting a texture the card may
+								// still be drawing from waits for it (the ~50 ms stalls --log-stalls named in glTexImage2D).
+								long freeAt = System.Diagnostics.Stopwatch.GetTimestamp();
 								if (_old != null && !_old.IsDisposed)
 								{
-									_old.Dispose();
+									m_DyingTextures.Add((OpenFF.Client.GameHost.StepsTaken, _old));
 								}
+								long nowStep = OpenFF.Client.GameHost.StepsTaken;
+								for (int d = m_DyingTextures.Count - 1; d >= 0; d--)
+								{
+									if (nowStep - m_DyingTextures[d].step >= 6)
+									{
+										if (!m_DyingTextures[d].texture.IsDisposed) m_DyingTextures[d].texture.Dispose();
+										m_DyingTextures.RemoveAt(d);
+									}
+								}
+								OpenFF.Client.StepProbe.Add("tex-free", System.Diagnostics.Stopwatch.GetElapsedTime(freeAt).TotalMilliseconds);
 								OpenFF.Client.StepProbe.Add("glTexImage2D " + width + "x" + height, System.Diagnostics.Stopwatch.GetElapsedTime(uploadAt).TotalMilliseconds);
 							}
 							catch (Exception)
