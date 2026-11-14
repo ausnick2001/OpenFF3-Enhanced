@@ -388,8 +388,6 @@ internal static partial class GlobalScope
 
 								private readonly System.Collections.Generic.List<dgs.DGSMessage> jobBlock = new System.Collections.Generic.List<dgs.DGSMessage>();
 
-								private int skillRowY0 = int.MinValue;
-
 									private void ReleaseJobBlock()
 								{
 									foreach (dgs.DGSMessage m in jobBlock) m?.release();
@@ -407,34 +405,27 @@ internal static partial class GlobalScope
 									jobBlock.Add(m);
 								}
 
-								/// <summary>PORT: the default rows kept, but the job name and the Job Level row moved up a line, and the job points still needed for the next job level on the line freed under them.</summary>
+								/// <summary>PORT: the job points still needed for the next job level, on the line under "Job Level" and in the style of the "EXP / For Next Level:" rows (label on the left, the number on the same right edge as the other numbers).</summary>
 								private void JobBlock(menu.Medget M, pl.Player player)
 								{
 									ReleaseJobBlock();
-									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
 									menu.Medget skillNode = M.getNodeByID(TRANSCODE("SKILL"));
-									if (jobNode == null || skillNode == null) return;
+									menu.Medget expValue = M.getNodeByID(TRANSCODE("EXPMax"));
+									if (skillNode == null || expValue == null) return;
 									menu.Medget skillRow = skillNode.parentNode() ?? skillNode;
-									// the gap between the job name and the Job Level row is the line height
-									int dy = (skillRowY0 == int.MinValue ? skillRow.y() : skillRowY0) - jobNode.y();
+									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
+									// one line is the gap between the job name and the Job Level row
+									int dy = jobNode != null ? skillRow.y() - jobNode.y() : 18;
 									if (dy < 8 || dy > 30) dy = 18;
-									int rowY = skillRow.y();
-									int rowX = skillRow.x();
-									// the job name: the game's own message put away and drawn again one line higher
-									((menu.MBJobName)jobNode.behavior()?.queryInterface(menu.MBJobName.classIdentifier()))?.mbjReleaseMessage();
 									int type = player.jobManager().nowJob();
-									string name = OpenFF.Client.ProgressionLayer.JobNameOverride(player.playerId(), type);
-									if (name == null) name = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)(50105 + type));
-									AddJobLine(name, jobNode.x(), jobNode.y() - dy);
-									// the Job Level row (label and number) one line higher
-									skillRow.setPosition((short)skillRow.x(), (short)(rowY - dy));
-									// job points still to win for the next job level (a level takes 99; the ones just won in this battle are paid out when it is won)
 									pl.Skill skill = player.jobManager().job((pl.JOB_TYPE)type).skill();
-									if (!OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) && skill.skillLevel().get() < 99)
-									{
-										dgs.msg.CMessageSys.getInstance().changeValueFont(99 - skill.skillExp().get(), out string digits);
-										AddJobLine("Job pts for next level  " + digits, rowX, rowY);
-									}
+									if (OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) || skill.skillLevel().get() >= 99) return;
+									// a level takes 99 job points; the ones just won in this battle are paid out when it is won
+									int drop = OpenFF.Client.SteamLayout.TextDrop(skillNode.height(), 1);
+									int y = skillRow.y() + dy + drop;
+									AddJobLine("JP For Next Level:", skillRow.x(), y);
+									dgs.msg.CMessageSys.getInstance().changeValueFont(99 - skill.skillExp().get(), out string digits);
+									AddJobLine(digits, expValue.x(), y);
 								}
 
 								public override void bmBehave(menu.Medget M)
