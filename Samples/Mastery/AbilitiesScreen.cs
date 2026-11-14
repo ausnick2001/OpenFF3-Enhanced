@@ -52,7 +52,7 @@ namespace Mastery
 			if (w != null) w.Colour = colour;
 		}
 
-		public static string Shown(AbilityInfo a) => a == null ? "" : (a.Passive ? "" : "!") + a.Name;
+		public static string Shown(AbilityInfo a) => a == null ? "" : a.Name;
 
 		/// <summary>Where an ability is learned, for the description: "Knight: Lv. 2" (the first ladder that teaches it).</summary>
 		public static string Source(AbilityInfo a) => a?.TaughtBy.FirstOrDefault();

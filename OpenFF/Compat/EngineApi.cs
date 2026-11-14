@@ -1904,7 +1904,9 @@ namespace OpenFF.Client
 			if (number < 0) { EngineApi.Warn("party-changejob", "ChangeJob: no job called '" + job + "'"); return false; }
 			if (!ProgressionLayer.CanChangeJob(id, number)) return false;
 			// From a mod's menu screen, the game's own job change scene: the job taken at its flash, done once it has ended.
-			if (GlobalScope.wmenu.JobChangeScene.Start(id, () => { bool ok = ProgressionLayer.ChangeJob(id, number); if (ok) RefreshDisplay(); return ok; }, done)) return true;
+			// PORT: once the change is made, on to the hero's Equipment screen (their gear is theirs to choose again), not back to the Jobs page.
+			Action<bool> after = ok => { if (ok && OpenFF.Client.ModMenus.ToEquipment(id)) return; done?.Invoke(ok); };
+			if (GlobalScope.wmenu.JobChangeScene.Start(id, () => { bool ok = ProgressionLayer.ChangeJob(id, number); if (ok) RefreshDisplay(); return ok; }, after)) return true;
 			bool changed = ProgressionLayer.ChangeJob(id, number);
 			if (changed) RefreshDisplay();
 			done?.Invoke(changed);

@@ -590,6 +590,9 @@ namespace OpenFF.Client
 		/// <summary>Whether a mod's screen is up in the game's menus (what the job change scene plays over).</summary>
 		public static bool ScreenUp => _host != null && _screen != null;
 
+		/// <summary>From a mod's screen, on to the game's Equipment screen for a hero (after a job change); false when no mod screen is up.</summary>
+		public static bool ToEquipment(int playerId) => _host != null && _screen != null && _host.LeaveForEquipment(playerId);
+
 		/// <summary>The mod's screen up left for good: out of the menus, not back to the main menu (Game.Title.Return). False when none is up.</summary>
 		public static bool LeaveMenus()
 		{

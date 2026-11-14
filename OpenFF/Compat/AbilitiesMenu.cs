@@ -106,10 +106,10 @@ namespace OpenFF.Client
 
 		private static string JobName(int job) => ProgressionLayer.JobName(job);
 
-		/// <summary>An ability's name as FF5 writes them: commands with a leading "!", passives plain.</summary>
+		/// <summary>An ability's name as the menu shows it (FF5 marks commands with a leading "!"; here they are plain).</summary>
 		private static string Shown(int id)
 		{
-			return (ProgressionLayer.IsPassive(id) ? "" : "!") + ProgressionLayer.AbilityName(id);
+			return ProgressionLayer.AbilityName(id);
 		}
 
 		/// <summary>Which ladders teach an ability, for the pick page's right column.</summary>

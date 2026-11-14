@@ -124,7 +124,7 @@ internal static partial class GlobalScope
 			}
 
 			/// <summary>Leaves the screen: to the main menu, or out of the menus when it was opened from the field.</summary>
-			public void Leave(bool toMainMenu)
+			public void Leave(bool toMainMenu, WMENU_KIND next = WMENU_KIND.WMENU_KIND_MAIN_MENU)
 			{
 				if (toMainMenu)
 				{
@@ -139,7 +139,7 @@ internal static partial class GlobalScope
 						}
 					}
 					catch (Exception) { }
-					CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+					CWMenuManager.Instance().SetNextKind(next);
 					CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
 				}
 				else
@@ -147,6 +147,22 @@ internal static partial class GlobalScope
 					_noGameScreenNext = true;
 					CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_END);
 				}
+			}
+
+			/// <summary>PORT: leaves for the game's Equipment screen on a hero (by id), as after a job change.</summary>
+			public bool LeaveForEquipment(int playerId)
+			{
+				int index = -1;
+				try
+				{
+					for (int i = 0; i < 4; i++)
+						if (pl.PlayerParty.instance().player((byte)i).isEnable() && pl.PlayerParty.instance().player((byte)i).playerId() == playerId) index = i;
+				}
+				catch (Exception) { }
+				if (index < 0) return false;
+				menu.MenuManager.getSingleton().SetTargetCharNo(index);
+				Leave(toMainMenu: true, next: WMENU_KIND.WMENU_KIND_EQUIP);
+				return true;
 			}
 
 			/// <summary>Leaves for another screen of the mods' (ModMenus has set which).</summary>
