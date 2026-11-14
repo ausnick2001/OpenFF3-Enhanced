@@ -34,6 +34,13 @@ internal static partial class GlobalScope
 
 								private int currentMode;
 
+								// PORT: pad route to the command row (Equip / Remove / Remove all): Circle from the slots steps up to it.
+								private int padCmd = -1;
+
+								private bool padCmdSkip;
+
+								private static readonly string[] padCmdIds = { "m_equip", "m_nouse", "m_removeall" };
+
 								private int currentFocusGroup;
 
 								private int currentPlayer;
@@ -203,6 +210,13 @@ internal static partial class GlobalScope
 											slideTime = 0;
 											slideDir = 0;
 										}
+										return;
+									}
+									if (padCmd >= 0)
+									{
+										PadCommandStep();
+										menu.MenuManager.getSingleton().SetActivateButtonState(1);
+										menu.MenuManager.getSingleton().ClearBehaviorButton();
 										return;
 									}
 									if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
@@ -1163,8 +1177,7 @@ internal static partial class GlobalScope
 										currentFocusGroup = 1;
 										break;
 									case 1:
-										CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
-										CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+										BeginPadCommand();
 										break;
 									default:
 										return false;
@@ -1330,6 +1343,77 @@ internal static partial class GlobalScope
 										}
 										num++;
 										nodeByIDFromChildren = nodeByIDFromChildren.nextSibling();
+									}
+								}
+
+								private void BeginPadCommand()
+								{
+									menu.Medget cmd = ownerMedget.getNodeByID(TRANSCODE(padCmdIds[currentMode == 1 ? 1 : 0]));
+									if (cmd == null)
+									{
+										CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+										CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+										return;
+									}
+									padCmd = currentMode == 1 ? 1 : 0;
+									padCmdSkip = true;
+									currentMode = 0;
+									currentFocusGroup = 0;
+									bmRefreshChangeValue(ownerMedget);
+									menu.MenuManager.getSingleton().inputPermission(b: false);
+									CWMenuManager.Instance().GetDummyCursor().SetShow(show: false);
+									menu.MenuManager.getSingleton().GetCursor2d().SetPositionI(cmd.cursorX(), cmd.cursorY());
+								}
+
+								private void PadCommandStep()
+								{
+									if (padCmdSkip)
+									{
+										padCmdSkip = false;
+										return;
+									}
+									int edge = ds.g_Pad.edge();
+									if ((edge & 2) != 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+									{
+										padCmd = -1;
+										menu.MenuManager.getSingleton().inputPermission(b: true);
+										menu.MenuManager.getSingleton().playSECancel();
+										CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+										CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+										return;
+									}
+									if ((edge & 1) != 0)
+									{
+										menu.Medget chosen = ownerMedget.getNodeByID(TRANSCODE(padCmdIds[padCmd]));
+										padCmd = -1;
+										menu.MenuManager.getSingleton().inputPermission(b: true);
+										menu.MenuManager.getSingleton().playSEDecide();
+										if (chosen != null)
+										{
+											// the same path as touching the command: the next frame's activate branch carries it out
+											currentFocusGroup = 1;
+											menu.MenuManager.getSingleton().initFocus(chosen.myTag());
+										}
+										return;
+									}
+									int step = 0;
+									if ((edge & 0x30) != 0)
+									{
+										step = ((edge & 0x10) != 0) ? 1 : -1;
+									}
+									else if ((edge & 0xC0) != 0)
+									{
+										step = ((edge & 0x80) != 0) ? 1 : -1;
+									}
+									if (step != 0)
+									{
+										padCmd = (padCmd + step + padCmdIds.Length) % padCmdIds.Length;
+										menu.Medget cmd = ownerMedget.getNodeByID(TRANSCODE(padCmdIds[padCmd]));
+										if (cmd != null)
+										{
+											menu.MenuManager.getSingleton().GetCursor2d().SetPositionI(cmd.cursorX(), cmd.cursorY());
+										}
+										menu.MenuManager.getSingleton().playSEMoveCursor();
 									}
 								}
 
