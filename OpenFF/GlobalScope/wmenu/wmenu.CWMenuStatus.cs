@@ -405,27 +405,44 @@ internal static partial class GlobalScope
 									jobBlock.Add(m);
 								}
 
-								/// <summary>PORT: the job points still needed for the next job level, on the line under "Job Level" and in the style of the "EXP / For Next Level:" rows (label on the left, the number on the same right edge as the other numbers).</summary>
+								/// <summary>PORT: the job name, the Job Level row and a new "JP For Next Level:" row (job points still needed for the next job level), in the style of the EXP rows. The first two are drawn again a little higher (about 3/4 of a line) to make room, at the same left edges as the game's own; the game's own copies are put away.</summary>
 								private void JobBlock(menu.Medget M, pl.Player player)
 								{
 									ReleaseJobBlock();
+									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
 									menu.Medget skillNode = M.getNodeByID(TRANSCODE("SKILL"));
 									menu.Medget expValue = M.getNodeByID(TRANSCODE("EXPMax"));
-									if (skillNode == null || expValue == null) return;
-									menu.Medget skillRow = skillNode.parentNode() ?? skillNode;
-									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
-									// one line is the gap between the job name and the Job Level row
-									int dy = jobNode != null ? skillRow.y() - jobNode.y() : 18;
-									if (dy < 8 || dy > 30) dy = 18;
+									if (jobNode == null || skillNode == null || expValue == null) return;
+									menu.Medget skillRow = skillNode.parentNode();
+									const int lift = 10;   // a bit under a line, in the screen's own units
+									const int line = 14;   // the gap between two of the EXP rows
 									int type = player.jobManager().nowJob();
 									pl.Skill skill = player.jobManager().job((pl.JOB_TYPE)type).skill();
-									if (OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) || skill.skillLevel().get() >= 99) return;
-									// a level takes 99 job points; the ones just won in this battle are paid out when it is won
 									int drop = OpenFF.Client.SteamLayout.TextDrop(skillNode.height(), 1);
-									int y = skillRow.y() + dy + drop;
-									AddJobLine("JP For Next Level:", skillRow.x(), y);
-									dgs.msg.CMessageSys.getInstance().changeValueFont(99 - skill.skillExp().get(), out string digits);
-									AddJobLine(digits, expValue.x(), y);
+									// the job name
+									((menu.MBJobName)jobNode.behavior()?.queryInterface(menu.MBJobName.classIdentifier()))?.mbjReleaseMessage();
+									string name = OpenFF.Client.ProgressionLayer.JobNameOverride(player.playerId(), type);
+									if (name == null) name = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)(50105 + type));
+									AddJobLine(name, jobNode.x(), jobNode.y() - lift);
+									// the Job Level row: the game's label and number put away, the same words and number drawn higher
+									if (skillRow != null && skillRow != skillNode)
+									{
+										((menu.MBText)skillRow.behavior()?.queryInterface(menu.MBText.classIdentifier()))?.bmTextVisibility(v: false);
+										((menu.MBText)skillNode.behavior()?.queryInterface(menu.MBText.classIdentifier()))?.mbSetBufferMsg("", decWidth: false);
+										int jobLevelY = skillRow.y() - lift + drop;
+										string label = dgs.msg.CMessageSys.getInstance().Sub().getMessage(50503);
+										AddJobLine(string.IsNullOrWhiteSpace(label) ? "Job Level" : label.Trim(), skillRow.x(), jobLevelY);
+										dgs.msg.CMessageSys.getInstance().changeValueFont(OpenFF.Client.ProgressionLayer.JobMenuLevel(player.playerId(), type, skill.skillLevel().get()), out string levelDigits);
+										AddJobLine(levelDigits, skillNode.x(), jobLevelY);
+										// the new row, a line under it
+										if (!OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) && skill.skillLevel().get() < 99)
+										{
+											// a level takes 99 job points; the ones just won in this battle are paid out when it is won
+											dgs.msg.CMessageSys.getInstance().changeValueFont(99 - skill.skillExp().get(), out string digits);
+											AddJobLine("JP For Next Level:", skillRow.x(), jobLevelY + line);
+											AddJobLine(digits, expValue.x(), jobLevelY + line);
+										}
+									}
 								}
 
 								public override void bmBehave(menu.Medget M)
