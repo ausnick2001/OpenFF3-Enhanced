@@ -39,6 +39,8 @@ internal static partial class GlobalScope
 
 								private bool padCmdSkip;
 
+								private bool padActivate;
+
 								private static readonly string[] padCmdIds = { "m_equip", "m_nouse", "m_removeall" };
 
 								private int currentFocusGroup;
@@ -215,7 +217,9 @@ internal static partial class GlobalScope
 									if (padCmd >= 0)
 									{
 										PadCommandStep();
-										menu.MenuManager.getSingleton().SetActivateButtonState(1);
+										// a command takes effect when its frame reports itself active, as a touch does
+										menu.MenuManager.getSingleton().SetActivateButtonState(padActivate ? 0 : 1);
+										padActivate = false;
 										menu.MenuManager.getSingleton().ClearBehaviorButton();
 										return;
 									}
@@ -1393,6 +1397,7 @@ internal static partial class GlobalScope
 											// the same path as touching the command: the next frame's activate branch carries it out
 											currentFocusGroup = 1;
 											menu.MenuManager.getSingleton().initFocus(chosen.myTag());
+											padActivate = true;
 										}
 										return;
 									}
