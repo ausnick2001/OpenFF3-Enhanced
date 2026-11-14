@@ -12103,9 +12103,9 @@ internal static partial class GlobalScope
 						/// normalised by the material's declared size, not the picture's, so it maps the same -
 						/// with linear filtering; else the package's texels as ever.
 						/// </summary>
-						internal static uint LoadTextureNamed(string texName, uint fmt, uint sizeS, uint sizeT, uint color0, ushort[] texData, int iTexDataOffset, uint[] tex4x4Data, int iTex4x4DataOffset, ushort[] tex4x4IdxData, int iTex4x4IdxDataOffset, ushort[] plttData, int iPlttDataOffset, uint wrap)
+						internal static uint LoadTextureNamed(string texName, uint fmt, uint sizeS, uint sizeT, uint color0, ushort[] texData, int iTexDataOffset, uint[] tex4x4Data, int iTex4x4DataOffset, ushort[] tex4x4IdxData, int iTex4x4IdxDataOffset, ushort[] plttData, int iPlttDataOffset, uint wrap, string package = null)
 						{
-							if (OpenFF.Client.TextureOverrides.Any && OpenFF.Client.TextureOverrides.TryGet(texName, null, out int ow, out int oh, out byte[] rgba))
+							if (OpenFF.Client.TextureOverrides.Any && OpenFF.Client.TextureOverrides.TryGet(texName, package, out int ow, out int oh, out byte[] rgba))
 							{
 								uint own = GenTexture(ow, oh, rgba, wrap, 9729u, 5121u);
 								if (own != 0)
@@ -12399,7 +12399,7 @@ internal static partial class GlobalScope
 								vramKey.list[0].dictTexData = array;
 								vramKey.list[0].fmt = (array[0] >> 26) & 7;
 								vramKey.list[0].texName = entry.name != null && entry.name.Length > 0 ? entry.name[0].name : null;
-								vramKey.list[0].tex = LoadTextureNamed(vramKey.list[0].texName, (array[0] >> 26) & 7, (array[0] >> 20) & 7, (array[0] >> 23) & 7, (array[0] >> 29) & 1, pTex.texInfo.tex, (num << 3) / 2, pTex.tex4x4Info.tex, (num << 3) / 4, pTex.tex4x4Info.pal, (num << 2) / 2, pTex.plttInfo.pal, (array2[0] << 3) / 2, 10497u);
+								vramKey.list[0].tex = LoadTextureNamed(vramKey.list[0].texName, (array[0] >> 26) & 7, (array[0] >> 20) & 7, (array[0] >> 23) & 7, (array[0] >> 29) & 1, pTex.texInfo.tex, (num << 3) / 2, pTex.tex4x4Info.tex, (num << 3) / 4, pTex.tex4x4Info.pal, (num << 2) / 2, pTex.plttInfo.pal, (array2[0] << 3) / 2, 10497u, pTex.package);
 							}
 						}
 
@@ -12524,7 +12524,7 @@ internal static partial class GlobalScope
 											vramKey.list[j].dictTexData = array3;
 											vramKey.list[j].fmt = (array3[0] >> 26) & 7;
 											vramKey.list[j].texName = name[j]?.name;
-											vramKey.list[j].tex = LoadTextureNamed(vramKey.list[j].texName, (array3[0] >> 26) & 7, (array3[0] >> 20) & 7, (array3[0] >> 23) & 7, (array3[0] >> 29) & 1, pTex.texInfo.tex, (num5 << 3) / 2, pTex.tex4x4Info.tex, (num5 << 3) / 4, pTex.tex4x4Info.pal, (num5 << 2) / 2, pTex.plttInfo.pal, ((array4 != null) ? (array4[0] << 3) : 0) / 2, 10497u);
+											vramKey.list[j].tex = LoadTextureNamed(vramKey.list[j].texName, (array3[0] >> 26) & 7, (array3[0] >> 20) & 7, (array3[0] >> 23) & 7, (array3[0] >> 29) & 1, pTex.texInfo.tex, (num5 << 3) / 2, pTex.tex4x4Info.tex, (num5 << 3) / 4, pTex.tex4x4Info.pal, (num5 << 2) / 2, pTex.plttInfo.pal, ((array4 != null) ? (array4[0] << 3) : 0) / 2, 10497u, pTex.package);
 										}
 									}
 									if (nNSG3dResMatData.texImageParam != null && nNSG3dResMatData.texImageParamMask == 0)
@@ -12621,7 +12621,7 @@ internal static partial class GlobalScope
 										}
 										texImageParam.tex = 0u;
 										// PORT: a mod's PNG for this texture stays through a palette rebind (it is a full picture; a palette means nothing to it).
-										texImageParam.tex = LoadTextureNamed(texImageParam.texName, (dictTexData[0] >> 26) & 7, (dictTexData[0] >> 20) & 7, (dictTexData[0] >> 23) & 7, (dictTexData[0] >> 29) & 1, pTex2.texInfo.tex, (num2 << 3) / 2, pTex2.tex4x4Info.tex, (num2 << 3) / 4, pTex2.tex4x4Info.pal, (num2 << 2) / 2, pTex.plttInfo.pal, (array3[0] << 3) / 2, 10497u);
+										texImageParam.tex = LoadTextureNamed(texImageParam.texName, (dictTexData[0] >> 26) & 7, (dictTexData[0] >> 20) & 7, (dictTexData[0] >> 23) & 7, (dictTexData[0] >> 29) & 1, pTex2.texInfo.tex, (num2 << 3) / 2, pTex2.tex4x4Info.tex, (num2 << 3) / 4, pTex2.tex4x4Info.pal, (num2 << 2) / 2, pTex.plttInfo.pal, (array3[0] << 3) / 2, 10497u, pTex2.package);
 									}
 								}
 							}

@@ -60,8 +60,12 @@ internal static partial class GlobalScope
 			return -1;
 		}
 
+		/// <summary>PORT: the array this reader reads, so a texture package can be traced to the file it came from (OpenFF.Client.TextureOverrides).</summary>
+		public byte[] Source { get; }
+
 		public ArrayReader(Array a)
 		{
+			Source = (byte[])a;
 			m_St = new MemoryStream((byte[])a);
 			m_lMark = 0L;
 		}

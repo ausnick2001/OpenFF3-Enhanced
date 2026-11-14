@@ -43,6 +43,7 @@ internal static partial class GlobalScope
 				if (fsize != 0)
 				{
 					pAddr = ds.CHeap.alloc_app(fsize);
+					OpenFF.Client.TextureOverrides.NoteSource(pAddr, filename);
 					m_Object = null;
 					_ = pAddr;
 					ds.g_File.load(pAddr, filename);
@@ -67,6 +68,7 @@ internal static partial class GlobalScope
 				}
 				fsize = compressInfo.unExtractSize;
 				pAddr = ds.CHeap.alloc_app(fsize);
+				OpenFF.Client.TextureOverrides.NoteSource(pAddr, filename);
 				m_Object = null;
 				if (pAddr == null)
 				{
@@ -93,6 +95,7 @@ internal static partial class GlobalScope
 				if (fsize != 0)
 				{
 					pAddr = ds.CHeap.alloc_app(fsize);
+					OpenFF.Client.TextureOverrides.NoteSource(pAddr, filename);
 					m_Object = null;
 					if (pAddr == null)
 					{
@@ -121,6 +124,7 @@ internal static partial class GlobalScope
 				}
 				fsize = compressInfo.unExtractSize;
 				pAddr = ds.CHeap.alloc_app(fsize);
+				OpenFF.Client.TextureOverrides.NoteSource(pAddr, filename);
 				m_Object = null;
 				if (pAddr == null)
 				{

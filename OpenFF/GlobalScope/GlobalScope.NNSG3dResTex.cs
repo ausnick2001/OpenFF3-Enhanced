@@ -27,9 +27,13 @@ internal static partial class GlobalScope
 
 		public NNSG3dResDict dict;
 
+		/// <summary>PORT: the file this package was read from ("files/j104.ntxp.lz"), or null when not known.</summary>
+		public string package;
+
 		public static explicit operator NNSG3dResTex(ArrayReader src)
 		{
 			NNSG3dResTex nNSG3dResTex = new NNSG3dResTex();
+			nNSG3dResTex.package = OpenFF.Client.TextureOverrides.SourceOf(src.Source);
 			long position = src.getPosition();
 			nNSG3dResTex.header = (NNSG3dResDataBlockHeader)src;
 			nNSG3dResTex.texInfo = (NNSG3dResTexInfo)src;
