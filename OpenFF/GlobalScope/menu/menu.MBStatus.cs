@@ -283,6 +283,32 @@ internal static partial class GlobalScope
 						pMsg[num].setPosition((short)tx, (short)ty, erase: true);
 						pMsg[num].setDisplaySpeed(byte.MaxValue);
 						pMsg[num].setDisplayWait(0);
+						// PORT: the job's level just after the job's name ("LV. 5").
+						try
+						{
+							int levelSlot = CheckEnableMessageNo();
+							if (levelSlot >= 0)
+							{
+								pl.Player hero = pl.PlayerParty.instance().player((byte)cNo);
+								int type = hero.jobManager().nowJob();
+								int value = OpenFF.Client.ProgressionLayer.JobMenuLevel(hero.playerId(), type, hero.jobManager().job((pl.JOB_TYPE)type).skill().skillLevel().get());
+								string digits = "";
+								dgs.msg.CMessageSys.getInstance().changeValueFont(value, out digits);
+								pMsg[levelSlot] = pm.createMessage("LV. " + digits, (int)font_size);
+								if (pMsg[levelSlot] != null)
+								{
+									ds.Vector2<short> size = new ds.Vector2<short>(0, 0);
+									pMsg[num].getTextSize(size);
+									pMsg[levelSlot].setPosition((short)(tx + size.vx + 8), (short)ty, erase: true);
+									pMsg[levelSlot].setDisplaySpeed(byte.MaxValue);
+									pMsg[levelSlot].setDisplayWait(0);
+								}
+							}
+						}
+						catch (System.Exception ex)
+						{
+							OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.General, "menus: job level on the party panel: " + ex.Message);
+						}
 					}
 				}
 			}

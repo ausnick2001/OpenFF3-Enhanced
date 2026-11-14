@@ -130,6 +130,7 @@ internal static partial class GlobalScope
 								{
 									if (!isFinalize())
 									{
+										ReleaseJobBlock();
 										menu.MenuManager.getSingleton().releaseWindowAll();
 										menu.MenuManager.getSingleton().release();
 										setFinalize(val: true);
@@ -380,6 +381,86 @@ internal static partial class GlobalScope
 										int num3 = player.magicDefensePower();
 										dgs.msg.CMessageSys.getInstance().changeValueFont(num3, out after);
 										mBText.mbSetBufferMsg(after, decWidth: false);
+									}
+									try { JobBlock(M, player); }
+									catch (System.Exception ex) { OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.General, "menus: status job block: " + ex.Message); }
+								}
+
+								private readonly System.Collections.Generic.List<dgs.DGSMessage> jobBlock = new System.Collections.Generic.List<dgs.DGSMessage>();
+
+								private void ReleaseJobBlock()
+								{
+									foreach (dgs.DGSMessage m in jobBlock) m?.release();
+									jobBlock.Clear();
+								}
+
+								private void AddJobLine(string text, int x, int y)
+								{
+									if (string.IsNullOrEmpty(text)) return;
+									dgs.DGSMessage m = dgs.msg.CMessageSys.getInstance().Sub().createMessage(text, 1);
+									if (m == null) return;
+									m.setPosition((short)x, (short)y, erase: true);
+									m.setDisplaySpeed(byte.MaxValue);
+									m.setDisplayWait(0);
+									jobBlock.Add(m);
+								}
+
+								/// <summary>PORT: the job in one line with its level on the name's row ("Monk LV. 6"), and under it the job's commands and a word on its trait; the old "Job Level" row is gone.</summary>
+								private void JobBlock(menu.Medget M, pl.Player player)
+								{
+									ReleaseJobBlock();
+									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
+									menu.Medget levelRow = M.getNodeByID(TRANSCODE("LV"));
+									menu.Medget skillNode = M.getNodeByID(TRANSCODE("SKILL"));
+									if (jobNode == null || levelRow == null || skillNode == null) return;
+									// the game's own job-name message and the Job Level row (its value, and the label found by its place) put away
+									((menu.MBJobName)jobNode.behavior()?.queryInterface(menu.MBJobName.classIdentifier()))?.mbjReleaseMessage();
+									((menu.MBText)skillNode.behavior()?.queryInterface(menu.MBText.classIdentifier()))?.mbSetBufferMsg("", decWidth: false);
+									HideLabelsOnRow(M, skillNode);
+									int x = jobNode.x();
+									int y = levelRow.y();
+									int type = player.jobManager().nowJob();
+									string name = OpenFF.Client.ProgressionLayer.JobNameOverride(player.playerId(), type);
+									if (name == null) name = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)(50105 + type));
+									int level = OpenFF.Client.ProgressionLayer.JobMenuLevel(player.playerId(), type, player.jobManager().job((pl.JOB_TYPE)type).skill().skillLevel().get());
+									dgs.msg.CMessageSys.getInstance().changeValueFont(level, out string digits);
+									AddJobLine(name + "  LV. " + digits, x, y);
+									// commands: the ones that mark the job (the shared ones are in every battle menu anyway)
+									System.Collections.Generic.List<string> names = new System.Collections.Generic.List<string>();
+									pl.Command command = player.jobManager().command();
+									for (int i = 0; i < pl.COMMAND_MAX; i++)
+									{
+										int id = command.commandId(i);
+										if (id <= 0 || id >= (int)pl.ABILITY_ID.ABILITY_LIST_MAX) continue;
+										if (id == (int)pl.ABILITY_ID.ABILITY_ATTACK || id == (int)pl.ABILITY_ID.ABILITY_ESCAPE || id == (int)pl.ABILITY_ID.ABILITY_GUARD || id == (int)pl.ABILITY_ID.ABILITY_ITEM
+											|| id == (int)pl.ABILITY_ID.ABILITY_CHANGE || id == (int)pl.ABILITY_ID.ABILITY_FRONT || id == (int)pl.ABILITY_ID.ABILITY_BACK || id == (int)pl.ABILITY_ID.ABILITY_EQUIP) continue;
+										string text = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)pl.PlayerParty.instance().abilityList(id).nameId_);
+										if (!string.IsNullOrWhiteSpace(text) && !names.Contains(text.Trim())) names.Add(text.Trim());
+									}
+									AddJobLine(names.Count > 0 ? string.Join(", ", names) : "Attack, Item", x, y + 18);
+									if (type == (int)pl.JOB_TYPE.MONK || type == (int)pl.JOB_TYPE.KARATE_MASTER) AddJobLine("Strong bare hands", x, y + 36);
+								}
+
+								/// <summary>The labels on the same row as a value (the "Job Level" words beside its number) hidden.</summary>
+								private void HideLabelsOnRow(menu.Medget M, menu.Medget value)
+								{
+									HideLabels(menu.MenuManager.getSingleton().root(), value);
+								}
+
+								private void HideLabels(menu.Medget parent, menu.Medget value)
+								{
+									for (menu.Medget m = parent.childNode(); m != null; m = m.nextSibling())
+									{
+										if (m != value && System.Math.Abs(m.y() - value.y()) <= 3 && m.x() < value.x())
+										{
+											menu.MBText text = m.behavior()?.queryInterface(menu.MBText.classIdentifier()) as menu.MBText;
+											if (text != null)
+											{
+												text.bmTextVisibility(v: false);
+												OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "menus: status: hid the row label " + m._id());
+											}
+										}
+										HideLabels(m, value);
 									}
 								}
 
