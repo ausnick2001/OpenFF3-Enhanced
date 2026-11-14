@@ -388,7 +388,9 @@ internal static partial class GlobalScope
 
 								private readonly System.Collections.Generic.List<dgs.DGSMessage> jobBlock = new System.Collections.Generic.List<dgs.DGSMessage>();
 
-								private void ReleaseJobBlock()
+								private int skillRowY0 = int.MinValue;
+
+									private void ReleaseJobBlock()
 								{
 									foreach (dgs.DGSMessage m in jobBlock) m?.release();
 									jobBlock.Clear();
@@ -405,64 +407,33 @@ internal static partial class GlobalScope
 									jobBlock.Add(m);
 								}
 
-								/// <summary>PORT: the job in one line with its level on the name's row ("Monk LV. 6"), and under it the job's commands and a word on its trait; the old "Job Level" row is gone.</summary>
+								/// <summary>PORT: the default rows kept, but the job name and the Job Level row moved up a line, and the job points still needed for the next job level on the line freed under them.</summary>
 								private void JobBlock(menu.Medget M, pl.Player player)
 								{
 									ReleaseJobBlock();
 									menu.Medget jobNode = M.getNodeByIDFromChildren(TRANSCODE("mbs_job"));
-									menu.Medget levelRow = M.getNodeByID(TRANSCODE("LV"));
 									menu.Medget skillNode = M.getNodeByID(TRANSCODE("SKILL"));
-									if (jobNode == null || levelRow == null || skillNode == null) return;
-									// the game's own job-name message and the Job Level row (its value, and the label found by its place) put away
+									if (jobNode == null || skillNode == null) return;
+									menu.Medget skillRow = skillNode.parentNode() ?? skillNode;
+									// the gap between the job name and the Job Level row is the line height
+									int dy = (skillRowY0 == int.MinValue ? skillRow.y() : skillRowY0) - jobNode.y();
+									if (dy < 8 || dy > 30) dy = 18;
+									int rowY = skillRow.y();
+									int rowX = skillRow.x();
+									// the job name: the game's own message put away and drawn again one line higher
 									((menu.MBJobName)jobNode.behavior()?.queryInterface(menu.MBJobName.classIdentifier()))?.mbjReleaseMessage();
-									((menu.MBText)skillNode.behavior()?.queryInterface(menu.MBText.classIdentifier()))?.mbSetBufferMsg("", decWidth: false);
-									HideLabelsOnRow(M, skillNode);
-									int x = jobNode.x();
-									int y = levelRow.y();
 									int type = player.jobManager().nowJob();
 									string name = OpenFF.Client.ProgressionLayer.JobNameOverride(player.playerId(), type);
 									if (name == null) name = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)(50105 + type));
-									int level = OpenFF.Client.ProgressionLayer.JobMenuLevel(player.playerId(), type, player.jobManager().job((pl.JOB_TYPE)type).skill().skillLevel().get());
-									dgs.msg.CMessageSys.getInstance().changeValueFont(level, out string digits);
-									AddJobLine(name + "  LV. " + digits, x, y);
-									// commands: the ones that mark the job (the shared ones are in every battle menu anyway)
-									System.Collections.Generic.List<string> names = new System.Collections.Generic.List<string>();
-									pl.Command command = player.jobManager().command();
-									for (int i = 0; i < pl.COMMAND_MAX; i++)
-									{
-										int id = command.commandId(i);
-										if (id <= 0 || id >= (int)pl.ABILITY_ID.ABILITY_LIST_MAX) continue;
-										if (id == (int)pl.ABILITY_ID.ABILITY_ATTACK || id == (int)pl.ABILITY_ID.ABILITY_ESCAPE || id == (int)pl.ABILITY_ID.ABILITY_GUARD || id == (int)pl.ABILITY_ID.ABILITY_ITEM
-											|| id == (int)pl.ABILITY_ID.ABILITY_CHANGE || id == (int)pl.ABILITY_ID.ABILITY_FRONT || id == (int)pl.ABILITY_ID.ABILITY_BACK || id == (int)pl.ABILITY_ID.ABILITY_EQUIP) continue;
-										string text = dgs.msg.CMessageSys.getInstance().Sub().getMessage((uint)pl.PlayerParty.instance().abilityList(id).nameId_);
-										if (!string.IsNullOrWhiteSpace(text) && !names.Contains(text.Trim())) names.Add(text.Trim());
-									}
-									AddJobLine(names.Count > 0 ? string.Join(", ", names) : "Attack, Item", x, y + 18);
+									AddJobLine(name, jobNode.x(), jobNode.y() - dy);
+									// the Job Level row (label and number) one line higher
+									skillRow.setPosition((short)skillRow.x(), (short)(rowY - dy));
 									// job points still to win for the next job level (a level takes 99; the ones just won in this battle are paid out when it is won)
 									pl.Skill skill = player.jobManager().job((pl.JOB_TYPE)type).skill();
-									if (!OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) && skill.skillLevel().get() < 99) AddJobLine("Next job level: " + (99 - skill.skillExp().get()), x, y + 36);
-								}
-
-								/// <summary>The labels on the same row as a value (the "Job Level" words beside its number) hidden.</summary>
-								private void HideLabelsOnRow(menu.Medget M, menu.Medget value)
-								{
-									HideLabels(menu.MenuManager.getSingleton().root(), value);
-								}
-
-								private void HideLabels(menu.Medget parent, menu.Medget value)
-								{
-									for (menu.Medget m = parent.childNode(); m != null; m = m.nextSibling())
+									if (!OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) && skill.skillLevel().get() < 99)
 									{
-										if (m != value && System.Math.Abs(m.y() - value.y()) <= 3 && m.x() < value.x())
-										{
-											menu.MBText text = m.behavior()?.queryInterface(menu.MBText.classIdentifier()) as menu.MBText;
-											if (text != null)
-											{
-												text.bmTextVisibility(v: false);
-												OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "menus: status: hid the row label " + m._id());
-											}
-										}
-										HideLabels(m, value);
+										dgs.msg.CMessageSys.getInstance().changeValueFont(99 - skill.skillExp().get(), out string digits);
+										AddJobLine("Job pts for next level  " + digits, rowX, rowY);
 									}
 								}
 
