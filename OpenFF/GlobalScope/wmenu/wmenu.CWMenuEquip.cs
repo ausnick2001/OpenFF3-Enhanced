@@ -41,6 +41,8 @@ internal static partial class GlobalScope
 
 								private bool padActivate;
 
+								private bool padForce;
+
 								private static readonly string[] padCmdIds = { "m_equip", "m_nouse", "m_removeall" };
 
 								private int currentFocusGroup;
@@ -235,8 +237,9 @@ internal static partial class GlobalScope
 											menu.MenuManager.getSingleton().setNotSEFlag(flag: false);
 										}
 									}
-									else if (menu.MenuManager.getSingleton().GetActivateButtonState() == 0)
+									else if (menu.MenuManager.getSingleton().GetActivateButtonState() == 0 || padForce)
 									{
+										padForce = false;
 										if (strcmp(menu.MenuManager.getSingleton().getFocuseMedget().parentNode()
 											._id(), "select_equip_command") == 0)
 										{
@@ -1398,6 +1401,8 @@ internal static partial class GlobalScope
 											currentFocusGroup = 1;
 											menu.MenuManager.getSingleton().initFocus(chosen.myTag());
 											padActivate = true;
+											padForce = true;
+											OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "equip: pad chose " + chosen._id() + ", focus now on " + menu.MenuManager.getSingleton().getFocuseMedget()._id());
 										}
 										return;
 									}
