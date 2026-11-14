@@ -196,6 +196,7 @@ namespace OpenFF.Client
 			{
 				s.Job = own ? job : -1;
 				player.changeJob((GlobalScope.pl.JOB_TYPE)BaseOf(job));
+				StripIllegalGear(player);
 				Log.Write(LogChannel.General, "progression: " + player.name() + " is now a " + JobName(job) + (own ? " (on the " + ModCharacters.Jobs[BaseOf(job)].Name + ")" : ""));
 				// The field's figure follows, as after the game's own Job menu.
 				try
@@ -420,10 +421,34 @@ namespace OpenFF.Client
 			try
 			{
 				GlobalScope.pl.Player player = GlobalScope.pl.PlayerParty.instance().playerForId((byte)playerId);
-				if (player != null) { ApplyCommands(player); player.updateParameter(); }   // the stats follow a carried ability
+				if (player != null) { ApplyCommands(player); StripIllegalGear(player); player.updateParameter(); }   // the stats follow a carried ability
 			}
 			catch (Exception) { }
 			return true;
+		}
+
+		/// <summary>After a job change or a change of set abilities: whatever the hero wears and may no longer wear (the new job's permissions plus the grants still in play) goes back to the bag. The game's own Job menu takes everything off; a mastery hero keeps what is still allowed.</summary>
+		public static void StripIllegalGear(GlobalScope.pl.Player player)
+		{
+			try
+			{
+				for (int points = 0; points < GlobalScope.pl.PlayerEquipParameter.EQUIP_POINTS_MAX; points++)
+				{
+					int id = player.equipParameter().equipPoint(points).itemId();
+					if (id <= 0 || id == 1000) continue;
+					int jobFlag;
+					GlobalScope.itm.WeaponParameter weapon = GlobalScope.itm.ItemManager.instance().weaponParameter((short)id);
+					GlobalScope.itm.ProtectionParameter armour = weapon == null ? GlobalScope.itm.ItemManager.instance().protectionParameter((short)id) : null;
+					if (weapon != null) jobFlag = weapon.equipJob();
+					else if (armour != null) jobFlag = armour.equipJob();
+					else continue;
+					if (player.isEquipItem(jobFlag)) continue;
+					player.releaseEquipItem(points, sort: true);
+					Log.Write(LogChannel.General, "progression: " + player.name() + " may no longer wear item " + id + "; back in the bag");
+				}
+				player.updateParameter();
+			}
+			catch (Exception ex) { Log.Write(LogChannel.General, "progression: unequip: " + ex.Message); }
 		}
 
 		/// <summary>Gives ABP toward a hero's job and climbs the ladder; the steps reached, as notices. Nothing without a ladder for the job.</summary>
