@@ -77,9 +77,14 @@ internal static partial class GlobalScope
 
 								private int wait;
 
+								/// <summary>PORT: set when the screen is entered with its hero already chosen (after a job change from a mod's screen): the character pick is skipped once.</summary>
+								public static bool SkipSelect;
+
 								public override bool cSelectInitialize()
 								{
-									return true;
+									bool skip = SkipSelect;
+									SkipSelect = false;
+									return !skip;
 								}
 
 								public override void initialize()

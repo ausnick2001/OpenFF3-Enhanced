@@ -161,6 +161,7 @@ internal static partial class GlobalScope
 				catch (Exception) { }
 				if (index < 0) return false;
 				menu.MenuManager.getSingleton().SetTargetCharNo(index);
+				CWMenuEquip.SkipSelect = true;
 				Leave(toMainMenu: true, next: WMENU_KIND.WMENU_KIND_EQUIP);
 				return true;
 			}
