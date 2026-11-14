@@ -40,6 +40,18 @@ namespace OpenFF.Client
 					if (_files.ContainsKey(key)) continue;
 					_files[key] = file;
 					count++;
+					// The names Crystal saves a texture under ("files_j104.ntxp.eye.png", package then texture)
+					// can be kept as they are: the texture's own name after the package's is the one the game asks for.
+					int cut = key.IndexOf(".ntxp.", StringComparison.OrdinalIgnoreCase);
+					if (cut < 0) cut = key.IndexOf(".nmdp.", StringComparison.OrdinalIgnoreCase);
+					if (cut >= 0 && key.Length > cut + 6)
+					{
+						string texture = key.Substring(cut + 6);
+						if (_files.TryGetValue(texture, out string other) && !string.Equals(other, file, StringComparison.OrdinalIgnoreCase))
+							Log.Write(LogChannel.General, "textures: " + Path.GetFileName(file) + " and " + Path.GetFileName(other) + " are both for the texture called " + texture + " - the game asks by that name alone, so " + Path.GetFileName(other) + " is the one drawn");
+						else
+							_files[texture] = file;
+					}
 				}
 			}
 			if (count > 0) Log.Write(LogChannel.General, "textures: " + count + " PNG(s) of the mods' own in place of the game's (textures/<name>.png)");
