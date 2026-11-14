@@ -438,7 +438,9 @@ internal static partial class GlobalScope
 										if (!string.IsNullOrWhiteSpace(text) && !names.Contains(text.Trim())) names.Add(text.Trim());
 									}
 									AddJobLine(names.Count > 0 ? string.Join(", ", names) : "Attack, Item", x, y + 18);
-									if (type == (int)pl.JOB_TYPE.MONK || type == (int)pl.JOB_TYPE.KARATE_MASTER) AddJobLine("Strong bare hands", x, y + 36);
+									// job points still to win for the next job level (a level takes 99; the ones just won in this battle are paid out when it is won)
+									pl.Skill skill = player.jobManager().job((pl.JOB_TYPE)type).skill();
+									if (!OpenFF.Client.ProgressionLayer.IsMastery(player.playerId()) && skill.skillLevel().get() < 99) AddJobLine("Next job level: " + (99 - skill.skillExp().get()), x, y + 36);
 								}
 
 								/// <summary>The labels on the same row as a value (the "Job Level" words beside its number) hidden.</summary>
