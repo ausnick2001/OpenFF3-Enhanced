@@ -90,7 +90,7 @@ internal static partial class GlobalScope
 									// PORT: a line in the log for each face read, with its size (a replaced one is a different size).
 									OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "faces: " + arg2 + " read, " + ncgr.Size() + " bytes");
 									NNSG2dCharacterData pChrData = ncgr.pDataCg();
-									NNS_G2dBGSetupChar((int)(pc + 8), pChrData);
+									NNS_G2dBGSetupChar((int)(pc + 8), pChrData, 112, 112);
 								}
 
 								public void pcfmClear()

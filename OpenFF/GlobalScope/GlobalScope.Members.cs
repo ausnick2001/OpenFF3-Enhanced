@@ -11325,7 +11325,9 @@ internal static partial class GlobalScope
 							NNS_G2dBGSetupCell(index, pCellData, bg, 240, 160);
 						}
 
-						internal static void NNS_G2dBGSetupChar(int index, NNSG2dCharacterData pChrData)
+						// PORT: baseW/baseH is the size the game's own picture has (a party face's 112 x 112); a mod's picture that is larger
+						// (an upscale) is drawn over the same cells, each cell's rectangle scaled to match.
+						internal static void NNS_G2dBGSetupChar(int index, NNSG2dCharacterData pChrData, int baseW = 0, int baseH = 0)
 						{
 							if (bgCell[index].image != 0)
 							{
@@ -11335,9 +11337,21 @@ internal static partial class GlobalScope
 							}
 							if (pChrData != null)
 							{
-								bgCell[index].image = LoadPNG((byte[])pChrData.m_aPng, out var sizeW, out var sizeH);
-								bgCell[index].texScaleU = 1f / (float)sizeW;
-								bgCell[index].texScaleV = 1f / (float)sizeH;
+								byte[] png = (byte[])pChrData.m_aPng;
+								bgCell[index].image = LoadPNG(png, out var sizeW, out var sizeH);
+								float scaleU = 1f, scaleV = 1f;
+								if (baseW > 0 && baseH > 0 && png != null && png.Length >= 24)
+								{
+									int w = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+									int h = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+									if (w > baseW && h > baseH)
+									{
+										scaleU = (float)w / baseW;
+										scaleV = (float)h / baseH;
+									}
+								}
+								bgCell[index].texScaleU = scaleU / (float)sizeW;
+								bgCell[index].texScaleV = scaleV / (float)sizeH;
 							}
 						}
 
