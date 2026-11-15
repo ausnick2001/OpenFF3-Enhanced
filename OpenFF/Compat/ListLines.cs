@@ -19,6 +19,7 @@ namespace OpenFF.Client
 
 		private readonly List<(int X0, int X1, int Y)> _lines = new List<(int, int, int)>();
 		private long _step = long.MinValue;
+		private System.Func<bool> _visible;
 		private SpriteBatch _batch;
 
 		// How far in from each end of a row the lines stop, in text space: the grey border covers about a unit and a
@@ -40,17 +41,27 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>The command list's row boundaries (the 480 x 320 text space), set again every step it is up.</summary>
-		public static void Set(IList<(int X0, int X1, int Y)> lines)
+		public static void Set(IList<(int X0, int X1, int Y)> lines, System.Func<bool> visible = null)
 		{
 			if (_instance == null) return;
 			_instance._lines.Clear();
 			_instance._lines.AddRange(lines);
+			_instance._visible = visible;
 			_instance._step = GameHost.StepsTaken;
+		}
+
+		/// <summary>The command list has gone: the lines go with it on the very next frame.</summary>
+		public static void Clear()
+		{
+			if (_instance == null) return;
+			_instance._lines.Clear();
+			_instance._visible = null;
 		}
 
 		public override void Draw(GameTime gameTime)
 		{
 			if (_lines.Count == 0 || RenderTest.Active || GameHost.StepsTaken - _step > 2) return;
+			if (_visible != null && !_visible()) return;   // the panel under them is not up
 			Ui.Ensure(GraphicsDevice);
 			_batch ??= new SpriteBatch(GraphicsDevice);
 			Viewport view = GraphicsDevice.Viewport;

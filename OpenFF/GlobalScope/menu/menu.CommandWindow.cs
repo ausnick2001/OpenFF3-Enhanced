@@ -162,7 +162,7 @@ internal static partial class GlobalScope
 					cwDATA d = commandWindowData(j);
 					lines.Add((d.Position.vx, d.Position.vx + d.Size.vx, d.Position.vy));
 				}
-				OpenFF.Client.ListLines.Set(lines);
+				OpenFF.Client.ListLines.Set(lines, () => panelMade_ && IsShow() && panel_.IsShow() && commandWindow_[0].IsShow());
 			}
 
 			public void createCommandWindow()
@@ -245,6 +245,7 @@ internal static partial class GlobalScope
 				if (panelMade_) panel_.SetShow(show, user: true);
 				if (!show)
 				{
+					OpenFF.Client.ListLines.Clear();   // PORT: the row lines go the moment the list does
 					releaseCommandMessageAll();
 				}
 			}
@@ -317,6 +318,7 @@ internal static partial class GlobalScope
 					commandWindow_[i].Release();
 				}
 				if (panelMade_) { panel_.Release(); panelMade_ = false; }
+				OpenFF.Client.ListLines.Clear();
 				releaseCommandMessageAll();
 				if (m_MessageId != -1)
 				{
