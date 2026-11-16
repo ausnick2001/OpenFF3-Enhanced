@@ -43,6 +43,7 @@ namespace OpenFF.Client
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 36, 516, 440), 104, 26, 23f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 50, 516, 414), 118, 29, 26, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -388,8 +389,8 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Random encounters, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Indicator, Back.
-		private const int QolRows = 8;
+		// Speed, Random encounters, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Indicator, Back.
+		private const int QolRows = 9;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -422,10 +423,14 @@ namespace OpenFF.Client
 					Qol.Changed("job change adjustment " + (q.JobAdjustment ? "on" : "off"));
 					break;
 				case 6:
+					q.TurnBased = !q.TurnBased;
+					Qol.Changed("turn-based battles " + (q.TurnBased ? "on" : "off"));
+					break;
+				case 7:
 					q.Indicator = !q.Indicator;
 					Qol.Changed("indicator " + (q.Indicator ? "on" : "off"));
 					break;
-				case 7:
+				case 8:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -443,7 +448,8 @@ namespace OpenFF.Client
 				case 3: return "job EXP from each action in battle, multiplied";
 				case 4: return "Save in the menu on any map, towns and dungeons too";
 				case 5: return "off: no lowered stats for a few battles after a job change";
-				case 6: return "a note in the corner of what is on";
+				case 6: return "off: the game's own order of play - every hero's command first, then the round; from the next battle";
+				case 7: return "a note in the corner of what is on";
 				default: return "";
 			}
 		}
@@ -459,6 +465,7 @@ namespace OpenFF.Client
 			if (Math.Abs(q.JobExp - 1) > 1e-9) on.Add("job EXP " + Qol.Times(q.JobExp));
 			if (q.SaveAnywhere) on.Add("save anywhere");
 			if (!q.JobAdjustment) on.Add("no adjustment");
+			if (!q.TurnBased) on.Add("classic battles");
 			if (on.Count == 0) return "as the game plays";
 			string all = string.Join(", ", on);
 			return all.Length > 40 ? on.Count + " on" : all;
@@ -525,7 +532,8 @@ namespace OpenFF.Client
 						case 3: icon = UiTheme.Icon.JobExp; return Kind.Stepper;
 						case 4: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
 						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
-						case 6: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
+						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
+						case 7: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -785,7 +793,8 @@ namespace OpenFF.Client
 						case 3: label = "Job EXP"; value = Qol.Times(q.JobExp); return;
 						case 4: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
 						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
-						case 6: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
+						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
+						case 7: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}

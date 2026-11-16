@@ -90,6 +90,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("saveAnywhere")] public bool SaveAnywhere { get; set; }
 			/// <summary>The job change's adjustment period (lowered stats for a few battles); false for none.</summary>
 			[JsonPropertyName("jobAdjustment")] public bool JobAdjustment { get; set; } = true;
+			/// <summary>FF3's battles turn by turn (each hero chooses when their turn comes); false plays the game's own order. Read when a battle begins.</summary>
+			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>The corner's note of what is on.</summary>
 			[JsonPropertyName("indicator")] public bool Indicator { get; set; } = true;
 		}

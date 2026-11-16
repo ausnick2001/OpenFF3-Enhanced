@@ -7,7 +7,8 @@
 // Everyone still acts once a round, the round still ends with the poison and other end-of-round effects,
 // and every status that counts rounds counts them as it did.
 //
-// On by default for FF3. `--classic-battle` (or FF3_CLASSIC_BATTLE=1) plays the game's own order of play.
+// On by default for FF3; the OpenFF menu's Quality of life > Turn-based battles turns it off (from the next battle), and
+// `--classic-battle` (or FF3_CLASSIC_BATTLE=1) plays the game's own order of play for a run.
 // A battle two clients compute together (IBattle.Shared) always plays the classic way, since its random
 // rolls are seeded per round and the commands travel over the wire a round at a time (BattleSync).
 
@@ -25,7 +26,7 @@ namespace OpenFF.Client
 			{
 				if (GameProfile.IsFf4) return false;
 				if (BattleSync.Shared != null) return false;
-				return Options.Get("classic-battle") == null;
+				return Options.Get("classic-battle") == null && Qol.TurnBased;
 			}
 		}
 

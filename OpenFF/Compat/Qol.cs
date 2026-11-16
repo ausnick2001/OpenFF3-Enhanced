@@ -50,6 +50,9 @@ namespace OpenFF.Client
 
 		public static bool SaveAnywhere => S.SaveAnywhere;
 
+		/// <summary>Whether FF3's battles play turn by turn (the menu's Turn-based battles; --classic-battle turns it off for a run).</summary>
+		public static bool TurnBased => S.TurnBased;
+
 		/// <summary>Whether a job change brings the adjustment period (stats lowered for a few battles), as the game has it.</summary>
 		public static bool JobAdjustment => S.JobAdjustment;
 
