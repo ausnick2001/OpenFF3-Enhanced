@@ -146,6 +146,12 @@ internal static partial class GlobalScope
 					{
 						return false;
 					}
+					// PORT: on the world map the hero only walks (the keys and the touch already hold to that):
+					// a full push is a walk there, not the run's speed.
+					if (cPlayerHuman.getInPutMode() == INPUT_MODE.INPUT_MODE_FIELD || PLAYER_MOVE_TYPE.PLAYER_MOVE_TYPE_FROG == cPlayerHuman.getPlayerMoveType())
+					{
+						pace = 0f;
+					}
 					cPlayerHuman.StickPace = pace;
 					// The touch drag is in screen pixels (the thresholds below: 37 walks, past it runs), so
 					// the stick's push is scaled to a drag of 25 to walk or 50 to run.
