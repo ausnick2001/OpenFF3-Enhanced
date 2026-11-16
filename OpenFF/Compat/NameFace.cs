@@ -1,5 +1,5 @@
-// The speaker's name in a dialogue window, in a face of its own: the first font in a name-font folder beside the
-// game (OpenFF.exe's folder). With none there, the name is drawn as before. Personal-use tweak: the font is the user's.
+// The speaker's name in a dialogue window, in a face of its own: the first font in the fonts\names folder beside the
+// game (OpenFF.exe's folder; the older name-font folder still works). With none there, the name is drawn as before.
 
 using System;
 using System.IO;
@@ -41,10 +41,7 @@ namespace OpenFF.Client
 				_looked = true;
 				try
 				{
-					string folder = Path.Combine(AppContext.BaseDirectory, "name-font");
-					if (!Directory.Exists(folder)) return null;
-					string file = Directory.EnumerateFiles(folder).Where(f => f.EndsWith(".otf", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase))
-						.OrderBy(f => f, StringComparer.OrdinalIgnoreCase).FirstOrDefault();
+					string file = FontFolders.First(FontFolders.Names, "name-font");
 					if (file == null) return null;
 					OpenFF.Content.MenuText style = new OpenFF.Content.MenuText();
 					style.Families.Add("file:" + file);

@@ -174,6 +174,7 @@ namespace OpenFF.Client
 		private static void LoadTitleFace()
 		{
 			string file = Options.Get("title-font");
+			if (string.IsNullOrEmpty(file)) file = FontFolders.First(FontFolders.Title);
 			if (string.IsNullOrEmpty(file))
 			{
 				string windows = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
@@ -514,6 +515,9 @@ namespace OpenFF.Client
 					Add(file);
 				}
 			}
+
+			// The player's own: the fonts\menus folder beside the game (FontFolders).
+			foreach (string file in FontFolders.Faces(FontFolders.Menus)) Add(file);
 
 			string configured = Options.Get("font");
 			if (!string.IsNullOrEmpty(configured))
