@@ -24,8 +24,8 @@ copy /y README.md dist\OpenFF\README.md >nul
 copy /y Docs\Modding.md dist\OpenFF\Modding.md >nul
 copy /y Docs\Releases.md dist\OpenFF\Releases.md >nul
 copy /y LICENSE dist\OpenFF\LICENSE.txt >nul
-rem The sample mods, for Crystal's Sample projects… (Samples\ beside crystal.exe); their build
-rem output is left out. The Showcase is also a ready mod: mods\Showcase plays as it stands.
+rem The sample mods, for Crystal's Sample projects (Samples\ beside crystal.exe); their build
+rem output is left out. Nothing is put in mods\ - it starts empty, for the player's own mods.
 robocopy Samples dist\OpenFF\Samples /e /xd bin obj /njh /njs /ndl /nfl /nc /ns >nul
 rem The samples with code, built against this release's engine: each one's assembly beside its mod.json, so a sample
 rem copied into mods\ plays as it stands with no .NET SDK (without it, Mastery's screens came up empty).
@@ -38,8 +38,8 @@ copy /y dist\samples\HelloMod\Hello.dll dist\OpenFF\Samples\HelloMod\ >nul || go
 copy /y dist\samples\Mastery\Mastery.dll dist\OpenFF\Samples\Mastery\ >nul || goto fail
 copy /y dist\samples\Survivors\Survivors.dll dist\OpenFF\Samples\Survivors\ >nul || goto fail
 copy /y dist\samples\Rogue\Rogue.dll dist\OpenFF\Samples\Rogue\ >nul || goto fail
-rem The Showcase installed as the MODS list and Crystal install a sample (its sample.json), so a later release updates it.
-dist\OpenFF\crystal.exe sample-install dist\OpenFF\Samples\Showcase dist\OpenFF\mods >nul || goto fail
+rem The PlayStation button pictures (Settings > Button icons), which the client reads from pad-icons beside OpenFF.exe.
+robocopy pad-icons dist\OpenFF\pad-icons /e /njh /njs /ndl /nfl /nc /ns >nul
 rem The guide: the HTML tutorials Crystal opens with Help, readable on their own too.
 if exist Docs\Guide robocopy Docs\Guide dist\OpenFF\Guide /e /njh /njs /ndl /nfl /nc /ns >nul
 if exist dist\OpenFF-%VERSION%-win-x64.zip del dist\OpenFF-%VERSION%-win-x64.zip
@@ -48,7 +48,7 @@ if not exist dist\OpenFF-%VERSION%-win-x64.zip goto fail
 rem The zip's SHA-256, which the client checks a downloaded update against before it installs it.
 powershell -NoProfile -Command "$h = (Get-FileHash -Algorithm SHA256 'dist\OpenFF-%VERSION%-win-x64.zip').Hash.ToLower(); Set-Content -NoNewline -Encoding ascii 'dist\OpenFF-%VERSION%-win-x64.zip.sha256' ($h + '  OpenFF-%VERSION%-win-x64.zip')" || goto fail
 echo.
-echo dist\OpenFF: OpenFF.exe plays, crystal.exe edits, mods\ is where mods go.
+echo dist\OpenFF: OpenFF.exe plays, crystal.exe edits, mods\ is where mods go (empty).
 echo dist\OpenFF-%VERSION%-win-x64.zip: the release, and its .sha256 beside it.
 exit /b 0
 

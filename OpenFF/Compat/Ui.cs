@@ -309,30 +309,77 @@ namespace OpenFF.Client
 			}
 		}
 
-		/// <summary>Whether the connected pad speaks PlayStation (glyphs) rather than Xbox (letters).</summary>
-		public static bool PlayStationPad
+		/// <summary>The button icons the player can pick (Settings > Button icons; settings.json's "padStyle"): auto follows the connected pad's name.</summary>
+		public static readonly string[] PadStyles = { "auto", "ps", "xbox", "switch", "keyboard" };
+
+		public static string NormalisePadStyle(string style)
+		{
+			style = (style ?? "").Trim().ToLowerInvariant();
+			if (style == "playstation") return "ps";
+			if (style == "nintendo") return "switch";
+			if (style == "keys" || style == "keycaps") return "keyboard";
+			return Array.IndexOf(PadStyles, style) >= 0 ? style : "auto";
+		}
+
+		public static string PadStyleName(string style)
+		{
+			switch (NormalisePadStyle(style))
+			{
+				case "ps": return "PlayStation";
+				case "xbox": return "Xbox";
+				case "switch": return "Switch";
+				case "keyboard": return "Keyboard";
+				default: return "Auto";
+			}
+		}
+
+		public static string PadStyleNote(string style)
+		{
+			switch (NormalisePadStyle(style))
+			{
+				case "ps": return "Cross, Circle, Square, Triangle, whatever pad is connected";
+				case "xbox": return "A, B, X, Y in Xbox colours, whatever pad is connected";
+				case "switch": return "A, B, X, Y as a Switch pad lays them out (A is the right button), + for menu";
+				case "keyboard": return "keys (Enter, Esc, C, V, Q, E) even with a pad connected";
+				default: return "chosen by the pad's name: PlayStation, Switch or Xbox; keys with no pad";
+			}
+		}
+
+		public enum PadFamily { PlayStation, Xbox, Switch, Keyboard }
+
+		/// <summary>The icons in force: the player's pick (settings.json's "padStyle", or --padstyle= for a run), else the connected pad's name; with no pad, the keyboard's keys.</summary>
+		public static PadFamily Family
 		{
 			get
 			{
-				// settings.json's "padStyle" (ps | xbox) or --padstyle= decides outright; else the pad's name.
-				string style = Options.Get("padstyle") ?? DisplaySettings.Current.PadStyle;
-				if (string.Equals(style, "ps", StringComparison.OrdinalIgnoreCase)) return true;
-				if (string.Equals(style, "xbox", StringComparison.OrdinalIgnoreCase)) return false;
+				switch (NormalisePadStyle(Options.Get("padstyle") ?? DisplaySettings.Current.PadStyle))
+				{
+					case "ps": return PadFamily.PlayStation;
+					case "xbox": return PadFamily.Xbox;
+					case "switch": return PadFamily.Switch;
+					case "keyboard": return PadFamily.Keyboard;
+				}
 				for (int i = 0; i < 4; i++)
 				{
 					try
 					{
 						if (!GamePad.GetState((PlayerIndex)i).IsConnected) continue;
 						string name = GamePad.GetCapabilities((PlayerIndex)i).DisplayName ?? "";
-						return name.IndexOf("PS", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("DualS", StringComparison.OrdinalIgnoreCase) >= 0
+						if (name.IndexOf("Nintendo", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("Switch", StringComparison.OrdinalIgnoreCase) >= 0
+							|| name.IndexOf("Pro Controller", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("Joy-Con", StringComparison.OrdinalIgnoreCase) >= 0) return PadFamily.Switch;
+						bool ps = name.IndexOf("PS", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("DualS", StringComparison.OrdinalIgnoreCase) >= 0
 							|| name.IndexOf("Sony", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("Wireless Controller", StringComparison.OrdinalIgnoreCase) >= 0
 							|| name.IndexOf("PlayStation", StringComparison.OrdinalIgnoreCase) >= 0;
+						return ps ? PadFamily.PlayStation : PadFamily.Xbox;
 					}
 					catch (Exception) { }
 				}
-				return false;
+				return PadFamily.Xbox;
 			}
 		}
+
+		/// <summary>Whether the icons are PlayStation's (the supplied pictures, or the drawn Cross / Circle / Square / Triangle).</summary>
+		public static bool PlayStationPad => Family == PadFamily.PlayStation;
 
 		private static readonly Color PsDark = new Color(30, 34, 50, 255);
 		private static readonly Color PsInk = new Color(232, 236, 248, 255);
@@ -342,6 +389,21 @@ namespace OpenFF.Client
 		public static (string Mark, Color Face, Color Ink) Glyph(PadButton button)
 		{
 			bool ps = PlayStationPad;
+			if (Family == PadFamily.Switch)
+			{
+				// A Switch pad's letters sit where the Xbox's do but are crossed over: the bottom button is B, the right one A.
+				Color plate = new Color(150, 160, 190);
+				switch (button)
+				{
+					case PadButton.A: return ("B", plate, Color.White);
+					case PadButton.B: return ("A", plate, Color.White);
+					case PadButton.X: return ("Y", plate, Color.White);
+					case PadButton.Y: return ("X", plate, Color.White);
+					case PadButton.Start: return ("+", plate, Color.White);
+					case PadButton.L: return ("L", plate, Color.White);
+					default: return ("R", plate, Color.White);
+				}
+			}
 			switch (button)
 			{
 				case PadButton.A: return ps ? ("×", PsDark, new Color(124, 178, 255)) : ("A", new Color(96, 176, 96), Color.White);
@@ -383,6 +445,7 @@ namespace OpenFF.Client
 		{
 			get
 			{
+				if (Family == PadFamily.Keyboard) return false;   // the player picked the keys
 				for (int i = 0; i < 4; i++)
 				{
 					try { if (GamePad.GetState((PlayerIndex)i).IsConnected) return true; } catch (Exception) { }

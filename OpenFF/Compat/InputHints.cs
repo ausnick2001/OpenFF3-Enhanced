@@ -58,7 +58,7 @@ namespace OpenFF.Client
 
 		private void Read()
 		{
-			string device = Ui.PadConnected ? (Ui.PlayStationPad ? "playstation" : "xbox") : "keyboard";
+			string device = Ui.PadConnected ? (Ui.PlayStationPad ? "playstation" : "xbox") : "keyboard";   // a Switch pad reads as "xbox" to mods (A/B/X/Y letters)
 			DisplaySettings.PadMap map = DisplaySettings.Current.Pad ?? new DisplaySettings.PadMap();
 			string was = Device + Ok + Back + X + Y + L + R + Menu + OkButton + BackButton;
 			Device = device;

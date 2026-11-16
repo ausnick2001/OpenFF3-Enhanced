@@ -42,7 +42,7 @@ namespace OpenFF.Client
 				case Page.Main: return new Layout(new Rectangle(152, 70, 496, 340), 150, 43, 36, false);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
-				case Page.Settings: return new Layout(new Rectangle(142, 36, 516, 440), 104, 26, 23f, true);
+				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
 				case Page.Qol: return new Layout(new Rectangle(142, 50, 516, 414), 118, 29, 26, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
@@ -225,12 +225,12 @@ namespace OpenFF.Client
 					CheckNote();
 					break;
 				case Page.Buttons:
-					if (cancel) { _page = Page.Settings; _selected = 9; return; }
+					if (cancel) { _page = Page.Settings; _selected = 10; return; }
 					if (confirm)
 					{
 						if (_selected < DsButtons.Length) { _binding = DsButtons[_selected].Key; _note = "press the pad button for " + DsButtons[_selected].Label + "  (Esc gives up)"; }
 						else if (_selected == DsButtons.Length) { DisplaySettings.Current.Pad = new DisplaySettings.PadMap(); _note = "the defaults are back"; }
-						else { _page = Page.Settings; _selected = 9; }
+						else { _page = Page.Settings; _selected = 10; }
 					}
 					break;
 				case Page.Quit:
@@ -256,7 +256,7 @@ namespace OpenFF.Client
 			switch (_page)
 			{
 				case Page.Main: return MainRows().Length;
-				case Page.Settings: return 11;
+				case Page.Settings: return 12;
 				case Page.Qol: return QolRows;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
@@ -327,9 +327,16 @@ namespace OpenFF.Client
 					if (confirm) { s.Save(); Close(); GameFileCheck.Start(asked: true); }
 					break;
 				case 9:
+				{
+					int i = Array.IndexOf(Ui.PadStyles, Ui.NormalisePadStyle(s.PadStyle));
+					s.PadStyle = Ui.PadStyles[(i + by + Ui.PadStyles.Length) % Ui.PadStyles.Length];
+					_note = Ui.PadStyleNote(s.PadStyle);
+					break;
+				}
+				case 10:
 					if (confirm) { _page = Page.Buttons; _selected = 0; _note = ""; }
 					break;
-				case 10:
+				case 11:
 					if (confirm) { _page = Page.Main; _selected = MainRow("settings"); s.Save(); }
 					break;
 			}
@@ -549,7 +556,8 @@ namespace OpenFF.Client
 						case 6: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						case 7: icon = UiTheme.Icon.Resume; return Kind.Page;
 						case 8: icon = UiTheme.Icon.Save; return Kind.Page;
-						case 9: icon = UiTheme.Icon.Pad; return Kind.Page;
+						case 9: icon = UiTheme.Icon.Pad; return Kind.Stepper;
+						case 10: icon = UiTheme.Icon.Pad; return Kind.Page;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Buttons:
@@ -810,7 +818,8 @@ namespace OpenFF.Client
 						case 6: label = "Updates"; value = Updates.Mode == "auto" ? "Automatic" : Updates.Mode == "off" ? "Off" : "Ask"; return;
 						case 7: label = "Check for updates"; return;
 						case 8: label = "Check game files"; return;
-						case 9: label = "Pad buttons..."; return;
+						case 9: label = "Button icons"; value = Ui.PadStyleName(s.PadStyle); return;
+						case 10: label = "Pad buttons..."; return;
 						default: label = "Back"; return;
 					}
 				case Page.Buttons:

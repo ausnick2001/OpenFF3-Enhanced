@@ -42,7 +42,7 @@ namespace OpenFF.Client
 		/// <summary>The game pad's buttons, DS button -> pad button. Names: cross/circle/square/triangle (or a/b/x/y), l1/r1/l2/r2 (or lb/rb/lt/rt), l3/r3, options/start, share/create/back, touchpad/guide. "none" unbinds.</summary>
 		[JsonPropertyName("pad")] public PadMap Pad { get; set; } = new PadMap();
 		/// <summary>Which glyphs the client's screens show for the pad's buttons: "auto" (by the pad's name), "ps" or "xbox".</summary>
-		[JsonPropertyName("padStyle")] public string PadStyle { get; set; } = "auto";
+		[JsonPropertyName("padStyle")] public string PadStyle { get; set; } = "auto";   // auto | ps | xbox | switch | keyboard (Settings > Button icons)
 		/// <summary>Quality of life, as the Pixel Remaster's boosters (Qol): the game's speed, random encounters, EXP and job EXP, saving anywhere, the job change's adjustment period, the indicator.</summary>
 		[JsonPropertyName("qol")] public QolSettings Qol { get; set; } = new QolSettings();
 		/// <summary>Updates from GitHub's releases (Updates): "ask" offers a new version on the title, "auto" installs it, "off" never looks.</summary>
