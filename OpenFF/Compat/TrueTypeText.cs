@@ -408,6 +408,26 @@ namespace OpenFF.Client
 				int amount = Blur > 0 ? Math.Max(1, (int)Math.Round(Blur * 800f / Math.Max(1, GlobalScope.LCD_WIDTH) * _viewportScale / 2)) : 0;
 				float spacing = Spacing(scale.X);
 				string clean = Clean(text);
+				// The story's lines (the prologue) get a pale glow behind them: the same text in cream, two rings of copies a
+				// little apart, drawn behind the lettering. DisplaySettings.StoryGlow sets how strong (0 none).
+				double glow = DisplaySettings.Current?.StoryGlow ?? 1;
+				if (glow > 0 && NameFace.IsStory(Style))
+				{
+					const int Steps = 16;
+					float[] reach = { 0.07f, 0.14f };
+					float[] weight = { 0.20f, 0.12f };
+					float behind = Math.Min(1f, depth + 0.0002f);
+					for (int ring = 0; ring < reach.Length; ring++)
+					{
+						Color halo = new Color(255, 247, 228) * (float)Math.Min(1.0, weight[ring] * glow);
+						for (int k = 0; k < Steps; k++)
+						{
+							double angle = Math.PI * 2 * k / Steps;
+							Vector2 away = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * (size * reach[ring] * scale.X);
+							styled.DrawText(batch, clean, position + away, halo, rotation, origin * _viewportScale, drawScale, behind, spacing, 0f, decoration, effect, amount);
+						}
+					}
+				}
 				styled.DrawText(batch, clean, position, color, rotation, origin * _viewportScale, drawScale, depth, spacing, 0f, decoration, effect, amount);
 				if (bold) styled.DrawText(batch, clean, position + new Vector2(BoldOffset(size) * scale.X, 0), color, rotation, origin * _viewportScale, drawScale, depth, spacing, 0f, decoration, effect, amount);
 				return;

@@ -17,20 +17,24 @@ namespace OpenFF.Client
 
 		private static OpenFF.Content.MenuText _story;
 
-		/// <summary>The lettering for the centred story text over a picture (the cutscenes' lines), in the same font; null with no name-font.</summary>
+		/// <summary>The lettering for the centred story text over a picture (the cutscenes' lines): the name font, else the game's face.</summary>
 		public static OpenFF.Content.MenuText Story
 		{
 			get
 			{
 				if (_story != null) return _story;
 				OpenFF.Content.MenuText name = Style;
-				if (name == null) return null;
-				_story = new OpenFF.Content.MenuText { Scale = 0.85f };
-				_story.Families.AddRange(name.Families);
-				Log.Write(LogChannel.General, "text: centred story lines in the name font");
+				// With no name font the lines keep the game's own face at its own size (no families, scale 1), as a style
+				// of their own so the glow (TrueTypeText.Draw) is drawn behind them all the same.
+				_story = new OpenFF.Content.MenuText { Scale = name == null ? 1f : 0.85f };
+				if (name != null) _story.Families.AddRange(name.Families);
+				Log.Write(LogChannel.General, name == null ? "text: centred story lines in the game's face" : "text: centred story lines in the name font");
 				return _story;
 			}
 		}
+
+		/// <summary>Whether a lettering is the story lines' (drawn with a pale glow behind it so it reads over the picture).</summary>
+		public static bool IsStory(OpenFF.Content.MenuText style) => style != null && ReferenceEquals(style, _story);
 
 		/// <summary>The lettering for a speaker's name, or null when there is no name-font to use.</summary>
 		public static OpenFF.Content.MenuText Style
