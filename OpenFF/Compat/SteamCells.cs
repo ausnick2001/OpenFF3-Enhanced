@@ -109,17 +109,21 @@ namespace OpenFF.Client
 				return false;
 			}
 			int sheetW = png[0], sheetH = png[1];
+			// A mod's larger title picture (see FitSheet) is read through the same cells,
+			// their rectangles scaled by its size over Steam's 300 px wide sheet.
+			int k = sheetW >= 600 ? sheetW / 300 : 1;
 			short[] a = new short[7];
 			foreach (GlobalScope.NNSG2dCellOAMAttrData oam in oams)
 			{
 				oam.copy(a, 14);
 				oam.source(out short sw, out short sh);
 				DrawnRect(oam, out int x, out _, out int w, out _);
-				int u = a[4], v = a[5];
+				int u = a[4] * k, v = a[5] * k;
 				if (sw <= 0 || sh <= 0 || w <= 0)
 				{
 					continue;
 				}
+				sw = (short)(sw * k); sh = (short)(sh * k);
 				int min = int.MaxValue, max = int.MinValue;
 				for (int px = Math.Max(0, u); px < Math.Min(sheetW, u + sw); px++)
 				{
@@ -258,6 +262,38 @@ namespace OpenFF.Client
 			catch (Exception ex)
 			{
 				Log.Write(LogChannel.File, "steam cells: table unreadable: " + ex.Message);
+			}
+		}
+
+		/// <summary>
+		/// The sheets whose picture a mod may replace with a larger one (an upscale), and the
+		/// size Steam's own picture has. The cells' source rectangles are in Steam's pixels, so
+		/// a larger picture is read through the same rectangles scaled by its size over this.
+		/// </summary>
+		private static readonly Dictionary<string, int[]> _scalableSheets = new Dictionary<string, int[]>(StringComparer.OrdinalIgnoreCase)
+		{
+			["title_items_i.NCGR"] = new[] { 300, 150 },
+		};
+
+		/// <summary>
+		/// Called after a sheet is loaded: when it is one of the scalable ones and the picture
+		/// is larger than Steam's (a whole multiple is expected: 2x or 4x), the texture
+		/// coordinates are scaled to match, so the cells still pick out the same words.
+		/// </summary>
+		public static void FitSheet(string name, byte[] png, GlobalScope.NNSG2dImageProxy proxy)
+		{
+			if (string.IsNullOrEmpty(name) || png == null || png.Length < 24 || proxy?.data == null
+				|| !_scalableSheets.TryGetValue(Path.GetFileName(name), out int[] baseSize))
+			{
+				return;
+			}
+			int w = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+			int h = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+			if (w > baseSize[0] && h > baseSize[1])
+			{
+				proxy.data.texScaleU *= (float)w / baseSize[0];
+				proxy.data.texScaleV *= (float)h / baseSize[1];
+				Log.Write(LogChannel.File, "steam cells: " + Path.GetFileName(name) + " is " + w + "x" + h + ", drawn through its " + baseSize[0] + "x" + baseSize[1] + " cells");
 			}
 		}
 

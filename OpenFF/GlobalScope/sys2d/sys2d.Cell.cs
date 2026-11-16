@@ -73,6 +73,8 @@ internal static partial class GlobalScope
 					{
 						SVC_WaitVBlankIntr();
 						NNS_G2dLoadImage1DMapping(m_Ncgr.pDataCg(), baseAddr, DS2D_VRAM_TYPE[(int)plane], m_ImageProxy);
+						// PORT: a mod's larger picture for a title sheet is read through Steam's cells (SteamCells.FitSheet).
+						OpenFF.Client.SteamCells.FitSheet(pCg, m_Ncgr.pDataCg().m_aPng as byte[], m_ImageProxy);
 					}
 					else
 					{
