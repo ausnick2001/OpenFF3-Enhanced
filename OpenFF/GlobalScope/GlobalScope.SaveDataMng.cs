@@ -151,18 +151,9 @@ internal static partial class GlobalScope
 				_pSD[nSlot] = reinterpret_cast<card.CSaveData>(ds.CHeap.alloc_app(typeof(card.CSaveData)));
 				if (_pSD[nSlot] != null)
 				{
-					// PORT: a preview read must not replace the live job progress.
-					OpenFF.Client.ProgressionLayer.Previewing = true;
-					try
+					_pSD[nSlot].sdLoad(nSlot, sub: false);
+					while (!_pSD[nSlot].sdExecute())
 					{
-						_pSD[nSlot].sdLoad(nSlot, sub: false);
-						while (!_pSD[nSlot].sdExecute())
-						{
-						}
-					}
-					finally
-					{
-						OpenFF.Client.ProgressionLayer.Previewing = false;
 					}
 					if (_pSD[nSlot].sdCheck())
 					{

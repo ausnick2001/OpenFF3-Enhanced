@@ -2,7 +2,8 @@
   "id": "freelancer",
   "job": "freelancer",
   "name": "Freelancer",
-  "commands": ["attack", "magic", "*", "item"],
+  "commands": ["attack", "*", "*", "item"],
+  "inherits": true,
   "abilities": [
   ]
 }
