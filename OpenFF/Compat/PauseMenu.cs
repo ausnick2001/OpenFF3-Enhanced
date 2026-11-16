@@ -448,7 +448,7 @@ namespace OpenFF.Client
 				case 3: return "job EXP from each action in battle, multiplied";
 				case 4: return "Save in the menu on any map, towns and dungeons too";
 				case 5: return "off: no lowered stats for a few battles after a job change";
-				case 6: return "off: the game's own order of play - every hero's command first, then the round; from the next battle";
+				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
 				case 7: return "a note in the corner of what is on";
 				default: return "";
 			}
