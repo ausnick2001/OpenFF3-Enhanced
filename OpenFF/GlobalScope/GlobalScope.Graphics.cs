@@ -302,7 +302,7 @@ internal static partial class GlobalScope
 
             _fit = fit;
             spBatch.Begin(SpriteSortMode.FrontToBack, BlendState.AlphaBlend, SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, fit);
-            depth = 0f;
+            depth = 0.01f;   // PORT: a little above 0, so a text's glow (drawn a hair behind it) is never at a depth below the sprite batch's 0
         }
 
         // The text pass's matrix, for a slanted text's batch of its own.
