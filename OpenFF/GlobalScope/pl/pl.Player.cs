@@ -286,12 +286,6 @@ internal static partial class GlobalScope
 						handAttack_[(int)hand].aggressivity().add(jobManager_.nowJobParameter().skill().skillLevel()
 							.get());
 					}
-					else
-					{
-						// PORT: FF5's Barehanded (a mastery passive) strikes unarmed as a Monk does, by the Monk job's skill.
-						int barehanded = OpenFF.Client.ProgressionLayer.BarehandedSkill(this);
-						if (barehanded > 0) handAttack_[(int)hand].aggressivity().add(barehanded);
-					}
 					return;
 				}
 				weaponParameter = ((equipParameter().equipHand(hand).itemId() != -99 && equipParameter().equipHand(hand).itemId() > 0 && equipParameter().equipHand(hand).checkCategory() == itm.CATEGORY.CATEGORY_WEAPON) ? itm.ItemManager.instance().weaponParameter(equipParameter().equipHand(hand).itemId()) : itm.ItemManager.instance().weaponParameter(1000));

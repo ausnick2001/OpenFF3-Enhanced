@@ -90,13 +90,7 @@ internal static partial class GlobalScope
 					// PORT: FF5's Barehanded (a mastery passive) lets any job strike unarmed as a Monk does.
 					if (jOB_TYPE != pl.JOB_TYPE.MONK && jOB_TYPE != pl.JOB_TYPE.KARATE_MASTER)
 					{
-						if (OpenFF.Client.ProgressionLayer.HasInBattle(battlePlayer, OpenFF.Data.Ff3Abilities.Barehanded))
-						{
-							// as a Monk: the Monk job's skill, not the held job's
-							int monkSkill = OpenFF.Client.ProgressionLayer.BarehandedSkill(battlePlayer.player());
-							if (monkSkill > num) num = monkSkill;
-							OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "progression: Barehanded - " + battlePlayer.player().name() + " strikes unarmed with job skill " + num);
-						}
+						if (OpenFF.Client.ProgressionLayer.HasInBattle(battlePlayer, OpenFF.Data.Ff3Abilities.Barehanded)) OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "progression: Barehanded - " + battlePlayer.player().name() + " strikes unarmed with job skill " + num);
 						else num = 1;
 					}
 				}

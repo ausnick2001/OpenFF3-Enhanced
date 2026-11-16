@@ -427,20 +427,6 @@ namespace OpenFF.Client
 			return true;
 		}
 
-		/// <summary>The Monk's job skill level a hero strikes unarmed with by Barehanded (FF5's passive, any job): -1 when they do not have it in play or already are a Monk. The menu's attack and the battle's unarmed damage both read it.</summary>
-		public static int BarehandedSkill(GlobalScope.pl.Player player)
-		{
-			try
-			{
-				if (player == null || !GameProfile.Ff3Party) return -1;
-				int held = player.jobManager().nowJob();
-				if (held == (int)GlobalScope.pl.JOB_TYPE.MONK || held == (int)GlobalScope.pl.JOB_TYPE.KARATE_MASTER) return -1;
-				if (!Has(player, Ff3Abilities.Barehanded)) return -1;
-				return player.jobManager().job(GlobalScope.pl.JOB_TYPE.MONK).skill().skillLevel().get();
-			}
-			catch (Exception) { return -1; }
-		}
-
 		/// <summary>After a job change or a change of set abilities: whatever the hero wears and may no longer wear (the new job's permissions plus the grants still in play) goes back to the bag. The game's own Job menu takes everything off; a mastery hero keeps what is still allowed.</summary>
 		public static void StripIllegalGear(GlobalScope.pl.Player player)
 		{
