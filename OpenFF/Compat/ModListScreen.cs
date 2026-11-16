@@ -336,6 +336,10 @@ namespace OpenFF.Client
 				{
 					DrawTitleLabel(graphics);
 				}
+				else if (GlobalScope.ttl.TitlePromptUp)
+				{
+					DrawTitlePrompt(graphics);
+				}
 				return;
 			}
 			EnsureResources();
@@ -469,6 +473,39 @@ namespace OpenFF.Client
 				text += "  - skipped: " + mod.Skipped;
 			}
 			return text;
+		}
+
+		/// <summary>The start prompt as text, centred, in the title's face and lettering colour.</summary>
+		private void DrawTitlePrompt(GlobalScope.Graphics graphics)
+		{
+			string text = Localization.Get(Localization.Keys.TitlePrompt);
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			float ox = (480 - GlobalScope.LCD_WIDTH) / 2f;
+			float oy = (320 - GlobalScope.LCD_HEIGHT) / 2f;
+			float width = GlobalScope.ttl.TitleLabelWidth(text);
+			float x = (480 - width) / 2f;
+			float tx = (x - ox) / GlobalScope.LCD_WIDTH * TextSpaceWidth + GlobalScope.ttl.TITLE_LABEL_NUDGE_X;
+			float ty = (GlobalScope.ttl.TITLE_PROMPT_Y - oy) / GlobalScope.LCD_HEIGHT * TextSpaceHeight + GlobalScope.ttl.TITLE_LABEL_DROP;
+			graphics.SetImageOrigin(0f, 0f);
+			graphics.SetImageRotation(0f);
+			graphics.SetImageScale(1f, 1f);
+			graphics.DrawStringStart();
+			TrueTypeText.TitleFace = true;
+			graphics.SetImageScale(GlobalScope.ttl.TITLE_LABEL_SCALE_X, 1f);
+			try
+			{
+				SetColour(graphics, 0x282828FFu, 1f);
+				graphics.DrawString(text, tx, ty, GlobalScope.ttl.TITLE_LABEL_SIZE);
+			}
+			finally
+			{
+				TrueTypeText.TitleFace = false;
+				graphics.SetImageScale(1f, 1f);
+			}
+			graphics.DrawStringEnd();
 		}
 
 		/// <summary>The title's text labels where its commands sit, in the title's own LCD units and its face.</summary>

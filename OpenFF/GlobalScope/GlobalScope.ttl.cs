@@ -857,6 +857,7 @@ internal static partial class GlobalScope
 
             public void terminate()
             {
+                TitlePromptUp = false;
                 logoSprite[0].Release();
                 sys2d.DS2DManager.d2dGetInstance().d2dDeleteSprite(logoSprite[0]);
                 logoSprite[1].Release();
@@ -1003,11 +1004,15 @@ internal static partial class GlobalScope
             {
                 logoSprite[1].SetShow(show: false);
                 logoSprite[0].SetShow(show: true);
-                touch.SetShow(show: true);
+                // OpenFF: the start prompt is text in the title's face when it has one (crisp at any window size);
+                // --title-prompt-picture keeps Steam's picture.
+                TitlePromptUp = OpenFF.Client.TrueTypeText.HasTitleFace && string.IsNullOrEmpty(OpenFF.Client.Options.Get("title-prompt-picture"));
+                touch.SetShow(show: !TitlePromptUp);
             }
 
             public void SetUpMainSelect()
             {
+                TitlePromptUp = false;
                 touch.SetShow(show: false);
                 for (int num = titleCommands.size() - 1; num >= 0; num--)
                 {
@@ -1499,6 +1504,9 @@ internal static partial class GlobalScope
         public static int TITLE_CURSOR_LIFT = -3;        // the hand level with the words, as Steam's is
 
         private static int titleLabelInset;
+
+        /// <summary>OpenFF: whether the start prompt is up as text (ModListScreen draws it); the picture is hidden then.</summary>
+        public static bool TitlePromptUp;
 
         // The text labels in Times New Roman against Steam's pictures of the same words (measured over them):
         // the same cap height at 12, set 3.5% narrower, and moved in to where the pictures' words start.
