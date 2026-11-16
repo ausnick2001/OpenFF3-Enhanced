@@ -416,7 +416,7 @@ namespace OpenFF.Client
 					const int Steps = 16;
 					float[] reach = { 0.07f, 0.14f };
 					float[] weight = { 0.20f, 0.12f };
-					float behind = Math.Min(1f, depth + 0.0002f);
+					float behind = depth - 0.0002f;   // this batch sorts front to back with the larger depth nearer, so smaller is behind
 					for (int ring = 0; ring < reach.Length; ring++)
 					{
 						Color halo = new Color(255, 247, 228) * (float)Math.Min(1.0, weight[ring] * glow);
