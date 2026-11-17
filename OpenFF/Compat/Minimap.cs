@@ -30,9 +30,9 @@ namespace OpenFF.Client
 	internal sealed class Minimap : DrawableGameComponent
 	{
 		private const int CellFx = 2 * 4096;        // a cell is 2 units
-		private const int Radius = 11;              // cells shown each way from the party
-		private const int PerFrameNew = 28;         // cells probed per frame that have never been probed
-		private const int PerFrameStale = 6;        // and ones probed again
+		private const int Radius = 22;              // cells shown each way from the party
+		private const int PerFrameNew = 56;         // cells probed per frame that have never been probed
+		private const int PerFrameStale = 10;        // and ones probed again
 		private const int StaleFrames = 120;        // how old a cell is before it is probed again
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
 		private const int FloorRange = 24576;       // 6 units: ground further from the party's than this is another floor
@@ -49,7 +49,7 @@ namespace OpenFF.Client
 		private bool _failed;
 		private bool _haveFixed;
 		private float _fixedX, _fixedZ;   // the camera's way when the map was entered, for the fixed map
-		private static readonly float[] Sizes = { 0.22f, 0.30f, 0.40f };
+		private static readonly float[] Sizes = { 0.26f, 0.34f, 0.44f };
 
 		private SpriteBatch _batch;
 		private Texture2D _pixel;
@@ -264,7 +264,7 @@ namespace OpenFF.Client
 			GraphicsDevice.ScissorRectangle = box;
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { ScissorTestEnable = true });
 			bool solid = Qol.MinimapOpaque;
-			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 110));
+			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 90));
 
 			Vector2 centre = new Vector2(box.X + size / 2f, box.Y + size / 2f);
 			// The party's place inside its cell, so the picture slides smoothly as it walks.
@@ -272,7 +272,7 @@ namespace OpenFF.Client
 			float offZ = pz / (float)CellFx - CellOf(pz) - 0.5f;
 			int pcx = CellOf(px), pcz = CellOf(pz);
 			Vector2 origin = new Vector2(0.5f, 0.5f);
-			float cell = scale * 1.12f;   // a little over, so turned squares leave no gaps
+			float cell = scale + 0.8f;   // a little over, so turned squares leave no gaps
 
 			for (int dz = -Radius; dz <= Radius; dz++)
 			{
@@ -285,10 +285,10 @@ namespace OpenFF.Client
 					float v = ox * fx + oz * fz;
 					Vector2 at = centre + new Vector2(u * scale, -v * scale);
 					bool marked = c.State == Secret && Qol.MinimapPassages;
-					Color colour = marked ? new Color(255, 150, 60, solid ? 255 : 220)
-						: c.State == Wall || c.State == Secret ? new Color(205, 215, 235, solid ? 255 : 200)
-						: c.State == Exit ? new Color(90, 220, 120, solid ? 255 : 220)
-						: new Color(46, 70, 110, solid ? 255 : 150);
+					Color colour = marked ? new Color(255, 150, 60, 255)
+						: c.State == Wall || c.State == Secret ? new Color(205, 215, 235, 255)
+						: c.State == Exit ? new Color(90, 220, 120, 255)
+						: new Color(40, 62, 100, 255);
 					_batch.Draw(_pixel, at, null, colour, rotation, origin, cell, SpriteEffects.None, 0f);
 				}
 			}

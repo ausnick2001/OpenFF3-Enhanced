@@ -462,7 +462,7 @@ namespace OpenFF.Client
 				case 0: return "a small map of the walls around you, in dungeons and caves";
 				case 1: return "off: north stays up, as the camera first looked;  on: up is where the camera looks";
 				case 2: return "how big the map is in its corner";
-				case 3: return "transparent shows the game through the map";
+				case 3: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
 				case 4: return "a marker on each chest not yet opened";
 				case 5: return "off: a secret passage looks like any wall;  on: walls that can open are marked";
 				default: return "";
