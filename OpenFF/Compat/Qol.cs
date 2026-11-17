@@ -53,9 +53,6 @@ namespace OpenFF.Client
 		/// <summary>Whether FF3's battles play turn by turn (the menu's Turn-based battles; --classic-battle turns it off for a run).</summary>
 		public static bool TurnBased => S.TurnBased;
 
-		/// <summary>Dialogue text shown whole at once.</summary>
-		public static bool InstantText => S.InstantText;
-
 		/// <summary>Whether a job change brings the adjustment period (stats lowered for a few battles), as the game has it.</summary>
 		public static bool JobAdjustment => S.JobAdjustment;
 

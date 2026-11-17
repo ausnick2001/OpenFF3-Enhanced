@@ -225,7 +225,7 @@ internal static partial class GlobalScope
 								m_StartCount = 0u;
 								m_EndCount = 0u;
 								dGSMessage.pageForward();
-								dGSMessage.setDisplaySpeed(OpenFF.Client.Qol.InstantText ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);
+								dGSMessage.setDisplaySpeed(mwDEFAULT_DISPLAY_SPEED);
 								mwResetMessageWait_();
 							}
 						}
@@ -391,7 +391,7 @@ internal static partial class GlobalScope
 					if (m_Bar) vector.vy = (short)(285 - (vector2.vy >> 1));   // PORT: and its capitals' middle at Steam's, 285.8 of 320
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
-				dGSMessage.setDisplaySpeed(m_Bar || OpenFF.Client.Qol.InstantText ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);   // PORT: FF4's scene bar shows its line whole (EventConteManager::createMessage draws the text at once)
+				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);   // PORT: FF4's scene bar shows its line whole (EventConteManager::createMessage draws the text at once)
 				dGSMessage.setShadow(m_MessageShadow && !m_Bar);   // PORT: the Steam bar's line has no shadow
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
@@ -452,7 +452,7 @@ internal static partial class GlobalScope
 					if (m_Bar) vector.vy = (short)(285 - (vector2.vy >> 1));   // PORT: and its capitals' middle at Steam's, 285.8 of 320
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
-				dGSMessage.setDisplaySpeed(m_Bar || OpenFF.Client.Qol.InstantText ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);
+				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);
 				dGSMessage.setShadow(m_MessageShadow && !m_Bar);   // PORT: the Steam bar's line has no shadow
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
@@ -710,13 +710,6 @@ internal static partial class GlobalScope
 				dgs.DGSMessage dGSMessage = mm[m_Display].Message(m_MessageId);
 				if (dGSMessage != null)
 				{
-					if (OpenFF.Client.Qol.InstantText)
-					{
-						// OpenFF: the setting's instant text - the page whole at once, no wait between letters.
-						dGSMessage.setDisplaySpeed(byte.MaxValue);
-						dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
-						return;
-					}
 					switch (opt.COptionManager.getSingleton().messageOption().messageSpeed())
 					{
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_SLOW:
