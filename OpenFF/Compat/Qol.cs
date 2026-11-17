@@ -55,6 +55,11 @@ namespace OpenFF.Client
 
 		/// <summary>The dungeon minimap is on.</summary>
 		public static bool Minimap => S.Minimap;
+		public static bool MinimapRotate => S.MinimapRotate;
+		public static int MinimapSize => S.MinimapSize;
+		public static bool MinimapOpaque => S.MinimapOpaque;
+		public static bool MinimapChests => S.MinimapChests;
+		public static bool MinimapPassages => S.MinimapPassages;
 
 		/// <summary>Whether a job change brings the adjustment period (stats lowered for a few battles), as the game has it.</summary>
 		public static bool JobAdjustment => S.JobAdjustment;

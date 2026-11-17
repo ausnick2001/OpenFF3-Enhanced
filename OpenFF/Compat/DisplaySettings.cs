@@ -96,6 +96,16 @@ namespace OpenFF.Client
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>A small map of the walls about the party in the corner of the screen, in dungeons and caves (Minimap.cs).</summary>
 			[JsonPropertyName("minimap")] public bool Minimap { get; set; } = true;
+			/// <summary>The minimap turns with the camera (up is where it looks); false keeps it fixed, as the camera first looked.</summary>
+			[JsonPropertyName("minimapRotate")] public bool MinimapRotate { get; set; }
+			/// <summary>0 small, 1 medium, 2 large.</summary>
+			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 1;
+			/// <summary>A solid map; false lets the game show through.</summary>
+			[JsonPropertyName("minimapOpaque")] public bool MinimapOpaque { get; set; }
+			/// <summary>A marker on each chest not yet opened.</summary>
+			[JsonPropertyName("minimapChests")] public bool MinimapChests { get; set; } = true;
+			/// <summary>Walls that can open (secret passages) marked in their own colour; false draws them as walls.</summary>
+			[JsonPropertyName("minimapPassages")] public bool MinimapPassages { get; set; }
 			/// <summary>The corner's note of what is on.</summary>
 			[JsonPropertyName("indicator")] public bool Indicator { get; set; } = true;
 		}

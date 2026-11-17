@@ -39,7 +39,8 @@ namespace OpenFF.Client
 		{
 			switch (page)
 			{
-				case Page.Main: return new Layout(new Rectangle(152, 56, 496, 368), 136, 43, 36, false);
+				case Page.Main: return new Layout(new Rectangle(152, 44, 496, 392), 120, 41, 34, false);
+				case Page.Map: return new Layout(new Rectangle(142, 50, 516, 400), 118, 33, 28, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
@@ -51,7 +52,7 @@ namespace OpenFF.Client
 		public static PauseMenu Instance { get; private set; }
 		public static bool IsOpen => Instance != null && Instance._page != Page.Closed;
 
-		private enum Page { Closed, Main, Settings, Buttons, Qol, Quit }
+		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Quit }
 		private Page _page = Page.Closed;
 		private int _selected;
 		private string _binding;            // the DS button being rebound, while a press is awaited
@@ -78,7 +79,7 @@ namespace OpenFF.Client
 		{
 			List<string> rows = new List<string> { "resume" };
 			if (AbilitiesRow) rows.Add("abilities");
-			rows.Add("settings"); rows.Add("qol");
+			rows.Add("settings"); rows.Add("qol"); rows.Add("map");
 			if (CanLeaveToTitle) rows.Add("reset");
 			rows.Add("exit");
 			return rows.ToArray();
@@ -238,6 +239,7 @@ namespace OpenFF.Client
 						if (id == "resume") Close();
 						else if (id == "settings") { _page = Page.Settings; _selected = 0; _note = ""; }
 						else if (id == "qol") { _page = Page.Qol; _selected = 0; _note = QolNote(0); }
+						else if (id == "map") { _page = Page.Map; _selected = 0; _note = MapNote(0); }
 						else { _leave = id; _page = Page.Quit; _selected = 1; }
 					}
 					break;
@@ -245,6 +247,11 @@ namespace OpenFF.Client
 					if (cancel) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); return; }
 					if (up || downKey) _note = QolNote(_selected);
 					if (left || right || confirm) ChangeQol(_selected, left ? -1 : 1, confirm);
+					break;
+				case Page.Map:
+					if (cancel) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); return; }
+					if (up || downKey) _note = MapNote(_selected);
+					if (left || right || confirm) ChangeMap(_selected, left ? -1 : 1, confirm);
 					break;
 				case Page.Settings:
 					if (cancel) { _page = Page.Main; _selected = MainRow("settings"); DisplaySettings.Current.Save(); return; }
@@ -286,6 +293,7 @@ namespace OpenFF.Client
 				case Page.Main: return MainRows().Length;
 				case Page.Settings: return 12;
 				case Page.Qol: return QolRows;
+				case Page.Map: return MapRows;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -422,10 +430,56 @@ namespace OpenFF.Client
 			}
 		}
 
+		// ---- minimap ----
+
+		// Minimap, Rotation, Size, Style, Chests, Hidden passages, Back.
+		private const int MapRows = 7;
+
+		private static readonly string[] MapSizes = { "Small", "Medium", "Large" };
+
+		private void ChangeMap(int row, int by, bool confirm)
+		{
+			DisplaySettings.QolSettings q = Qol.S;
+			switch (row)
+			{
+				case 0: q.Minimap = !q.Minimap; Qol.Changed("minimap " + (q.Minimap ? "on" : "off")); break;
+				case 1: q.MinimapRotate = !q.MinimapRotate; Qol.Changed("minimap " + (q.MinimapRotate ? "turns with the camera" : "fixed")); break;
+				case 2: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
+				case 3: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
+				case 4: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
+				case 5: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
+				case 6:
+					if (confirm) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); }
+					return;
+			}
+			_note = MapNote(row);
+		}
+
+		private static string MapNote(int row)
+		{
+			switch (row)
+			{
+				case 0: return "a small map of the walls around you, in dungeons and caves";
+				case 1: return "off: north stays up, as the camera first looked;  on: up is where the camera looks";
+				case 2: return "how big the map is in its corner";
+				case 3: return "transparent shows the game through the map";
+				case 4: return "a marker on each chest not yet opened";
+				case 5: return "off: a secret passage looks like any wall;  on: walls that can open are marked";
+				default: return "";
+			}
+		}
+
+		/// <summary>The main page's row: the map's state in a few words.</summary>
+		private static string MapSummary()
+		{
+			DisplaySettings.QolSettings q = Qol.S;
+			return q.Minimap ? MapSizes[Math.Clamp(q.MinimapSize, 0, 2)].ToLowerInvariant() + (q.MinimapRotate ? ", turns" : ", fixed") : "off";
+		}
+
 		// ---- quality of life ----
 
 		// Speed, Random encounters, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Indicator, Back.
-		private const int QolRows = 10;
+		private const int QolRows = 9;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -462,14 +516,10 @@ namespace OpenFF.Client
 					Qol.Changed("turn-based battles " + (q.TurnBased ? "on" : "off"));
 					break;
 				case 7:
-					q.Minimap = !q.Minimap;
-					Qol.Changed("minimap " + (q.Minimap ? "on" : "off"));
-					break;
-				case 8:
 					q.Indicator = !q.Indicator;
 					Qol.Changed("indicator " + (q.Indicator ? "on" : "off"));
 					break;
-				case 9:
+				case 8:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -488,8 +538,7 @@ namespace OpenFF.Client
 				case 4: return "Save in the menu on any map, towns and dungeons too";
 				case 5: return "off: no lowered stats for a few battles after a job change";
 				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
-				case 7: return "on: a small map of the walls around you in dungeons";
-				case 8: return "a note in the corner of what is on";
+				case 7: return "a note in the corner of what is on";
 				default: return "";
 			}
 		}
@@ -558,7 +607,7 @@ namespace OpenFF.Client
 				{
 					string[] rows = MainRows();
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
-					icon = id == "resume" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : id == "reset" ? UiTheme.Icon.Settings : UiTheme.Icon.Exit;
+					icon = id == "resume" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : id == "map" ? UiTheme.Icon.Window : id == "reset" ? UiTheme.Icon.Settings : UiTheme.Icon.Exit;
 					return Kind.None;
 				}
 				case Page.Qol:
@@ -573,8 +622,21 @@ namespace OpenFF.Client
 						case 4: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
 						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
-						case 7: icon = UiTheme.Icon.Window; on = q.Minimap; return Kind.Switch;
-						case 8: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
+						case 7: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
+						default: icon = UiTheme.Icon.Back; return Kind.None;
+					}
+				}
+				case Page.Map:
+				{
+					DisplaySettings.QolSettings q = Qol.S;
+					switch (row)
+					{
+						case 0: icon = UiTheme.Icon.Window; on = q.Minimap; return Kind.Switch;
+						case 1: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 4: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
+						case 5: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -602,7 +664,7 @@ namespace OpenFF.Client
 			}
 		}
 
-		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
+		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
 
 		public override void Draw(GameTime gameTime)
 		{
@@ -682,12 +744,13 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "reset" ? "Reset?" : "Exit game?";
 				Ui.Left(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
 				string sub = _page == Page.Main ? "The game goes on behind this."
 					: _page == Page.Settings ? "Kept in settings.json."
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
+					: _page == Page.Map ? "A corner map for dungeons."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
 				float subX = titleX + Ui.Width(graphics, title, titleSize) + 18, room = panel.Right - 30 - subX;
@@ -738,7 +801,7 @@ namespace OpenFF.Client
 
 		private (Ui.PadButton, string)[] Hints()
 		{
-			if (_page == Page.Settings || _page == Page.Qol) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
+			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
 			if (_page == Page.Buttons) return new[] { (Ui.PadButton.A, _binding == null ? "Bind" : "Press a button"), (Ui.PadButton.B, "Back") };
 			return new[] { (Ui.PadButton.A, "Select"), (Ui.PadButton.B, "Back") };
 		}
@@ -820,8 +883,9 @@ namespace OpenFF.Client
 					string[] rows = MainRows();
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
 					if (id == "abilities") { label = "Abilities"; value = "job ladders, free slots"; return; }
-					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "reset" ? "Reset" : "Exit game";
+					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "reset" ? "Reset" : "Exit game";
 					if (id == "qol") value = QolSummary();
+					else if (id == "map") value = MapSummary();
 					else if (id == "reset") value = "back to the title";
 					return;
 				}
@@ -837,8 +901,21 @@ namespace OpenFF.Client
 						case 4: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
 						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
-						case 7: label = "Minimap"; value = q.Minimap ? "On" : "Off"; return;
-						case 8: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
+						case 7: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
+						default: label = "Back"; return;
+					}
+				}
+				case Page.Map:
+				{
+					DisplaySettings.QolSettings q = Qol.S;
+					switch (row)
+					{
+						case 0: label = "Minimap"; value = q.Minimap ? "On" : "Off"; return;
+						case 1: label = "Rotation"; value = q.MinimapRotate ? "Turns with the camera" : "Fixed"; return;
+						case 2: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
+						case 3: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
+						case 4: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
+						case 5: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
 						default: label = "Back"; return;
 					}
 				}

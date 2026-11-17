@@ -37,7 +37,7 @@ namespace OpenFF.Client
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
 		private const int FloorRange = 24576;       // 6 units: ground further from the party's than this is another floor
 
-		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3;
+		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4;   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
 		private struct Cell { public byte State; public int Stamp; }
 
@@ -47,6 +47,9 @@ namespace OpenFF.Client
 		private int _frame;
 		private int _staleAt;
 		private bool _failed;
+		private bool _haveFixed;
+		private float _fixedX, _fixedZ;   // the camera's way when the map was entered, for the fixed map
+		private static readonly float[] Sizes = { 0.22f, 0.30f, 0.40f };
 
 		private SpriteBatch _batch;
 		private Texture2D _pixel;
@@ -83,7 +86,7 @@ namespace OpenFF.Client
 				if (!Visible()) return;
 				if (!Locate(out int px, out int py, out int pz)) return;
 				string stage = GlobalScope.stg.CStageMng.CurrentName ?? "";
-				if (stage != _stage) { _stage = stage; _cells.Clear(); _staleAt = 0; }
+				if (stage != _stage) { _stage = stage; _cells.Clear(); _staleAt = 0; _haveFixed = false; }
 				_frame++;
 				Probe(px, py, pz);
 				Paint(px, pz);
@@ -204,10 +207,32 @@ namespace OpenFF.Client
 					if (!r.rorActivity()) continue;
 					_probe.set(x, groundY, z);
 					if (r.rorEvaluateSphere(_probe, _ahead, WallRadiusFx, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_WALL_01 + i, _result)
-						&& !(_result.normal.x == 0 && _result.normal.y == 0 && _result.normal.z == 0)) return Wall;
+						&& !(_result.normal.x == 0 && _result.normal.y == 0 && _result.normal.z == 0)) return i == 0 ? Wall : Secret;
 				}
 			}
 			return Floor;
+		}
+
+		private void PaintChests(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box)
+		{
+			GlobalScope.pl.CPlayerManager players = GlobalScope.wld.CBaseSystem.Current.PlayerMng();
+			Color tint = new Color(255, 120, 200, 255);
+			for (int i = 0; i < (int)GlobalScope.pl.MAP_OBJECT_NUM; i++)
+			{
+				GlobalScope.map.CMapObject o = players.MapObject(i);
+				if (o == null || o.getCharacterId() == -1) continue;
+				if (o.MapObjType() != GlobalScope.map.MAP_OBJECT_TYPE.TREASURE_BOX) continue;
+				if (GlobalScope.FlagManager.singleton().get(o.getFlagGroup(), o.getFlagIndex()) != 0) continue;   // opened
+				_pos.copy(o.getPosition());
+				GlobalScope.MTX_MultVec43(_pos, _inv, _local);
+				float ox = (_local.x - px) / (float)CellFx, oz = (_local.z - pz) / (float)CellFx;
+				float u = ox * (-fz) + oz * fx, v = ox * fx + oz * fz;
+				Vector2 at = centre + new Vector2(u * scale, -v * scale);
+				if (at.X < box.X + 3 || at.X > box.Right - 3 || at.Y < box.Y + 3 || at.Y > box.Bottom - 3) continue;
+				float d = Math.Max(5f, scale * 1.5f);
+				_batch.Draw(_pixel, at, null, new Color(20, 10, 30, 255), 0f, new Vector2(0.5f, 0.5f), d + 2f, SpriteEffects.None, 0f);
+				_batch.Draw(_pixel, at, null, tint, 0f, new Vector2(0.5f, 0.5f), d, SpriteEffects.None, 0f);
+			}
 		}
 
 		private void Paint(int px, int pz)
@@ -216,7 +241,7 @@ namespace OpenFF.Client
 			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
 
 			Viewport view = GraphicsDevice.Viewport;
-			int size = Math.Max(96, (int)(view.Height * 0.30f));
+			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
 			int margin = Math.Max(8, (int)(view.Height * 0.03f));
 			Rectangle box = new Rectangle(view.Width - size - margin, margin, size, size);
 			float scale = size / (2f * (Radius - 1));   // pixels per cell: the circle of cells fills the box
@@ -227,12 +252,19 @@ namespace OpenFF.Client
 			float len = (float)Math.Sqrt(fx * fx + fz * fz);
 			if (len < 1e-4f) { fx = 0; fz = -1; } else { fx /= len; fz /= len; }
 			if (GlobalScope.stg.MirrorZ) fz = -fz;
+			if (!Qol.MinimapRotate)
+			{
+				// Fixed: the way the camera looked when this map was entered.
+				if (!_haveFixed) { _fixedX = fx; _fixedZ = fz; _haveFixed = true; }
+				fx = _fixedX; fz = _fixedZ;
+			}
 			float rotation = (float)Math.Atan2(-fx, -fz);   // the sprite's x axis on the screen: the map's x axis, turned
 
 			Rectangle oldScissor = GraphicsDevice.ScissorRectangle;
 			GraphicsDevice.ScissorRectangle = box;
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { ScissorTestEnable = true });
-			_batch.Draw(_pixel, box, new Color(0, 0, 0, 140));
+			bool solid = Qol.MinimapOpaque;
+			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 110));
 
 			Vector2 centre = new Vector2(box.X + size / 2f, box.Y + size / 2f);
 			// The party's place inside its cell, so the picture slides smoothly as it walks.
@@ -252,12 +284,17 @@ namespace OpenFF.Client
 					float u = ox * (-fz) + oz * fx;
 					float v = ox * fx + oz * fz;
 					Vector2 at = centre + new Vector2(u * scale, -v * scale);
-					Color colour = c.State == Wall ? new Color(205, 215, 235, 235)
-						: c.State == Exit ? new Color(90, 220, 120, 235)
-						: new Color(46, 70, 110, 205);
+					bool marked = c.State == Secret && Qol.MinimapPassages;
+					Color colour = marked ? new Color(255, 150, 60, solid ? 255 : 220)
+						: c.State == Wall || c.State == Secret ? new Color(205, 215, 235, solid ? 255 : 200)
+						: c.State == Exit ? new Color(90, 220, 120, solid ? 255 : 220)
+						: new Color(46, 70, 110, solid ? 255 : 150);
 					_batch.Draw(_pixel, at, null, colour, rotation, origin, cell, SpriteEffects.None, 0f);
 				}
 			}
+
+			// Chests not yet opened.
+			if (Qol.MinimapChests) PaintChests(centre, scale, px, pz, fx, fz, box);
 
 			// The party: a gold square at the middle.
 			_batch.Draw(_pixel, centre, null, new Color(255, 214, 80, 255), 0f, origin, Math.Max(4f, scale * 1.4f), SpriteEffects.None, 0f);
