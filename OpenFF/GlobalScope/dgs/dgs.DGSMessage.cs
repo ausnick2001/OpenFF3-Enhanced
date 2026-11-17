@@ -632,7 +632,8 @@ internal static partial class GlobalScope
 						uint drawStyle = m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0);
 						string buffer = m_Buffer;
 						// PORT: FF3 puts the speaker's name first, indented, on a line of its own: that line in its own face and a little higher.
-						if (NameLettering != null && buffer != null && buffer.Length > 0 && (buffer[0] == ' ' || buffer[0] == '\u3000'))
+						if (NameLettering != null && buffer != null && buffer.Length > 0 && (buffer[0] == ' ' || buffer[0] == '\u3000') && msg_color != (int)TXT_COLOR.TXT_COLOR_YELLOW && msg_color != (int)TXT_COLOR.TXT_COLOR_PALLID_YELLOW)
+						// (OpenFF: an indented line in yellow is a notice - an item found - not a speaker's name: it keeps the body font.)
 						{
 							int cut = buffer.IndexOf('\n');
 							string name = cut < 0 ? buffer : buffer.Substring(0, cut);

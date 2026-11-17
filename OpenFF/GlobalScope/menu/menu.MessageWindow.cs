@@ -173,6 +173,9 @@ internal static partial class GlobalScope
 				OpenFF.Client.FieldHud.NextShown(show);
 			}
 
+			/// <summary>OpenFF: a new text on a window that is still opening - its text waits for the window, whatever the speed (Fast shows a page whole).</summary>
+			private bool m_OpeningHold;
+
 			public void mwExecute()
 			{
 				OpenFF.Client.FieldHud.Tick();   // PORT: the layout's panels once the window is open, and what moves in it
@@ -192,6 +195,7 @@ internal static partial class GlobalScope
 						// of 0, where the phone build waited for more than 0 for ever: a mod's Say got no page-turn arrow).
 						else if (dGSMessage != null && m_MessageId >= 0)
 						{
+							m_OpeningHold = false;
 							mwResetMessageWait_();
 							m_State = 1;
 						}
@@ -400,6 +404,7 @@ internal static partial class GlobalScope
 					dGSMessage.setStyle(m_MessageAlign);
 					m_MessageAlign = 0u;
 				}
+				m_OpeningHold = m_State == 0 && m_Made_1;
 				mwResetMessageWait_();
 				if (m_NextWanted) mwShowNext(false);   // PORT: a new text: its arrow once it is all there, not the last one's
 				m_MessageNo = msg_no;
@@ -461,6 +466,7 @@ internal static partial class GlobalScope
 					dGSMessage.setStyle(m_MessageAlign);
 					m_MessageAlign = 0u;
 				}
+				m_OpeningHold = m_State == 0 && m_Made_1;
 				mwResetMessageWait_();
 				if (m_NextWanted) mwShowNext(false);   // PORT: a new text: its arrow once it is all there, not the last one's
 				m_MessageNo = -2;
@@ -719,9 +725,16 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplayWait(mwDEFAULT_MESSAGE_SPEED);
 						break;
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_FAST:
-						// OpenFF: Fast shows the page whole, at once (the game's Fast was a letter a frame, still slow).
-						dGSMessage.setDisplaySpeed(byte.MaxValue);
-						dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
+						// OpenFF: Fast shows the page whole, at once (the game's Fast was a letter a frame, still slow) - once the window is open.
+						if (m_OpeningHold)
+						{
+							dGSMessage.setDisplayWait(255);
+						}
+						else
+						{
+							dGSMessage.setDisplaySpeed(byte.MaxValue);
+							dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
+						}
 						break;
 					default:
 						dGSMessage.setDisplayWait(mwDEFAULT_MESSAGE_SPEED);
