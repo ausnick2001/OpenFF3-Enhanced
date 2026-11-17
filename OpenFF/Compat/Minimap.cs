@@ -417,6 +417,12 @@ namespace OpenFF.Client
 				_memory[key] = _cells.TryGetValue(key, out Cell c) ? c.State : Void;
 				SetShown(pcx + dx, pcz + dz);
 			}
+			// ...and the ring just outside, whose walls now border seen floor.
+			int ring = SeeCells + 1;
+			for (int dz = -ring; dz <= ring; dz++)
+				for (int dx = -ring; dx <= ring; dx++)
+					if (Math.Max(Math.Abs(dx), Math.Abs(dz)) == ring || !_memory.ContainsKey(Key(pcx + dx, pcz + dz)))
+						SetShown(pcx + dx, pcz + dz);
 		}
 
 		/// <summary>What the map shows of a cell: what is found of it now, else what was kept of it; with fog of war, only if the party has been near.</summary>
@@ -424,8 +430,17 @@ namespace OpenFF.Client
 		{
 			long key = Key(cx, cz);
 			bool remembered = _memory.TryGetValue(key, out byte kept);
-			if (Qol.MinimapFog && !remembered) return ShowNone;
 			byte state = _cells.TryGetValue(key, out Cell c) ? c.State : remembered ? kept : Void;
+			if (Qol.MinimapFog && !remembered)
+			{
+				// Not seen yet: but a wall (or edge) touching floor that has been seen is the floor's border, so it is shown.
+				if (state != Wall && state != Edge && state != Secret) return ShowNone;
+				bool border = false;
+				for (int dz = -1; dz <= 1 && !border; dz++)
+					for (int dx = -1; dx <= 1 && !border; dx++)
+						border = (dx != 0 || dz != 0) && _memory.TryGetValue(Key(cx + dx, cz + dz), out byte nb) && (nb == Floor || nb == Exit);
+				if (!border) return ShowNone;
+			}
 			switch (state)
 			{
 				case Floor: return ShowFloor;
@@ -477,7 +492,11 @@ namespace OpenFF.Client
 			return t * t * (3f - 2f * t);
 		}
 
-		/// <summary>One texel: the four cells whose middles are nearest, weighed by nearness, give how much floor, wall and marked passage is here (a way out is floor, with a stairs icon over it).</summary>
+		/// <summary>
+		/// One texel: the four cells whose middles are nearest, weighed by nearness, give how much floor and how much wall is here. The floor
+		/// is filled; the outline is one smooth line along the floor's edge where a wall (or an edge) lies, so it does not matter how thick
+		/// the wall cells are. A way out is floor, with an icon over it; a marked passage is an orange line.
+		/// </summary>
 		private Color Shade(int tx, int ty)
 		{
 			float u = (tx + 0.5f) / S - 0.5f, v = (ty + 0.5f) / S - 0.5f;
@@ -496,11 +515,16 @@ namespace OpenFF.Client
 				if (s == ShowWall || s == ShowSecret) w += wt;
 				if (s == ShowSecret) p += wt;
 			}
-			float af = Soft(f), aw = Soft(w * 1.6f);   // a wall a cell thick still shows along a slant
+			float af = Soft(f);
+			float band = Math.Clamp(1f - Math.Abs(f - 0.5f) / 0.3f, 0f, 1f);
+			band = band * band * (3f - 2f * band);
+			float ao = band * Math.Clamp(w * 4f, 0f, 1f);
 			float mark = w > 1e-4f ? Math.Clamp(p / w, 0f, 1f) : 0f;
-			// Wall first (pale, orange where a passage is marked), the floor over it; premultiplied.
-			float r = (205f + (255f - 205f) * mark) / 255f * aw, g = (215f + (150f - 215f) * mark) / 255f * aw, bl = (235f + (60f - 235f) * mark) / 255f * aw, alpha = aw;
-			r = 40f / 255f * af + r * (1 - af); g = 62f / 255f * af + g * (1 - af); bl = 100f / 255f * af + bl * (1 - af); alpha = af + alpha * (1 - af);
+			float lr = (205f + (255f - 205f) * mark) / 255f, lg = (215f + (150f - 215f) * mark) / 255f, lb = (235f + (60f - 235f) * mark) / 255f;
+			float r = lr * ao + 40f / 255f * af * (1 - ao);
+			float g = lg * ao + 62f / 255f * af * (1 - ao);
+			float bl = lb * ao + 100f / 255f * af * (1 - ao);
+			float alpha = ao + af * (1 - ao);
 			return new Color(r, g, bl, alpha);
 		}
 
@@ -569,8 +593,8 @@ namespace OpenFF.Client
 					int gx = at % _cw, gz = at / _cw;
 					sx += gx; sz += gz; count++;
 					if (gx < x0) x0 = gx; if (gx > x1) x1 = gx; if (gz < z0) z0 = gz; if (gz > z1) z1 = gz;
-					for (int dz = -1; dz <= 1; dz++)
-						for (int dx = -1; dx <= 1; dx++)
+					for (int dz = -3; dz <= 3; dz++)   // runs with a gap of a few cells are one way out
+						for (int dx = -3; dx <= 3; dx++)
 						{
 							int nx = gx + dx, nz = gz + dz;
 							if (nx < 0 || nz < 0 || nx >= _cw || nz >= _ch) continue;
