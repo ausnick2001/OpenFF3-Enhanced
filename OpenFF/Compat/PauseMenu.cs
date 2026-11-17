@@ -470,7 +470,7 @@ namespace OpenFF.Client
 				case 4: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
 				case 5: return "a marker on each chest not yet opened";
 				case 6: return "complete maps only: walls that can open are marked";
-				case 7: return "what you have explored is kept for next time; this clears it all (for a new game)";
+				case 7: return "your explored floors are saved with the game; this clears them (until you save again)";
 				default: return "";
 			}
 		}

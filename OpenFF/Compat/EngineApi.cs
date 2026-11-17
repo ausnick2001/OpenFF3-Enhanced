@@ -44,6 +44,8 @@ namespace OpenFF.Client
 				OpenFF.Game.Services.Register(new LegacyParty());
 				// The heroes' auto-battle rules keep in the save (Gambits).
 				OpenFF.Game.Saves.Register(new Gambits.Chunk());
+				// The dungeon minimap's explored floors keep in the save too.
+				OpenFF.Game.Saves.Register(new Minimap.Chunk());
 			}
 			OpenFF.Game.Services.Register(new LegacyAudio());
 			OpenFF.Game.Services.Register(Screen);

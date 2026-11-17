@@ -95,7 +95,6 @@ namespace OpenFF.Client
 		{
 			_instance = new Minimap(game);
 			game.Components.Add(_instance);
-			game.Exiting += (s, e) => SaveStore();
 			Log.Write(LogChannel.General, "minimap: on in dungeons (the pause menu's Minimap page)");
 		}
 
@@ -110,7 +109,6 @@ namespace OpenFF.Client
 				if (stage != _stage) NewStage(stage, px, pz);
 				if (_myGen != _forgetGen) { _myGen = _forgetGen; _memory = Recall(_stage); _realloc = true; _dirty = true; }
 				_frame++;
-				if (_frame % 1800 == 0) SaveStore();
 				Explore(px, py, pz);
 				Rebuild();
 				Paint(px, pz);
@@ -124,7 +122,6 @@ namespace OpenFF.Client
 
 		private void NewStage(string stage, int px, int pz)
 		{
-			if (_stage != null) SaveStore();   // the floor just left is kept
 			_stage = stage;
 			_memory = Recall(stage);
 			_cells.Clear(); _frontier.Clear(); _seenX = int.MinValue;
@@ -168,32 +165,68 @@ namespace OpenFF.Client
 
 		// ---- the maps kept ----
 
-		// What the party has seen of each floor, by the floor's name, kept for the next visit and written to a file
-		// beside settings.json, so the maps are still there when the game is started again.
+		// What the party has seen of each floor, by the floor's name. It is kept in the save: every time the game writes a
+		// save slot the maps go into that slot's chunk (Chunk, below), and reading a slot back brings its maps back, so a
+		// map belongs to the playthrough and not to a slot - save the same game in all three and each has the maps as they
+		// were when it was written. A new game starts with none.
 		private static readonly Dictionary<string, Dictionary<long, byte>> Store = new Dictionary<string, Dictionary<long, byte>>();
-		private static bool _storeLoaded, _storeDirty;
 		private static int _forgetGen;
-
-		private static string StorePath => System.IO.Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "minimap.bin");
 
 		private static Dictionary<long, byte> Recall(string stage)
 		{
-			if (!_storeLoaded) LoadStore();
 			if (stage == null) stage = "";
 			if (!Store.TryGetValue(stage, out Dictionary<long, byte> kept)) Store[stage] = kept = new Dictionary<long, byte>();
 			return kept;
 		}
 
-		private static void LoadStore()
+		/// <summary>Every kept map is forgotten: a new game, a save read back with none, or the pause menu's Forget explored maps.</summary>
+		public static void Reset()
 		{
-			_storeLoaded = true;
-			try
+			Store.Clear();
+			_forgetGen++;
+		}
+
+		/// <summary>Every kept map is forgotten (the pause menu's Forget explored maps).</summary>
+		public static void Forget()
+		{
+			Reset();
+			Log.Write(LogChannel.General, "minimap: kept maps forgotten");
+		}
+
+		/// <summary>The maps in the save: one chunk, the floors packed (a gzipped list of cells) and written as text.</summary>
+		public sealed class Chunk : OpenFF.ISaveable
+		{
+			public string ChunkId => "openff/minimap";
+			public int ChunkVersion => 1;
+
+			public object Save()
 			{
-				if (!File.Exists(StorePath)) return;
-				using (BinaryReader r = new BinaryReader(new GZipStream(File.OpenRead(StorePath), CompressionMode.Decompress)))
+				int kept = 0;
+				foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store) if (kv.Value.Count > 0) kept++;
+				if (kept == 0) return null;
+				using (MemoryStream bytes = new MemoryStream())
 				{
-					if (r.ReadInt32() != 1) return;
+					using (BinaryWriter w = new BinaryWriter(new GZipStream(bytes, CompressionLevel.Fastest, true)))
+					{
+						w.Write(kept);
+						foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store)
+						{
+							if (kv.Value.Count == 0) continue;
+							w.Write(kv.Key);
+							w.Write(kv.Value.Count);
+							foreach (KeyValuePair<long, byte> cell in kv.Value) { w.Write(cell.Key); w.Write(cell.Value); }
+						}
+					}
+					return new Dictionary<string, object> { ["maps"] = Convert.ToBase64String(bytes.ToArray()) };
+				}
+			}
+
+			public void Load(int version, System.Text.Json.JsonElement data)
+			{
+				Reset();
+				if (version != 1 || !data.TryGetProperty("maps", out System.Text.Json.JsonElement maps) || maps.GetString() == null) return;
+				using (BinaryReader r = new BinaryReader(new GZipStream(new MemoryStream(Convert.FromBase64String(maps.GetString())), CompressionMode.Decompress)))
+				{
 					int stages = r.ReadInt32();
 					for (int i = 0; i < stages; i++)
 					{
@@ -204,46 +237,8 @@ namespace OpenFF.Client
 						Store[name] = cells;
 					}
 				}
-				Log.Write(LogChannel.General, "minimap: " + Store.Count + " floors kept from earlier");
+				Log.Write(LogChannel.General, "minimap: " + Store.Count + " floor(s) back from the save");
 			}
-			catch (Exception ex) { Log.Write(LogChannel.General, "minimap: kept maps not read - " + ex.Message); Store.Clear(); }
-		}
-
-		private static void SaveStore()
-		{
-			if (!_storeDirty) return;
-			_storeDirty = false;
-			try
-			{
-				Directory.CreateDirectory(System.IO.Path.GetDirectoryName(StorePath));
-				string temp = StorePath + ".tmp";
-				using (BinaryWriter w = new BinaryWriter(new GZipStream(File.Create(temp), CompressionLevel.Fastest)))
-				{
-					w.Write(1);
-					int kept = 0;
-					foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store) if (kv.Value.Count > 0) kept++;
-					w.Write(kept);
-					foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store)
-					{
-						if (kv.Value.Count == 0) continue;
-						w.Write(kv.Key);
-						w.Write(kv.Value.Count);
-						foreach (KeyValuePair<long, byte> cell in kv.Value) { w.Write(cell.Key); w.Write(cell.Value); }
-					}
-				}
-				File.Copy(temp, StorePath, true);
-				File.Delete(temp);
-			}
-			catch (Exception ex) { Log.Write(LogChannel.General, "minimap: maps not saved - " + ex.Message); }
-		}
-
-		/// <summary>Every kept map is forgotten (the pause menu's Forget explored maps, for a new game).</summary>
-		public static void Forget()
-		{
-			Store.Clear();
-			_storeLoaded = true; _storeDirty = false; _forgetGen++;
-			try { if (File.Exists(StorePath)) File.Delete(StorePath); } catch (Exception ex) { Log.Write(LogChannel.General, "minimap: " + ex.Message); }
-			Log.Write(LogChannel.General, "minimap: kept maps forgotten");
 		}
 
 		// ---- finding the floor ----
@@ -357,7 +352,6 @@ namespace OpenFF.Client
 				long key = Key(pcx + dx, pcz + dz);
 				if (_memory.ContainsKey(key)) continue;
 				_memory[key] = _cells.TryGetValue(key, out Cell c) ? c.State : Void;
-				_storeDirty = true;
 				if (_pix != null && InPicture(pcx + dx, pcz + dz)) { _pix[(pcz + dz - _oz) * _w + (pcx + dx - _ox)] = ColourAt(pcx + dx, pcz + dz); _dirty = true; }
 			}
 		}
@@ -390,7 +384,7 @@ namespace OpenFF.Client
 		{
 			long key = Key(cx, cz);
 			_cells[key] = c;
-			if (_memory.ContainsKey(key) && _memory[key] != c.State) { _memory[key] = c.State; _storeDirty = true; }
+			if (_memory.ContainsKey(key) && _memory[key] != c.State) _memory[key] = c.State;
 			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
 			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
 			_dirty = true;

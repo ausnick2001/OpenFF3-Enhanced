@@ -347,6 +347,7 @@ namespace OpenFF.Client
 			// The auto-battle rules start from the defaults; the save's own, if it has them, come in with its chunks.
 			if (GameProfile.IsFf4 && offset == OptionDataAddress) return;
 			Gambits.Reset();
+			Minimap.Reset();   // the explored floors start empty; the save's own, if it has them, come in with its chunks
 			if (OpenFF.Game.Saves.ReadSlot(offset, length))
 			{
 				OpenFF.Game.Events.Publish(new OpenFF.Events.SaveRead { Offset = offset, Length = length });

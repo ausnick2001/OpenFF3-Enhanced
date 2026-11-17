@@ -190,6 +190,7 @@ internal static partial class GlobalScope
                                 OpenFF.Client.TitleEntries.Pending = null;
                                 byte hero = (byte)(order != null && order.Hero >= 0 && order.Hero < 4 ? order.Hero : 0);
                                 string map = order?.Map ?? "d01_05";
+                                OpenFF.Client.Minimap.Reset();   // OpenFF: a new game has explored no floors
                                 OpenFF.Client.PartyRestriction.Set(null);   // OpenFF: a new game's party is the story's own; a mod holds it again once it has chosen
                                 pl.PlayerParty.instance().addPlayer(hero);
                                 pl.PlayerParty.instance().playerForId(hero).changeJob(pl.JOB_TYPE.SUPPINN);
