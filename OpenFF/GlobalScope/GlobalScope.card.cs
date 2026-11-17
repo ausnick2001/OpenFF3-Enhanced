@@ -1211,11 +1211,15 @@ internal static partial class GlobalScope
 				return true;
 			}
 
+			private int m_MapNum = -2;
+
 			public bool sdReflect()
 			{
 				composit.sdoReflect();
 				// PORT: the loaded party is in place; mastery heroes' commands follow their ladders.
 				OpenFF.Client.ProgressionLayer.OnLoaded();
+				// PORT: and the dungeon maps of the slot that was loaded.
+				if (m_MapNum != -2) OpenFF.Client.Minimap.Apply(m_MapNum);
 				return true;
 			}
 
@@ -1231,6 +1235,8 @@ internal static partial class GlobalScope
 			{
 				int buf = ((!sub) ? (-1) : ((Manager.GetInstance().GetCurrentBuffer() == 0) ? 1 : 0));
 				Manager.GetInstance().StartLoad((sbyte[])GetDataStartHeader(), GetDataSize(), num, buf);
+				OpenFF.Client.Minimap.Bind(num);   // PORT: the maps this read brought are this slot's
+				m_MapNum = num;
 				fromRaw();
 				// PORT: the mods' progression state from beside the slot.
 				OpenFF.Client.ProgressionLayer.OnLoad(num);

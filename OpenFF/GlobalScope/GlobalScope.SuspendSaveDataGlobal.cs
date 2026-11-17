@@ -39,6 +39,7 @@ internal static partial class GlobalScope
 			if (bSetup_)
 			{
 				SuspendSaveData_.sdReflect();
+				OpenFF.Client.Minimap.ApplySuspend();   // PORT: the autosave's dungeon maps
 			}
 		}
 

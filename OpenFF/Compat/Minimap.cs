@@ -178,7 +178,13 @@ namespace OpenFF.Client
 		// save slot the maps go into that slot's chunk (Chunk, below), and reading a slot back brings its maps back, so a
 		// map belongs to the playthrough and not to a slot - save the same game in all three and each has the maps as they
 		// were when it was written. A new game starts with none.
-		private static readonly Dictionary<string, Dictionary<long, byte>> Store = new Dictionary<string, Dictionary<long, byte>>();
+		private static Dictionary<string, Dictionary<long, byte>> Store = new Dictionary<string, Dictionary<long, byte>>();
+		// The game reads every slot (and the suspend save) at the title and applies one of them only when it is chosen, so what each
+		// read brought is kept by where it was read, and the chosen one is put in place when the game applies it.
+		private static Dictionary<string, Dictionary<long, byte>> _last;
+		private static readonly Dictionary<int, Dictionary<string, Dictionary<long, byte>>> _byOffset = new Dictionary<int, Dictionary<string, Dictionary<long, byte>>>();
+		private static readonly Dictionary<int, Dictionary<string, Dictionary<long, byte>>> _bySlot = new Dictionary<int, Dictionary<string, Dictionary<long, byte>>>();
+		public const int SuspendOffset = 41568;
 		private static int _forgetGen;
 
 		private static Dictionary<long, byte> Recall(string stage)
@@ -191,8 +197,34 @@ namespace OpenFF.Client
 		/// <summary>Every kept map is forgotten: a new game, a save read back with none, or the pause menu's Forget explored maps.</summary>
 		public static void Reset()
 		{
-			Store.Clear();
+			Store = new Dictionary<string, Dictionary<long, byte>>();
 			_forgetGen++;
+		}
+
+		/// <summary>A slot's data was read (and its chunk, if it has one, loaded): what it brought is kept under where it was read.</summary>
+		public static void Read(int offset)
+		{
+			_last = Store;
+			_byOffset[offset] = Store;
+		}
+
+		/// <summary>The game loaded save slot <paramref name="num"/>: the maps its read brought belong to that slot's data.</summary>
+		public static void Bind(int num) => _bySlot[num] = _last ?? new Dictionary<string, Dictionary<long, byte>>();
+
+		/// <summary>The game applies slot <paramref name="num"/>'s data: its maps become the game's.</summary>
+		public static void Apply(int num)
+		{
+			Store = _bySlot.TryGetValue(num, out Dictionary<string, Dictionary<long, byte>> kept) ? kept : new Dictionary<string, Dictionary<long, byte>>();
+			_forgetGen++;
+			Log.Write(LogChannel.General, "minimap: slot " + num + " applied - " + Store.Count + " floor(s)");
+		}
+
+		/// <summary>The game applies the suspend save (the autosave): its maps become the game's.</summary>
+		public static void ApplySuspend()
+		{
+			Store = _byOffset.TryGetValue(SuspendOffset, out Dictionary<string, Dictionary<long, byte>> kept) ? kept : new Dictionary<string, Dictionary<long, byte>>();
+			_forgetGen++;
+			Log.Write(LogChannel.General, "minimap: suspend save applied - " + Store.Count + " floor(s)");
 		}
 
 		/// <summary>Every kept map is forgotten (the pause menu's Forget explored maps).</summary>
