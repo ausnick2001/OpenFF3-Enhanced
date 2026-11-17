@@ -1,18 +1,16 @@
-// A small map of the walls about the party, in the corner of the screen, in dungeons and caves.
+// A map of the floor the party is on, in the corner of the screen, in dungeons and caves.
 //
-// It is read from the same collision the party walks on, not from the pictures: for each cell about the party the
-// game's own probes are asked the questions the party's feet ask - is there ground here (an arrow down, as the
-// ground test), would the party stand here (a sphere of the party's radius against the five wall attributes the
-// party is subject to), is there a way out of the map (the twelve map-jump attributes). So what blocks the party
-// is a wall on the map and nothing else is: a secret passage that is shut is wall to the probe and wall on the map,
-// and shows as floor only once it is open. Objects (chests, rocks that crumble) are not drawn.
-//
-// The probed cells are kept for the map it is on (a cell is probed again after a couple of seconds, so a passage that
-// opens appears). A few cells are probed each frame, nearest to the party first, so there is no hitch when a new
-// room is entered. The picture turns with the camera, so up the screen is the way the camera looks.
+// It is read from the same collision the party walks on, not from the pictures. From the cell the party stands in,
+// the map is filled outward over the ground, cell by cell, a few each frame: ground there (an arrow down, as the
+// ground test), would the party stand there (a sphere of the party's radius against the five wall attributes the party
+// is subject to), is it a way out of the map (the twelve map-jump attributes). What the party can walk becomes floor,
+// what stops it wall, and the cells so found are kept as one picture of the floor (a texture) that is drawn once, with the
+// party's marker moving over it - so what is seen of the floor stays when the party leaves it. A wall that is shut
+// is wall to the probe, and a cell found to be walkable later (a passage opened) is filled in then. Objects are not
+// drawn, but chests not yet opened are marked.
 //
 // Shown in a dungeon only (STAGE_TYPE_DUNGEON), and not over a message, a menu, an event, a battle or the pause menu.
-// Settings: Quality of life, "Minimap".
+// Settings: the pause menu's Minimap page.
 
 using System;
 using System.Collections.Generic;
@@ -31,25 +29,34 @@ namespace OpenFF.Client
 	{
 		private const int CellFx = 2 * 4096;        // a cell is 2 units
 		private const int Radius = 22;              // cells shown each way from the party
-		private const int PerFrameNew = 56;         // cells probed per frame that have never been probed
-		private const int PerFrameStale = 10;        // and ones probed again
-		private const int StaleFrames = 120;        // how old a cell is before it is probed again
+		private const int Pad = Radius + 2;         // the picture's margin, so the shown part is always inside it
+		private const int Budget = 80;              // cells probed each frame
+		private const int ReachCells = 160;         // how far the fill goes from where the map was entered
+		private const int RecheckEvery = 150;       // frames before a wall is probed again (a passage may have opened)
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
-		private const int FloorRange = 24576;       // 6 units: ground further from the party's than this is another floor
+		private const int FloorRange = 24576;       // 6 units: ground further from the neighbour's than this is another floor
 
 		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4;   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
-		private struct Cell { public byte State; public int Stamp; }
+		private struct Cell { public byte State; public int GroundY; public int Stamp; }
+
+		private static readonly float[] Sizes = { 0.26f, 0.34f, 0.44f };
+		private static readonly RasterizerState Scissor = new RasterizerState { ScissorTestEnable = true, CullMode = CullMode.None };
 
 		private readonly Dictionary<long, Cell> _cells = new Dictionary<long, Cell>();
-		private readonly List<(int dx, int dz)> _order = new List<(int, int)>();   // the offsets in the picture, nearest first
+		private readonly Queue<(int cx, int cz)> _frontier = new Queue<(int, int)>();
+		private readonly List<(int dx, int dz)> _order = new List<(int, int)>();   // offsets nearest first, for the wall re-checks
 		private string _stage;
-		private int _frame;
-		private int _staleAt;
-		private bool _failed;
-		private bool _haveFixed;
+		private int _frame, _recheckAt, _lastSet;
+		private int _startX, _startZ;
+		private int _minX, _maxX, _minZ, _maxZ;
+		private bool _failed, _haveFixed, _dirty, _realloc, _lastPassages;
 		private float _fixedX, _fixedZ;   // the camera's way when the map was entered, for the fixed map
-		private static readonly float[] Sizes = { 0.26f, 0.34f, 0.44f };
+
+		// The picture of the floor: a pixel a cell, from cell (_ox, _oz).
+		private Texture2D _tex;
+		private Color[] _pix;
+		private int _w, _h, _ox, _oz;
 
 		private SpriteBatch _batch;
 		private Texture2D _pixel;
@@ -75,7 +82,7 @@ namespace OpenFF.Client
 		public static void Attach(Game game)
 		{
 			game.Components.Add(new Minimap(game));
-			Log.Write(LogChannel.General, "minimap: on in dungeons (Quality of life)");
+			Log.Write(LogChannel.General, "minimap: on in dungeons (the pause menu's Minimap page)");
 		}
 
 		public override void Draw(GameTime gameTime)
@@ -86,9 +93,10 @@ namespace OpenFF.Client
 				if (!Visible()) return;
 				if (!Locate(out int px, out int py, out int pz)) return;
 				string stage = GlobalScope.stg.CStageMng.CurrentName ?? "";
-				if (stage != _stage) { _stage = stage; _cells.Clear(); _staleAt = 0; _haveFixed = false; }
+				if (stage != _stage) NewStage(stage, px, pz);
 				_frame++;
-				Probe(px, py, pz);
+				Explore(px, py, pz);
+				Rebuild();
 				Paint(px, pz);
 			}
 			catch (Exception ex)
@@ -96,6 +104,17 @@ namespace OpenFF.Client
 				_failed = true;   // one failure and it is off for the session, not a failure each frame
 				Log.Write(LogChannel.General, "minimap: off - " + ex.GetType().Name + ": " + ex.Message);
 			}
+		}
+
+		private void NewStage(string stage, int px, int pz)
+		{
+			_stage = stage;
+			_cells.Clear(); _frontier.Clear();
+			_haveFixed = false; _recheckAt = 0;
+			_startX = CellOf(px); _startZ = CellOf(pz);
+			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
+			_tex?.Dispose(); _tex = null; _pix = null;
+			_realloc = true; _dirty = true;
 		}
 
 		/// <summary>Whether the field is free: a dungeon, with no talk, menu, event, battle or shop over it.</summary>
@@ -129,72 +148,86 @@ namespace OpenFF.Client
 
 		private static int CellOf(int fx) => (int)Math.Floor(fx / (double)CellFx);
 
-		/// <summary>Probes a few cells: those never probed, nearest first, then a few that have gone stale.</summary>
-		private void Probe(int px, int py, int pz)
+		// ---- finding the floor ----
+
+		/// <summary>Fills the floor outward a few cells each frame, and looks again at a few walls near the party.</summary>
+		private void Explore(int px, int py, int pz)
 		{
 			GlobalScope.dgs.CRestrictor first = (GlobalScope.dgs.CRestrictor)GlobalScope.dgs.DGSLinkedList<GlobalScope.dgs.CRestrictor>.dgsllBase();
 			if (first == null) return;
-			GlobalScope.wld.CMapData map = GlobalScope.wld.CWorldOutSideData.getInstance().MapData();
-			int mapFlags = map.isColFlag();
+			int mapFlags = GlobalScope.wld.CWorldOutSideData.getInstance().MapData().isColFlag();
 			int colFlags = GlobalScope.wld.CBaseSystem.Current.PlayerMng().Player(GlobalScope.chr.CBaseCharacter.getLookIndex()).getColFlag();
-			int pcx = CellOf(px), pcz = CellOf(pz);
 
-			int fresh = 0, stale = 0;
-			for (int i = 0; i < _order.Count && fresh < PerFrameNew; i++)
+			// Where the party stands is floor, whatever the probe at the cell's middle says.
+			int pcx = CellOf(px), pcz = CellOf(pz);
+			if (!_cells.TryGetValue(Key(pcx, pcz), out Cell here) || (here.State != Floor && here.State != Exit))
 			{
-				int cx = pcx + _order[i].dx, cz = pcz + _order[i].dz;
-				long key = Key(cx, cz);
-				if (!_cells.ContainsKey(key))
+				Put(pcx, pcz, new Cell { State = Floor, GroundY = py, Stamp = _frame });
+				_frontier.Enqueue((pcx, pcz));
+			}
+
+			int budget = Budget;
+			while (budget > 0 && _frontier.Count > 0)
+			{
+				(int cx, int cz) = _frontier.Dequeue();
+				Cell from = _cells[Key(cx, cz)];
+				for (int dz = -1; dz <= 1; dz++)
 				{
-					_cells[key] = new Cell { State = ProbeCell(first, mapFlags, colFlags, cx, cz, py), Stamp = _frame };
-					fresh++;
+					for (int dx = -1; dx <= 1; dx++)
+					{
+						if (dx == 0 && dz == 0) continue;
+						int nx = cx + dx, nz = cz + dz;
+						if (Math.Abs(nx - _startX) > ReachCells || Math.Abs(nz - _startZ) > ReachCells) continue;
+						if (_cells.ContainsKey(Key(nx, nz))) continue;
+						budget--;
+						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, out int gy);
+						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame });
+						if (state == Floor || state == Exit) _frontier.Enqueue((nx, nz));
+					}
 				}
 			}
-			if (fresh > 0) return;
-			// Nothing new: probe again some that are old, going round the picture over the frames.
-			for (int n = 0; n < _order.Count && stale < PerFrameStale; n++)
+
+			// A passage may have opened: walls near the party are probed again now and then, and a cell that has
+			// become walkable carries the fill on from there.
+			for (int n = 0; n < 12; n++)
 			{
-				_staleAt = (_staleAt + 1) % _order.Count;
-				int cx = pcx + _order[_staleAt].dx, cz = pcz + _order[_staleAt].dz;
-				long key = Key(cx, cz);
-				if (_cells.TryGetValue(key, out Cell old) && _frame - old.Stamp >= StaleFrames)
-				{
-					_cells[key] = new Cell { State = ProbeCell(first, mapFlags, colFlags, cx, cz, py), Stamp = _frame };
-					stale++;
-				}
+				_recheckAt = (_recheckAt + 1) % _order.Count;
+				int cx = pcx + _order[_recheckAt].dx, cz = pcz + _order[_recheckAt].dz;
+				if (!_cells.TryGetValue(Key(cx, cz), out Cell old) || (old.State != Wall && old.State != Secret) || _frame - old.Stamp < RecheckEvery) continue;
+				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, out int gy);
+				Put(cx, cz, new Cell { State = state, GroundY = state == Void ? old.GroundY : gy, Stamp = _frame });
+				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
 			}
 		}
 
-		private byte ProbeCell(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int cx, int cz, int py)
+		private byte ProbeCell(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int cx, int cz, int refY, out int groundY)
 		{
 			int x = cx * CellFx + CellFx / 2, z = cz * CellFx + CellFx / 2;
+			groundY = refY;
 
-			// Ground: an arrow down from above the party's height, as the ground test.
+			// Ground: an arrow down from above the neighbour's height, as the ground test.
 			bool ground = false;
-			int groundY = py;
 			for (GlobalScope.dgs.CRestrictor r = first; r != null; r = (GlobalScope.dgs.CRestrictor)r.dgsllNext())
 			{
 				if (!r.rorActivity()) continue;
-				_probe.set(x, py + 28672, z);
+				_probe.set(x, refY + 28672, z);
 				if (r.rorEvaluateArrow(_probe, _down, 81920, 1, _result))
 				{
 					int gy = _result.pos.y;
-					if (Math.Abs(gy - py) <= FloorRange) { ground = true; groundY = gy; break; }
+					if (Math.Abs(gy - refY) <= FloorRange) { ground = true; groundY = gy; break; }
 				}
 			}
 			if (!ground) return Void;
 
 			// The way out of the map: the map-jump attributes.
+			for (int k = 0; k < 12; k++)
 			{
-				for (int k = 0; k < 12; k++)
+				if ((mapFlags & (4096 << k)) == 0) continue;
+				for (GlobalScope.dgs.CRestrictor r = first; r != null; r = (GlobalScope.dgs.CRestrictor)r.dgsllNext())
 				{
-					if ((mapFlags & (4096 << k)) == 0) continue;
-					for (GlobalScope.dgs.CRestrictor r = first; r != null; r = (GlobalScope.dgs.CRestrictor)r.dgsllNext())
-					{
-						if (!r.rorActivity()) continue;
-						_probe.set(x, groundY + 20480, z);
-						if (r.rorEvaluateSphere(_probe, _ahead, 12288, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_MAPJUMP_01 + k, _result)) return Exit;
-					}
+					if (!r.rorActivity()) continue;
+					_probe.set(x, groundY + 20480, z);
+					if (r.rorEvaluateSphere(_probe, _ahead, 12288, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_MAPJUMP_01 + k, _result)) return Exit;
 				}
 			}
 
@@ -211,6 +244,111 @@ namespace OpenFF.Client
 				}
 			}
 			return Floor;
+		}
+
+		// ---- the picture of the floor ----
+
+		private Color ColourOf(byte state)
+		{
+			switch (state)
+			{
+				case Floor: return new Color(40, 62, 100, 255);
+				case Wall: return new Color(205, 215, 235, 255);
+				case Secret: return Qol.MinimapPassages ? new Color(255, 150, 60, 255) : new Color(205, 215, 235, 255);
+				case Exit: return new Color(90, 220, 120, 255);
+				default: return Color.Transparent;
+			}
+		}
+
+		/// <summary>A cell found or changed: kept, and put in the picture if it is inside it (else the picture is made again, larger).</summary>
+		private void Put(int cx, int cz, Cell c)
+		{
+			_cells[Key(cx, cz)] = c;
+			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
+			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
+			_dirty = true;
+			if (_pix == null || cx - Pad < _ox || cx + Pad >= _ox + _w || cz - Pad < _oz || cz + Pad >= _oz + _h) { _realloc = true; return; }
+			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(c.State);
+		}
+
+		private void Rebuild()
+		{
+			bool passages = Qol.MinimapPassages;
+			if (passages != _lastPassages) { _lastPassages = passages; _realloc = true; }
+			if (_tex != null && _tex.IsDisposed) _realloc = true;
+			if (_realloc)
+			{
+				// The picture covers every cell found and a margin, with room to grow so it is not made again at every step.
+				_ox = _minX - Pad - 16; _oz = _minZ - Pad - 16;
+				_w = _maxX + Pad + 16 - _ox + 1; _h = _maxZ + Pad + 16 - _oz + 1;
+				_pix = new Color[_w * _h];
+				foreach (KeyValuePair<long, Cell> kv in _cells)
+				{
+					int cx = (int)(kv.Key >> 32), cz = (int)(uint)kv.Key;
+					if (kv.Value.State != Void) _pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(kv.Value.State);
+				}
+				_tex?.Dispose();
+				_tex = new Texture2D(GraphicsDevice, _w, _h);
+				_realloc = false; _dirty = true; _lastSet = -99;
+			}
+			if (_dirty && _frame - _lastSet >= 4)
+			{
+				_tex.SetData(_pix);
+				_dirty = false; _lastSet = _frame;
+			}
+		}
+
+		// ---- drawing ----
+
+		private void Paint(int px, int pz)
+		{
+			if (_tex == null) return;
+			if (_batch == null) _batch = new SpriteBatch(GraphicsDevice);
+			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
+
+			Viewport view = GraphicsDevice.Viewport;
+			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
+			int margin = Math.Max(8, (int)(view.Height * 0.03f));
+			Rectangle box = new Rectangle(view.Width - size - margin, margin, size, size);
+			float scale = size / (2f * (Radius - 1));   // pixels a cell
+
+			// The camera's way on the ground, in the map's space: where the map's up is when it turns.
+			float fx = (GlobalScope.NNS_G3dGlb.camTarget.x - GlobalScope.NNS_G3dGlb.camPos.x) / 4096f;
+			float fz = (GlobalScope.NNS_G3dGlb.camTarget.z - GlobalScope.NNS_G3dGlb.camPos.z) / 4096f;
+			float len = (float)Math.Sqrt(fx * fx + fz * fz);
+			if (len < 1e-4f) { fx = 0; fz = -1; } else { fx /= len; fz /= len; }
+			if (GlobalScope.stg.MirrorZ) fz = -fz;
+			if (!Qol.MinimapRotate)
+			{
+				// Fixed: the way the camera looked when this map was entered.
+				if (!_haveFixed) { _fixedX = fx; _fixedZ = fz; _haveFixed = true; }
+				fx = _fixedX; fz = _fixedZ;
+			}
+			float rotation = (float)Math.Atan2(-fx, -fz);   // the picture's x axis on the screen: the map's x axis, turned
+
+			bool solid = Qol.MinimapOpaque;
+			Vector2 centre = new Vector2(box.X + size / 2f, box.Y + size / 2f);
+			Vector2 party = new Vector2(px / (float)CellFx - _ox, pz / (float)CellFx - _oz);   // the party's place in the picture, in its pixels
+
+			Rectangle oldScissor = GraphicsDevice.ScissorRectangle;
+			GraphicsDevice.ScissorRectangle = box;
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, Scissor);
+			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 80));
+			// One picture of the floor, drawn once (so, no seams), turned about the party.
+			_batch.Draw(_tex, centre, null, solid ? Color.White : Color.White * 0.85f, rotation, party, scale, SpriteEffects.None, 0f);
+
+			if (Qol.MinimapChests) PaintChests(centre, scale, px, pz, fx, fz, box);
+
+			// The party: a gold square at the middle.
+			_batch.Draw(_pixel, centre, null, new Color(255, 214, 80, 255), 0f, new Vector2(0.5f, 0.5f), Math.Max(4f, scale * 1.4f), SpriteEffects.None, 0f);
+			// The frame.
+			Color edge = new Color(235, 235, 245, 220);
+			_batch.Draw(_pixel, new Rectangle(box.X, box.Y, box.Width, 2), edge);
+			_batch.Draw(_pixel, new Rectangle(box.X, box.Bottom - 2, box.Width, 2), edge);
+			_batch.Draw(_pixel, new Rectangle(box.X, box.Y, 2, box.Height), edge);
+			_batch.Draw(_pixel, new Rectangle(box.Right - 2, box.Y, 2, box.Height), edge);
+			_batch.End();
+			GraphicsDevice.ScissorRectangle = oldScissor;
 		}
 
 		private void PaintChests(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box)
@@ -233,79 +371,6 @@ namespace OpenFF.Client
 				_batch.Draw(_pixel, at, null, new Color(20, 10, 30, 255), 0f, new Vector2(0.5f, 0.5f), d + 2f, SpriteEffects.None, 0f);
 				_batch.Draw(_pixel, at, null, tint, 0f, new Vector2(0.5f, 0.5f), d, SpriteEffects.None, 0f);
 			}
-		}
-
-		private void Paint(int px, int pz)
-		{
-			if (_batch == null) _batch = new SpriteBatch(GraphicsDevice);
-			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
-
-			Viewport view = GraphicsDevice.Viewport;
-			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
-			int margin = Math.Max(8, (int)(view.Height * 0.03f));
-			Rectangle box = new Rectangle(view.Width - size - margin, margin, size, size);
-			float scale = size / (2f * (Radius - 1));   // pixels per cell: the circle of cells fills the box
-
-			// The camera's way on the ground, in the map's space: up the picture is where the camera looks.
-			float fx = (GlobalScope.NNS_G3dGlb.camTarget.x - GlobalScope.NNS_G3dGlb.camPos.x) / 4096f;
-			float fz = (GlobalScope.NNS_G3dGlb.camTarget.z - GlobalScope.NNS_G3dGlb.camPos.z) / 4096f;
-			float len = (float)Math.Sqrt(fx * fx + fz * fz);
-			if (len < 1e-4f) { fx = 0; fz = -1; } else { fx /= len; fz /= len; }
-			if (GlobalScope.stg.MirrorZ) fz = -fz;
-			if (!Qol.MinimapRotate)
-			{
-				// Fixed: the way the camera looked when this map was entered.
-				if (!_haveFixed) { _fixedX = fx; _fixedZ = fz; _haveFixed = true; }
-				fx = _fixedX; fz = _fixedZ;
-			}
-			float rotation = (float)Math.Atan2(-fx, -fz);   // the sprite's x axis on the screen: the map's x axis, turned
-
-			Rectangle oldScissor = GraphicsDevice.ScissorRectangle;
-			GraphicsDevice.ScissorRectangle = box;
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, new RasterizerState { ScissorTestEnable = true });
-			bool solid = Qol.MinimapOpaque;
-			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 90));
-
-			Vector2 centre = new Vector2(box.X + size / 2f, box.Y + size / 2f);
-			// The party's place inside its cell, so the picture slides smoothly as it walks.
-			float offX = px / (float)CellFx - CellOf(px) - 0.5f;
-			float offZ = pz / (float)CellFx - CellOf(pz) - 0.5f;
-			int pcx = CellOf(px), pcz = CellOf(pz);
-			Vector2 origin = new Vector2(0.5f, 0.5f);
-			float cell = scale + 0.8f;   // a little over, so turned squares leave no gaps
-
-			for (int dz = -Radius; dz <= Radius; dz++)
-			{
-				for (int dx = -Radius; dx <= Radius; dx++)
-				{
-					if (!_cells.TryGetValue(Key(pcx + dx, pcz + dz), out Cell c) || c.State == Void) continue;
-					float ox = dx - offX, oz = dz - offZ;
-					// offset (ox, oz) in the map's space to the picture: forward is up, right is (-fz, fx).
-					float u = ox * (-fz) + oz * fx;
-					float v = ox * fx + oz * fz;
-					Vector2 at = centre + new Vector2(u * scale, -v * scale);
-					bool marked = c.State == Secret && Qol.MinimapPassages;
-					Color colour = marked ? new Color(255, 150, 60, 255)
-						: c.State == Wall || c.State == Secret ? new Color(205, 215, 235, 255)
-						: c.State == Exit ? new Color(90, 220, 120, 255)
-						: new Color(40, 62, 100, 255);
-					_batch.Draw(_pixel, at, null, colour, rotation, origin, cell, SpriteEffects.None, 0f);
-				}
-			}
-
-			// Chests not yet opened.
-			if (Qol.MinimapChests) PaintChests(centre, scale, px, pz, fx, fz, box);
-
-			// The party: a gold square at the middle.
-			_batch.Draw(_pixel, centre, null, new Color(255, 214, 80, 255), 0f, origin, Math.Max(4f, scale * 1.4f), SpriteEffects.None, 0f);
-			// The frame.
-			Color edge = new Color(235, 235, 245, 220);
-			_batch.Draw(_pixel, new Rectangle(box.X, box.Y, box.Width, 2), edge);
-			_batch.Draw(_pixel, new Rectangle(box.X, box.Bottom - 2, box.Width, 2), edge);
-			_batch.Draw(_pixel, new Rectangle(box.X, box.Y, 2, box.Height), edge);
-			_batch.Draw(_pixel, new Rectangle(box.Right - 2, box.Y, 2, box.Height), edge);
-			_batch.End();
-			GraphicsDevice.ScissorRectangle = oldScissor;
 		}
 	}
 }
