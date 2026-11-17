@@ -57,7 +57,7 @@ internal static partial class GlobalScope
 
 		public const TARGETLCD TLCD_SUB = TARGETLCD.TLCD_SUB;
 
-		public static C_C_SET[] ccs = new C_C_SET[23]
+		public static C_C_SET[] ccs = new C_C_SET[24]
 		{
 			new C_C_SET("lead_player_name", ccpLeadPlayerName),
 			new C_C_SET("shuyaku", ccpPlayerName),
@@ -81,9 +81,18 @@ internal static partial class GlobalScope
 			new C_C_SET("slot", ccpUnFixedSlot),
 			new C_C_SET("friend", ccpUnFixedFriendName),
 			new C_C_SET("1", ccpArgument1),
+			// OpenFF: Steam's button names in the text ("Press %key_assign6% to ...") - the player's own button, by the pad in hand or the keyboard.
+			new C_C_SET("key_assign", ccpKeyAssign),
 			// PORT (FF4): libff4's "chr" code - Whyt's name, the ability's, a member's (Ff4Names).
 			new C_C_SET("chr", ccpFf4Chr)
 		};
+
+		internal static void ccpKeyAssign(string code, char[] dest, int iDestOffset)
+		{
+			if (OpenFF.Client.GameProfile.IsFf4 || code.Length <= 10) return;
+			string text = OpenFF.Client.InputHints.KeyAssign(atoi(code.Substring(10)));
+			if (text != null) strcpy(dest, iDestOffset, text);
+		}
 
 		internal static void ccpFf4Chr(string code, char[] dest, int iDestOffset)
 		{

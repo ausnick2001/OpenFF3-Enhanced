@@ -72,6 +72,37 @@ namespace OpenFF.Client
 			if (was != Device + Ok + Back + X + Y + L + R + Menu + OkButton + BackButton) Version++;
 		}
 
+		/// <summary>
+		/// The label of the button Steam's text names by "%key_assign N%" (FF3): 1 confirm, 2 back, 3 menu, 4 and 5 the Y and Start
+		/// buttons, 6 the zoom shoulder (the other of the two is the menu's, by the Config's setting), 7 L, 8 Y.
+		/// </summary>
+		public static string KeyAssign(int n)
+		{
+			InputHints h = Current;
+			string label;
+			switch (n)
+			{
+				case 1: label = h.Ok; break;
+				case 2: label = h.Back; break;
+				case 3: label = h.X; break;
+				case 4: label = h.Y; break;
+				case 5: label = h.Menu; break;
+				case 6: label = GlobalScope.opt.COptionManager.getSingleton().gameOption().menuZoomSetting() == GlobalScope.opt.MENU_ZOOM_SETTING.MENU_R_ZOOM_L ? h.L : h.R; break;
+				case 7: label = h.L; break;
+				case 8: label = h.Y; break;
+				default: return null;
+			}
+			// The dialogue's font may lack the PlayStation marks: their names in letters.
+			switch (label)
+			{
+				case "\u00D7": return "Cross";
+				case "\u25CB": return "Circle";
+				case "\u25A1": return "Square";
+				case "\u25B3": return "Triangle";
+				default: return label;
+			}
+		}
+
 		/// <summary>A game button's label and the button it is on: the keyboard's key, or the pad's button the map puts it on.</summary>
 		private (string Label, string Button) Hint(Ui.PadButton button, string mapped)
 		{
