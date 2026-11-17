@@ -898,14 +898,6 @@ internal static partial class GlobalScope
                 {
                     return false;
                 }
-                if (OpenFF.Client.TitleEntries.Showing && OpenFF.Client.PauseMenu.LoadOnTitle)
-                {
-                    // OpenFF: the pause menu's Load game - straight on to the load screen, as Load Game on the title.
-                    OpenFF.Client.PauseMenu.LoadOnTitle = false;
-                    OpenFF.Client.SaveFiles.Profile = null;
-                    cIndexNo = 1;
-                    return true;
-                }
                 if ((ds.g_Pad.repeat() & 0x40) != 0 || (ds.g_Pad.repeat() & 0x20) != 0)
                 {
                     if (--cIndexNo < 0)
