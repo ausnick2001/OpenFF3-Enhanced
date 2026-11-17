@@ -40,7 +40,7 @@ namespace OpenFF.Client
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
 		private const int FloorRange = 24576;       // 6 units: ground further from the neighbour's than this is another floor
 
-		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4;   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
+		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
 		private struct Cell { public byte State; public int GroundY; public int Stamp; }
 
@@ -66,7 +66,10 @@ namespace OpenFF.Client
 		private int _w, _h, _ox, _oz;
 
 		private SpriteBatch _batch;
-		private Texture2D _pixel;
+		private Texture2D _pixel, _arrow, _chest;
+		private float _faceX, _faceZ;   // the way the hero faces, in the map's space
+		private readonly GlobalScope.VecFx32 _dirA = new GlobalScope.VecFx32();
+		private readonly GlobalScope.VecFx32 _dirB = new GlobalScope.VecFx32();
 
 		private int _myGen;
 		private static Minimap _instance;
@@ -150,12 +153,18 @@ namespace OpenFF.Client
 		private bool Locate(out int x, out int y, out int z)
 		{
 			x = y = z = 0;
-			GlobalScope.VecFx32 hero = GlobalScope.wld.CBaseSystem.Current.PlayerMng()?.Player(GlobalScope.chr.CBaseCharacter.getLookIndex())?.getPosition();
+			GlobalScope.pl.CBasePlayer player = GlobalScope.wld.CBaseSystem.Current.PlayerMng()?.Player(GlobalScope.chr.CBaseCharacter.getLookIndex());
+			GlobalScope.VecFx32 hero = player?.getPosition();
 			if (hero == null) return false;
 			_pos.copy(hero);
 			GlobalScope.stageMng.getInvWldMtx(_inv);
 			GlobalScope.MTX_MultVec43(_pos, _inv, _local);
 			x = _local.x; y = _local.y; z = _local.z;
+			// The way the hero faces: a point a step ahead, in the map's space, less the hero's own.
+			GlobalScope.VecFx32 d = player.getDirectionForRotY();
+			_dirA.set(hero.x + d.x, hero.y, hero.z + d.z);
+			GlobalScope.MTX_MultVec43(_dirA, _inv, _dirB);
+			_faceX = (_dirB.x - _local.x) / 4096f; _faceZ = (_dirB.z - _local.z) / 4096f;
 			return true;
 		}
 
@@ -275,6 +284,7 @@ namespace OpenFF.Client
 						if (_cells.ContainsKey(Key(nx, nz))) continue;
 						budget--;
 						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, out int gy);
+						if (state == Void) state = Edge;   // where the floor ends, the map has an edge
 						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame });
 						if (state == Floor || state == Exit) _frontier.Enqueue((nx, nz));
 					}
@@ -289,7 +299,8 @@ namespace OpenFF.Client
 				int cx = pcx + _order[_recheckAt].dx, cz = pcz + _order[_recheckAt].dz;
 				if (!_cells.TryGetValue(Key(cx, cz), out Cell old) || (old.State != Wall && old.State != Secret) || _frame - old.Stamp < RecheckEvery) continue;
 				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, out int gy);
-				Put(cx, cz, new Cell { State = state, GroundY = state == Void ? old.GroundY : gy, Stamp = _frame });
+				if (state == Void) state = Edge;
+				Put(cx, cz, new Cell { State = state, GroundY = state == Edge ? old.GroundY : gy, Stamp = _frame });
 				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
 			}
 		}
@@ -372,7 +383,7 @@ namespace OpenFF.Client
 			switch (state)
 			{
 				case Floor: return new Color(40, 62, 100, 255);
-				case Wall: return new Color(205, 215, 235, 255);
+				case Wall: case Edge: return new Color(205, 215, 235, 255);
 				case Secret: return Qol.MinimapPassages ? new Color(255, 150, 60, 255) : new Color(205, 215, 235, 255);
 				case Exit: return new Color(90, 220, 120, 255);
 				default: return Color.Transparent;
@@ -424,6 +435,85 @@ namespace OpenFF.Client
 			}
 		}
 
+		// ---- the two small pictures: the party's arrow and a chest ----
+
+		private const int ArrowSize = 64, ChestW = 14, ChestH = 8;
+
+		/// <summary>An arrow pointing up (white, with a dark outline), drawn smooth: its shape is sampled sixteen times a pixel.</summary>
+		private static Texture2D MakeArrow(GraphicsDevice device)
+		{
+			// The shape in a unit square: the tip, the two corners and the notch between them.
+			(float x, float y)[] shape = { (0.49f, 0.03f), (0.97f, 0.96f), (0.49f, 0.72f), (0.03f, 0.96f) };
+			const float half = 0.04f;   // half the outline's width
+			Color[] pixels = new Color[ArrowSize * ArrowSize];
+			for (int py = 0; py < ArrowSize; py++)
+			{
+				for (int px = 0; px < ArrowSize; px++)
+				{
+					float r = 0, g = 0, b = 0, a = 0;
+					for (int sy = 0; sy < 4; sy++)
+					{
+						for (int sx = 0; sx < 4; sx++)
+						{
+							float x = (px + (sx + 0.5f) / 4f) / ArrowSize, y = (py + (sy + 0.5f) / 4f) / ArrowSize;
+							bool inside = false;
+							float near = float.MaxValue;
+							for (int i = 0, j = shape.Length - 1; i < shape.Length; j = i++)
+							{
+								if ((shape[i].y > y) != (shape[j].y > y) && x < (shape[j].x - shape[i].x) * (y - shape[i].y) / (shape[j].y - shape[i].y) + shape[i].x) inside = !inside;
+								float ex = shape[j].x - shape[i].x, ey = shape[j].y - shape[i].y;
+								float t = Math.Clamp(((x - shape[i].x) * ex + (y - shape[i].y) * ey) / (ex * ex + ey * ey), 0f, 1f);
+								float dx = x - (shape[i].x + t * ex), dy = y - (shape[i].y + t * ey);
+								near = Math.Min(near, (float)Math.Sqrt(dx * dx + dy * dy));
+							}
+							if (near < half) { a += 1; }                       // the outline: dark, r g b stay 0
+							else if (inside) { a += 1; r += 1; g += 1; b += 1; }   // the inside: white
+						}
+					}
+					pixels[py * ArrowSize + px] = new Color(r / 16f, g / 16f, b / 16f, a / 16f);   // premultiplied
+				}
+			}
+			Texture2D tex = new Texture2D(device, ArrowSize, ArrowSize);
+			tex.SetData(pixels);
+			return tex;
+		}
+
+		/// <summary>A small chest: a red lid, a silver band, a blue base and a gold lock, as the game's chests look.</summary>
+		private static Texture2D MakeChest(GraphicsDevice device)
+		{
+			string[] rows =
+			{
+				"..oooooooooo..",
+				".orrrrrrrrrro.",
+				".orRRRRRRRRro.",
+				".osssssssssso.",
+				".obbbbggbbbbo.",
+				".obbbbggbbbbo.",
+				".obbbbbbbbbbo.",
+				".oooooooooooo.",
+			};
+			Color[] pixels = new Color[ChestW * ChestH];
+			for (int y = 0; y < ChestH; y++)
+			{
+				for (int x = 0; x < ChestW; x++)
+				{
+					switch (rows[y][x])
+					{
+						case 'o': pixels[y * ChestW + x] = new Color(28, 16, 36, 255); break;
+						case 'r': pixels[y * ChestW + x] = new Color(176, 52, 46, 255); break;
+						case 'R': pixels[y * ChestW + x] = new Color(224, 96, 78, 255); break;
+						case 's': pixels[y * ChestW + x] = new Color(205, 210, 222, 255); break;
+						case 'b': pixels[y * ChestW + x] = new Color(96, 78, 150, 255); break;
+						case 'g': pixels[y * ChestW + x] = new Color(250, 208, 86, 255); break;
+						default: pixels[y * ChestW + x] = Color.Transparent; break;
+					}
+				}
+			}
+			Texture2D tex = new Texture2D(device, ChestW, ChestH);
+			tex.SetData(pixels);
+			return tex;
+		}
+
 		// ---- drawing ----
 
 		private void Paint(int px, int pz)
@@ -431,6 +521,8 @@ namespace OpenFF.Client
 			if (_tex == null) return;
 			if (_batch == null) _batch = new SpriteBatch(GraphicsDevice);
 			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
+			if (_arrow == null || _arrow.IsDisposed) _arrow = MakeArrow(GraphicsDevice);
+			if (_chest == null || _chest.IsDisposed) _chest = MakeChest(GraphicsDevice);
 
 			Viewport view = GraphicsDevice.Viewport;
 			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
@@ -463,10 +555,21 @@ namespace OpenFF.Client
 			// One picture of the floor, drawn once (so, no seams), turned about the party.
 			_batch.Draw(_tex, centre, null, solid ? Color.White : Color.White * 0.85f, rotation, party, scale, SpriteEffects.None, 0f);
 
-			if (Qol.MinimapChests) PaintChests(centre, scale, px, pz, fx, fz, box);
+			if (Qol.MinimapChests)
+			{
+				// The chests are small drawn icons, so they are drawn crisp, not smoothed.
+				_batch.End();
+				_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, Scissor);
+				PaintChests(centre, scale, px, pz, fx, fz, box, size);
+				_batch.End();
+				_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, Scissor);
+			}
 
-			// The party: a gold square at the middle.
-			_batch.Draw(_pixel, centre, null, new Color(255, 214, 80, 255), 0f, new Vector2(0.5f, 0.5f), Math.Max(4f, scale * 1.4f), SpriteEffects.None, 0f);
+			// The party: an arrow at the middle, pointing the way the hero faces.
+			float hu = _faceX * (-fz) + _faceZ * fx, hv = _faceX * fx + _faceZ * fz;
+			float turn = hu * hu + hv * hv < 1e-8f ? 0f : (float)Math.Atan2(hu, hv);
+			float arrow = Math.Clamp(size * 0.1f, 14f, 40f);
+			_batch.Draw(_arrow, centre, null, Color.White, turn, new Vector2(ArrowSize / 2f, ArrowSize / 2f), arrow / ArrowSize, SpriteEffects.None, 0f);
 			// The frame.
 			Color edge = new Color(235, 235, 245, 220);
 			_batch.Draw(_pixel, new Rectangle(box.X, box.Y, box.Width, 2), edge);
@@ -477,10 +580,9 @@ namespace OpenFF.Client
 			GraphicsDevice.ScissorRectangle = oldScissor;
 		}
 
-		private void PaintChests(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box)
+		private void PaintChests(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box, int size)
 		{
 			GlobalScope.pl.CPlayerManager players = GlobalScope.wld.CBaseSystem.Current.PlayerMng();
-			Color tint = new Color(255, 120, 200, 255);
 			for (int i = 0; i < (int)GlobalScope.pl.MAP_OBJECT_NUM; i++)
 			{
 				GlobalScope.map.CMapObject o = players.MapObject(i);
@@ -493,9 +595,9 @@ namespace OpenFF.Client
 				float u = ox * (-fz) + oz * fx, v = ox * fx + oz * fz;
 				Vector2 at = centre + new Vector2(u * scale, -v * scale);
 				if (at.X < box.X + 3 || at.X > box.Right - 3 || at.Y < box.Y + 3 || at.Y > box.Bottom - 3) continue;
-				float d = Math.Max(5f, scale * 1.5f);
-				_batch.Draw(_pixel, at, null, new Color(20, 10, 30, 255), 0f, new Vector2(0.5f, 0.5f), d + 2f, SpriteEffects.None, 0f);
-				_batch.Draw(_pixel, at, null, tint, 0f, new Vector2(0.5f, 0.5f), d, SpriteEffects.None, 0f);
+				// A whole number of pixels a texel, so the little picture stays sharp.
+				int texel = Math.Max(1, (int)Math.Round(size * 0.075f / ChestW));
+				_batch.Draw(_chest, new Vector2((float)Math.Round(at.X), (float)Math.Round(at.Y)), null, Color.White, 0f, new Vector2(ChestW / 2f, ChestH / 2f), texel, SpriteEffects.None, 0f);
 			}
 		}
 	}
