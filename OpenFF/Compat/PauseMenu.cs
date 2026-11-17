@@ -432,8 +432,8 @@ namespace OpenFF.Client
 
 		// ---- minimap ----
 
-		// Minimap, Rotation, Size, Style, Chests, Hidden passages, Back.
-		private const int MapRows = 7;
+		// Minimap, Type, Rotation, Size, Style, Chests, Hidden passages, Back.
+		private const int MapRows = 8;
 
 		private static readonly string[] MapSizes = { "Small", "Medium", "Large" };
 
@@ -443,12 +443,13 @@ namespace OpenFF.Client
 			switch (row)
 			{
 				case 0: q.Minimap = !q.Minimap; Qol.Changed("minimap " + (q.Minimap ? "on" : "off")); break;
-				case 1: q.MinimapRotate = !q.MinimapRotate; Qol.Changed("minimap " + (q.MinimapRotate ? "turns with the camera" : "fixed")); break;
-				case 2: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
-				case 3: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
-				case 4: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
-				case 5: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
-				case 6:
+				case 1: q.MinimapFog = !q.MinimapFog; Qol.Changed("minimap " + (q.MinimapFog ? "fog of war" : "complete")); break;
+				case 2: q.MinimapRotate = !q.MinimapRotate; Qol.Changed("minimap " + (q.MinimapRotate ? "turns with the camera" : "fixed")); break;
+				case 3: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
+				case 4: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
+				case 5: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
+				case 6: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
+				case 7:
 					if (confirm) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -460,11 +461,12 @@ namespace OpenFF.Client
 			switch (row)
 			{
 				case 0: return "a small map of the walls around you, in dungeons and caves";
-				case 1: return "off: north stays up, as the camera first looked;  on: up is where the camera looks";
-				case 2: return "how big the map is in its corner";
-				case 3: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
-				case 4: return "a marker on each chest not yet opened";
-				case 5: return "off: a secret passage looks like any wall;  on: walls that can open are marked";
+				case 1: return "fog of war: only the parts you have been near;  complete: the whole floor from the start";
+				case 2: return "off: the map stays as the camera first looked;  on: up is where the camera looks";
+				case 3: return "how big the map is in its corner";
+				case 4: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
+				case 5: return "a marker on each chest not yet opened";
+				case 6: return "complete maps only: walls that can open are marked";
 				default: return "";
 			}
 		}
@@ -473,7 +475,7 @@ namespace OpenFF.Client
 		private static string MapSummary()
 		{
 			DisplaySettings.QolSettings q = Qol.S;
-			return q.Minimap ? MapSizes[Math.Clamp(q.MinimapSize, 0, 2)].ToLowerInvariant() + (q.MinimapRotate ? ", turns" : ", fixed") : "off";
+			return q.Minimap ? (q.MinimapFog ? "fog of war" : "complete") + (q.MinimapRotate ? ", turns" : ", fixed") : "off";
 		}
 
 		// ---- quality of life ----
@@ -632,11 +634,12 @@ namespace OpenFF.Client
 					switch (row)
 					{
 						case 0: icon = UiTheme.Icon.Window; on = q.Minimap; return Kind.Switch;
-						case 1: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
-						case 2: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
-						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
-						case 4: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
-						case 5: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
+						case 1: icon = UiTheme.Icon.Quality; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 5: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
+						case 6: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -911,11 +914,12 @@ namespace OpenFF.Client
 					switch (row)
 					{
 						case 0: label = "Minimap"; value = q.Minimap ? "On" : "Off"; return;
-						case 1: label = "Rotation"; value = q.MinimapRotate ? "Turns with the camera" : "Fixed"; return;
-						case 2: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
-						case 3: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
-						case 4: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
-						case 5: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
+						case 1: label = "Type"; value = q.MinimapFog ? "Fog of war" : "Complete"; return;
+						case 2: label = "Rotation"; value = q.MinimapRotate ? "Turns with the camera" : "Fixed"; return;
+						case 3: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
+						case 4: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
+						case 5: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
+						case 6: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
 						default: label = "Back"; return;
 					}
 				}

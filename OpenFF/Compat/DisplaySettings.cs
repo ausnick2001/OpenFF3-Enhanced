@@ -97,6 +97,7 @@ namespace OpenFF.Client
 			/// <summary>A small map of the walls about the party in the corner of the screen, in dungeons and caves (Minimap.cs).</summary>
 			[JsonPropertyName("minimap")] public bool Minimap { get; set; } = true;
 			/// <summary>The minimap turns with the camera (up is where it looks); false keeps it fixed, as the camera first looked.</summary>
+			[JsonPropertyName("minimapFog")] public bool MinimapFog { get; set; } = true;
 			[JsonPropertyName("minimapRotate")] public bool MinimapRotate { get; set; }
 			/// <summary>0 small, 1 medium, 2 large.</summary>
 			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 1;

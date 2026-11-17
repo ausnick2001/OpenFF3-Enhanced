@@ -55,6 +55,7 @@ namespace OpenFF.Client
 
 		/// <summary>The dungeon minimap is on.</summary>
 		public static bool Minimap => S.Minimap;
+		public static bool MinimapFog => S.MinimapFog;
 		public static bool MinimapRotate => S.MinimapRotate;
 		public static int MinimapSize => S.MinimapSize;
 		public static bool MinimapOpaque => S.MinimapOpaque;

@@ -28,6 +28,7 @@ namespace OpenFF.Client
 	internal sealed class Minimap : DrawableGameComponent
 	{
 		private const int CellFx = 2 * 4096;        // a cell is 2 units
+		private const int SeeCells = 6;             // how near the party must have been for a cell to be shown, with fog of war
 		private const int Radius = 22;              // cells shown each way from the party
 		private const int Pad = Radius + 2;         // the picture's margin, so the shown part is always inside it
 		private const int Budget = 80;              // cells probed each frame
@@ -50,7 +51,10 @@ namespace OpenFF.Client
 		private int _frame, _recheckAt, _lastSet;
 		private int _startX, _startZ;
 		private int _minX, _maxX, _minZ, _maxZ;
-		private bool _failed, _haveFixed, _dirty, _realloc, _lastPassages;
+		private bool _failed, _haveFixed, _dirty, _realloc, _lastPassages, _lastFog;
+		private int _seenX = int.MinValue, _seenZ;
+		private readonly HashSet<long> _seen = new HashSet<long>();
+		private readonly List<(int dx, int dz)> _near = new List<(int, int)>();
 		private float _fixedX, _fixedZ;   // the camera's way when the map was entered, for the fixed map
 
 		// The picture of the floor: a pixel a cell, from cell (_ox, _oz).
@@ -77,6 +81,9 @@ namespace OpenFF.Client
 				for (int dx = -Radius; dx <= Radius; dx++)
 					if (dx * dx + dz * dz <= Radius * Radius) _order.Add((dx, dz));
 			_order.Sort((a, b) => (a.dx * a.dx + a.dz * a.dz).CompareTo(b.dx * b.dx + b.dz * b.dz));
+			for (int dz = -SeeCells; dz <= SeeCells; dz++)
+				for (int dx = -SeeCells; dx <= SeeCells; dx++)
+					if (dx * dx + dz * dz <= SeeCells * SeeCells) _near.Add((dx, dz));
 		}
 
 		public static void Attach(Game game)
@@ -109,7 +116,7 @@ namespace OpenFF.Client
 		private void NewStage(string stage, int px, int pz)
 		{
 			_stage = stage;
-			_cells.Clear(); _frontier.Clear();
+			_cells.Clear(); _frontier.Clear(); _seen.Clear(); _seenX = int.MinValue;
 			_haveFixed = false; _recheckAt = 0;
 			_startX = CellOf(px); _startZ = CellOf(pz);
 			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
@@ -160,6 +167,7 @@ namespace OpenFF.Client
 
 			// Where the party stands is floor, whatever the probe at the cell's middle says.
 			int pcx = CellOf(px), pcz = CellOf(pz);
+			MarkSeen(pcx, pcz);
 			if (!_cells.TryGetValue(Key(pcx, pcz), out Cell here) || (here.State != Floor && here.State != Exit))
 			{
 				Put(pcx, pcz, new Cell { State = Floor, GroundY = py, Stamp = _frame });
@@ -248,8 +256,24 @@ namespace OpenFF.Client
 
 		// ---- the picture of the floor ----
 
-		private Color ColourOf(byte state)
+		/// <summary>The cells about the party, shown from now on with fog of war (the floor is found before it is shown, so a hidden room is not given away).</summary>
+		private void MarkSeen(int pcx, int pcz)
 		{
+			if (pcx == _seenX && pcz == _seenZ) return;
+			_seenX = pcx; _seenZ = pcz;
+			foreach ((int dx, int dz) in _near)
+			{
+				long key = Key(pcx + dx, pcz + dz);
+				if (!_seen.Add(key)) continue;
+				if (_pix != null && _cells.TryGetValue(key, out Cell c) && InPicture(pcx + dx, pcz + dz)) { _pix[(pcz + dz - _oz) * _w + (pcx + dx - _ox)] = ColourOf(c.State, pcx + dx, pcz + dz); _dirty = true; }
+			}
+		}
+
+		private bool InPicture(int cx, int cz) => cx >= _ox && cx < _ox + _w && cz >= _oz && cz < _oz + _h;
+
+		private Color ColourOf(byte state, int cx, int cz)
+		{
+			if (Qol.MinimapFog && !_seen.Contains(Key(cx, cz))) return Color.Transparent;
 			switch (state)
 			{
 				case Floor: return new Color(40, 62, 100, 255);
@@ -268,13 +292,14 @@ namespace OpenFF.Client
 			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
 			_dirty = true;
 			if (_pix == null || cx - Pad < _ox || cx + Pad >= _ox + _w || cz - Pad < _oz || cz + Pad >= _oz + _h) { _realloc = true; return; }
-			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(c.State);
+			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(c.State, cx, cz);
 		}
 
 		private void Rebuild()
 		{
 			bool passages = Qol.MinimapPassages;
 			if (passages != _lastPassages) { _lastPassages = passages; _realloc = true; }
+			if (Qol.MinimapFog != _lastFog) { _lastFog = Qol.MinimapFog; _realloc = true; }
 			if (_tex != null && _tex.IsDisposed) _realloc = true;
 			if (_realloc)
 			{
@@ -285,7 +310,7 @@ namespace OpenFF.Client
 				foreach (KeyValuePair<long, Cell> kv in _cells)
 				{
 					int cx = (int)(kv.Key >> 32), cz = (int)(uint)kv.Key;
-					if (kv.Value.State != Void) _pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(kv.Value.State);
+					if (kv.Value.State != Void) _pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(kv.Value.State, cx, cz);
 				}
 				_tex?.Dispose();
 				_tex = new Texture2D(GraphicsDevice, _w, _h);
