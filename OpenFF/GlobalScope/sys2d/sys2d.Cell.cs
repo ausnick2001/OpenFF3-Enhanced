@@ -62,6 +62,26 @@ internal static partial class GlobalScope
 				Load(plane, arg3, arg4, arg, arg2);
 			}
 
+			/// <summary>
+			/// OpenFF: tells the cell the size its sheet has in the game's own files (the name screen's Name label, 140 x 40). A
+			/// mod's sheet that is larger (an upscale) is then drawn over the same cells, each cell's rectangle scaled to match.
+			/// </summary>
+			public void SheetBase(int baseW, int baseH)
+			{
+				try
+				{
+					byte[] png = m_Ncgr.pDataCg()?.m_aPng as byte[];
+					IMAGE_TABLE data = m_ImageProxy?.data as IMAGE_TABLE;
+					if (png == null || png.Length < 24 || data == null || data.tex == 0 || baseW <= 0 || baseH <= 0) return;
+					int w = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+					int h = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
+					if (w <= baseW || h <= baseH) return;
+					data.texScaleU *= (float)w / baseW;
+					data.texScaleV *= (float)h / baseH;
+				}
+				catch (Exception) { }
+			}
+
 			public void ceLoadCg(DS2D_OBJ_PLANE plane, string pCg)
 			{
 				if (pCg != null)

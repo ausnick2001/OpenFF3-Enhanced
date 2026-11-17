@@ -94,6 +94,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("jobAdjustment")] public bool JobAdjustment { get; set; } = true;
 			/// <summary>FF3's battles turn by turn (each hero chooses when their turn comes); false plays the game's own order. Read when a battle begins.</summary>
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
+			/// <summary>Dialogue and message text appears whole, at once, instead of a few letters at a time (the game's Fast is still slow).</summary>
+			[JsonPropertyName("instantText")] public bool InstantText { get; set; }
 			/// <summary>The corner's note of what is on.</summary>
 			[JsonPropertyName("indicator")] public bool Indicator { get; set; } = true;
 		}

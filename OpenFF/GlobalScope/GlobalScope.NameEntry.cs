@@ -101,16 +101,19 @@ internal static partial class GlobalScope
 										menu.MenuManager.getSingleton().GetCursor2d().SetPositionI(36, 190);
 										changeCompanyDirectory();
 										profile_.bgLoad2(const_cast<string>(filename[(int)getSingleton().currentPlayerID_]));
+										profile_.BaseW = 1120; profile_.BaseH = 540;   // OpenFF: an upscaled profile picture fits the same cells
 										profile_.bgSetUp(NNSG2dBGSelect.NNS_G2D_BGSELECT_MAIN2);
 										profile_.bgRelease();
 										profile_.bgSetShow(show: true);
 										changeGlobalDirectory();
 										name_cell_.Load(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_SUB2D, "name_i.NCER", null, "name_i.NCGR", "name_i.NCLR");
+										name_cell_.SheetBase(140, 40);   // OpenFF: an upscaled Name label fits the same cell
 										name_cell_.SetCell(0);
 										name_cell_.SetShow(show: true);
 										name_cell_.SetPositionI(18, 150);
 										sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(name_cell_);
 										ok_cell_.Load(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_SUB2D, "ok.NCER", null, "ok.NCGR", "ok.NCLR");
+										ok_cell_.SheetBase(166, 60);     // OpenFF: and an upscaled Confirm button
 										ok_cell_.SetCell(0);
 										ok_cell_.SetShow(show: true);
 										ok_cell_.SetPositionI(150, 266);

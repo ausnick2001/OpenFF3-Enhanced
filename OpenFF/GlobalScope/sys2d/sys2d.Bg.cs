@@ -43,6 +43,10 @@ internal static partial class GlobalScope
 
 			private GXBGCharBase _ChrBase;
 
+			/// <summary>OpenFF: the size the game's own picture has (the name screen's profile art, 1120 x 540). A mod's larger picture is
+			/// drawn over the same cells scaled to match; 0 leaves the picture as it is.</summary>
+			public int BaseW, BaseH;
+
 			~Bg()
 			{
 				bgRelease();
@@ -77,7 +81,7 @@ internal static partial class GlobalScope
 				if (_Nscr.pDataCe() != null)
 				{
 					NNS_G2dBGSetupCell((int)bg_select, _Nscr.pDataCe(), bg_select);
-					NNS_G2dBGSetupChar((int)bg_select, _Ncgr.pDataCg());
+					NNS_G2dBGSetupChar((int)bg_select, _Ncgr.pDataCg(), BaseW, BaseH);
 					_BgSelect = bg_select;
 					_Flag = BG_FLAG_NOT_SHOW;
 					bgSetShow(show: true);
