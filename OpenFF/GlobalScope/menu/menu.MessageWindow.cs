@@ -719,6 +719,8 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplayWait(mwDEFAULT_MESSAGE_SPEED);
 						break;
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_FAST:
+						// OpenFF: Fast shows the page whole, at once (the game's Fast was a letter a frame, still slow).
+						dGSMessage.setDisplaySpeed(byte.MaxValue);
 						dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
 						break;
 					default:
