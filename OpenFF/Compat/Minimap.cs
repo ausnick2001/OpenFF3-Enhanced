@@ -42,7 +42,7 @@ namespace OpenFF.Client
 
 		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
-		private struct Cell { public byte State; public int GroundY; public int Stamp; }
+		private struct Cell { public byte State; public int GroundY; public int Stamp; public sbyte DirX, DirZ; }   // DirX/DirZ: the way it was probed from, kept for probing it again
 
 		private static readonly float[] Sizes = { 0.26f, 0.34f, 0.44f };
 		private static readonly RasterizerState Scissor = new RasterizerState { ScissorTestEnable = true, CullMode = CullMode.None };
@@ -66,7 +66,7 @@ namespace OpenFF.Client
 		private int _w, _h, _ox, _oz;
 
 		private SpriteBatch _batch;
-		private Texture2D _pixel, _arrow, _chest;
+		private Texture2D _pixel, _arrow, _chest, _stairs;
 		private float _faceX, _faceZ;   // the way the hero faces, in the map's space
 		private readonly GlobalScope.VecFx32 _dirA = new GlobalScope.VecFx32();
 		private readonly GlobalScope.VecFx32 _dirB = new GlobalScope.VecFx32();
@@ -317,7 +317,7 @@ namespace OpenFF.Client
 						budget--;
 						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, dx, dz, out int gy);
 						if (state == Void) state = Edge;   // where the floor ends, the map has an edge
-						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame });
+						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame, DirX = (sbyte)dx, DirZ = (sbyte)dz });
 						if (state == Floor || state == Exit) _frontier.Enqueue((nx, nz));
 					}
 				}
@@ -330,9 +330,9 @@ namespace OpenFF.Client
 				_recheckAt = (_recheckAt + 1) % _order.Count;
 				int cx = pcx + _order[_recheckAt].dx, cz = pcz + _order[_recheckAt].dz;
 				if (!_cells.TryGetValue(Key(cx, cz), out Cell old) || (old.State != Wall && old.State != Secret) || _frame - old.Stamp < RecheckEvery) continue;
-				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, Math.Sign(pcx - cx), Math.Sign(pcz - cz) == 0 && pcx == cx ? 1 : Math.Sign(pcz - cz), out int gy);
+				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, old.DirX, old.DirZ, out int gy);   // the way it was found: a wall is only hit from its front
 				if (state == Void) state = Edge;
-				Put(cx, cz, new Cell { State = state, GroundY = state == Edge ? old.GroundY : gy, Stamp = _frame });
+				Put(cx, cz, new Cell { State = state, GroundY = state == Edge ? old.GroundY : gy, Stamp = _frame, DirX = old.DirX, DirZ = old.DirZ });
 				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
 			}
 		}
@@ -345,6 +345,7 @@ namespace OpenFF.Client
 		{
 			int x = cx * CellFx + CellFx / 2, z = cz * CellFx + CellFx / 2;
 			groundY = refY;
+			if (dirX == 0 && dirZ == 0) dirZ = 1;
 			int along = dirX != 0 && dirZ != 0 ? 2896 : 4096;   // a diagonal step is a unit vector too
 			_ahead.set(dirX * along, 0, dirZ * along);
 
@@ -397,6 +398,9 @@ namespace OpenFF.Client
 		private const int S = 4;   // texels a cell
 		private const byte ShowNone = 0, ShowFloor = 1, ShowWall = 2, ShowExit = 3, ShowSecret = 4;
 		private byte[] _grid;
+		private readonly List<Vector2> _exits = new List<Vector2>();   // where the ways out are, in cells (the middle of each run of exit cells)
+		private bool _exitsDirty = true;
+		private int _exitsAt;
 		private int _cw, _ch;
 		private int _dx0, _dy0, _dx1 = -1, _dy1;   // the part of the picture changed since it was last sent (empty when _dx1 < _dx0)
 
@@ -449,7 +453,9 @@ namespace OpenFF.Client
 			if (_grid == null) return;
 			int gx = cx - _ox, gz = cz - _oz;
 			if (gx < 0 || gz < 0 || gx >= _cw || gz >= _ch) return;
-			_grid[gz * _cw + gx] = ShownState(cx, cz);
+			byte shown = ShownState(cx, cz);
+			if ((shown == ShowExit) != (_grid[gz * _cw + gx] == ShowExit)) _exitsDirty = true;
+			_grid[gz * _cw + gx] = shown;
 			ShadeRegion(gx * S - S / 2, gz * S - S / 2, gx * S + S + S / 2 - 1, gz * S + S + S / 2 - 1);
 		}
 
@@ -470,13 +476,14 @@ namespace OpenFF.Client
 			return t * t * (3f - 2f * t);
 		}
 
-		/// <summary>One texel: the four cells whose middles are nearest, weighed by nearness, give how much floor, wall, way out and marked passage is here.</summary>
+		/// <summary>One texel: the four cells whose middles are nearest, weighed by nearness, give how much floor, wall and marked passage is here (a way out is floor, with a stairs icon over it).</summary>
 		private Color Shade(int tx, int ty)
 		{
 			float u = (tx + 0.5f) / S - 0.5f, v = (ty + 0.5f) / S - 0.5f;
 			int i0 = (int)Math.Floor(u), j0 = (int)Math.Floor(v);
 			float a = u - i0, b = v - j0;
-			float f = 0, w = 0, e = 0, p = 0;
+			a = a * a * (3f - 2f * a); b = b * b * (3f - 2f * b);   // rounder corners
+			float f = 0, w = 0, p = 0;
 			for (int k = 0; k < 4; k++)
 			{
 				int gi = i0 + (k & 1), gj = j0 + (k >> 1);
@@ -485,16 +492,14 @@ namespace OpenFF.Client
 				if (s == ShowNone) continue;
 				float wt = ((k & 1) == 0 ? 1 - a : a) * ((k >> 1) == 0 ? 1 - b : b);
 				if (s == ShowFloor || s == ShowExit) f += wt;
-				if (s == ShowExit) e += wt;
 				if (s == ShowWall || s == ShowSecret) w += wt;
 				if (s == ShowSecret) p += wt;
 			}
-			float af = Soft(f), aw = Soft(w), ae = Soft(e);
+			float af = Soft(f), aw = Soft(w * 1.6f);   // a wall a cell thick still shows along a slant
 			float mark = w > 1e-4f ? Math.Clamp(p / w, 0f, 1f) : 0f;
-			// Wall first (pale, orange where a passage is marked), the floor over it, a way out over that; premultiplied.
+			// Wall first (pale, orange where a passage is marked), the floor over it; premultiplied.
 			float r = (205f + (255f - 205f) * mark) / 255f * aw, g = (215f + (150f - 215f) * mark) / 255f * aw, bl = (235f + (60f - 235f) * mark) / 255f * aw, alpha = aw;
 			r = 40f / 255f * af + r * (1 - af); g = 62f / 255f * af + g * (1 - af); bl = 100f / 255f * af + bl * (1 - af); alpha = af + alpha * (1 - af);
-			r = 90f / 255f * ae + r * (1 - ae); g = 220f / 255f * ae + g * (1 - ae); bl = 120f / 255f * ae + bl * (1 - ae); alpha = ae + alpha * (1 - ae);
 			return new Color(r, g, bl, alpha);
 		}
 
@@ -525,7 +530,7 @@ namespace OpenFF.Client
 				_tex?.Dispose();
 				_tex = new Texture2D(GraphicsDevice, _w, _h);
 				_tex.SetData(_pix);
-				_realloc = false; _dx1 = -1; _lastSet = _frame;
+				_realloc = false; _dx1 = -1; _lastSet = _frame; _exitsDirty = true;
 				return;
 			}
 			if (_dx1 >= _dx0 && _frame - _lastSet >= 3)
@@ -543,6 +548,37 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>The ways out: each run of exit cells is one, put at its middle.</summary>
+		private void FindExits()
+		{
+			_exits.Clear();
+			_exitsDirty = false; _exitsAt = _frame;
+			if (_grid == null) return;
+			bool[] done = new bool[_grid.Length];
+			Stack<int> open = new Stack<int>();
+			for (int start = 0; start < _grid.Length; start++)
+			{
+				if (_grid[start] != ShowExit || done[start]) continue;
+				float sx = 0, sz = 0; int count = 0;
+				done[start] = true; open.Push(start);
+				while (open.Count > 0)
+				{
+					int at = open.Pop();
+					int gx = at % _cw, gz = at / _cw;
+					sx += gx; sz += gz; count++;
+					for (int dz = -1; dz <= 1; dz++)
+						for (int dx = -1; dx <= 1; dx++)
+						{
+							int nx = gx + dx, nz = gz + dz;
+							if (nx < 0 || nz < 0 || nx >= _cw || nz >= _ch) continue;
+							int n = nz * _cw + nx;
+							if (_grid[n] == ShowExit && !done[n]) { done[n] = true; open.Push(n); }
+						}
+				}
+				_exits.Add(new Vector2(_ox + sx / count + 0.5f, _oz + sz / count + 0.5f));
+			}
+		}
+
 		private void GridCell(long key)
 		{
 			int cx = (int)(key >> 32), cz = (int)(uint)key;
@@ -553,7 +589,7 @@ namespace OpenFF.Client
 
 		// ---- the two small pictures: the party's arrow and a chest ----
 
-		private const int ArrowSize = 64, ChestW = 14, ChestH = 8;
+		private const int ArrowSize = 64, ChestW = 14, ChestH = 8, StairW = 16, StairH = 12;
 
 		/// <summary>An arrow pointing up (white, with a dark outline), drawn smooth: its shape is sampled sixteen times a pixel.</summary>
 		private static Texture2D MakeArrow(GraphicsDevice device)
@@ -590,6 +626,25 @@ namespace OpenFF.Client
 				}
 			}
 			Texture2D tex = new Texture2D(device, ArrowSize, ArrowSize);
+			tex.SetData(pixels);
+			return tex;
+		}
+
+		/// <summary>A small flight of steps going up to the right: pale, with a dark outline.</summary>
+		private static Texture2D MakeStairs(GraphicsDevice device)
+		{
+			Color[] pixels = new Color[StairW * StairH];
+			for (int y = 0; y < StairH; y++)
+			{
+				for (int x = 0; x < StairW; x++)
+				{
+					int step = x / 4, top = StairH - 3 * (step + 1);
+					if (y < top) { pixels[y * StairW + x] = Color.Transparent; continue; }
+					bool outline = y == top || y == StairH - 1 || x == StairW - 1 || x % 4 == 0 && y >= top && (x == 0 || y < StairH - 3 * step);
+					pixels[y * StairW + x] = outline ? new Color(18, 36, 28, 255) : new Color(150, 235, 170, 255);
+				}
+			}
+			Texture2D tex = new Texture2D(device, StairW, StairH);
 			tex.SetData(pixels);
 			return tex;
 		}
@@ -639,6 +694,8 @@ namespace OpenFF.Client
 			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
 			if (_arrow == null || _arrow.IsDisposed) _arrow = MakeArrow(GraphicsDevice);
 			if (_chest == null || _chest.IsDisposed) _chest = MakeChest(GraphicsDevice);
+			if (_stairs == null || _stairs.IsDisposed) _stairs = MakeStairs(GraphicsDevice);
+			if (_exitsDirty && _frame - _exitsAt >= 20) FindExits();
 
 			Viewport view = GraphicsDevice.Viewport;
 			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
@@ -671,15 +728,13 @@ namespace OpenFF.Client
 			// One picture of the floor, drawn once (so, no seams), turned about the party.
 			_batch.Draw(_tex, centre, null, solid ? Color.White : Color.White * 0.85f, rotation, party, scale / S, SpriteEffects.None, 0f);
 
-			if (Qol.MinimapChests)
-			{
-				// The chests are small drawn icons, so they are drawn crisp, not smoothed.
-				_batch.End();
-				_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, Scissor);
-				PaintChests(centre, scale, px, pz, fx, fz, box, size);
-				_batch.End();
-				_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, Scissor);
-			}
+			// The stairs and chests are small drawn icons, so they are drawn crisp, not smoothed.
+			_batch.End();
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, null, Scissor);
+			PaintStairs(centre, scale, px, pz, fx, fz, box, size);
+			if (Qol.MinimapChests) PaintChests(centre, scale, px, pz, fx, fz, box, size);
+			_batch.End();
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, Scissor);
 
 			// The party: an arrow at the middle, pointing the way the hero faces.
 			float hu = _faceX * (-fz) + _faceZ * fx, hv = _faceX * fx + _faceZ * fz;
@@ -694,6 +749,20 @@ namespace OpenFF.Client
 			_batch.Draw(_pixel, new Rectangle(box.Right - 2, box.Y, 2, box.Height), edge);
 			_batch.End();
 			GraphicsDevice.ScissorRectangle = oldScissor;
+		}
+
+		private void PaintStairs(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box, int size)
+		{
+			int texel = Math.Max(1, (int)Math.Round(size * 0.085f / StairW));
+			float half = Math.Max(StairW, StairH) * texel / 2f;
+			foreach (Vector2 exit in _exits)
+			{
+				float ox = exit.X - px / (float)CellFx, oz = exit.Y - pz / (float)CellFx;
+				float u = ox * (-fz) + oz * fx, v = ox * fx + oz * fz;
+				Vector2 at = centre + new Vector2(u * scale, -v * scale);
+				if (at.X < box.X + half || at.X > box.Right - half || at.Y < box.Y + half || at.Y > box.Bottom - half) continue;
+				_batch.Draw(_stairs, new Vector2((float)Math.Round(at.X), (float)Math.Round(at.Y)), null, Color.White, 0f, new Vector2(StairW / 2f, StairH / 2f), texel, SpriteEffects.None, 0f);
+			}
 		}
 
 		private void PaintChests(Vector2 centre, float scale, int px, int pz, float fx, float fz, Rectangle box, int size)
