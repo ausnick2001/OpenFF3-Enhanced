@@ -131,7 +131,7 @@ namespace OpenFF.Client
 			_haveFixed = false; _recheckAt = 0;
 			_startX = CellOf(px); _startZ = CellOf(pz);
 			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
-			_tex?.Dispose(); _tex = null; _pix = null;
+			_tex?.Dispose(); _tex = null; _pix = null; _grid = null;
 			_realloc = true; _dirty = true;
 		}
 
@@ -315,7 +315,7 @@ namespace OpenFF.Client
 						if (Math.Abs(nx - _startX) > ReachCells || Math.Abs(nz - _startZ) > ReachCells) continue;
 						if (_cells.ContainsKey(Key(nx, nz))) continue;
 						budget--;
-						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, out int gy);
+						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, dx, dz, out int gy);
 						if (state == Void) state = Edge;   // where the floor ends, the map has an edge
 						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame });
 						if (state == Floor || state == Exit) _frontier.Enqueue((nx, nz));
@@ -330,17 +330,23 @@ namespace OpenFF.Client
 				_recheckAt = (_recheckAt + 1) % _order.Count;
 				int cx = pcx + _order[_recheckAt].dx, cz = pcz + _order[_recheckAt].dz;
 				if (!_cells.TryGetValue(Key(cx, cz), out Cell old) || (old.State != Wall && old.State != Secret) || _frame - old.Stamp < RecheckEvery) continue;
-				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, out int gy);
+				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, Math.Sign(pcx - cx), Math.Sign(pcz - cz) == 0 && pcx == cx ? 1 : Math.Sign(pcz - cz), out int gy);
 				if (state == Void) state = Edge;
 				Put(cx, cz, new Cell { State = state, GroundY = state == Edge ? old.GroundY : gy, Stamp = _frame });
 				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
 			}
 		}
 
-		private byte ProbeCell(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int cx, int cz, int refY, out int groundY)
+		/// <summary>
+		/// What the party would find stepping into a cell, going the way (dirX, dirZ): the game's walls only push back from one
+		/// side (a wall is hit when the party moves against its face), so the probe goes the way the party would.
+		/// </summary>
+		private byte ProbeCell(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int cx, int cz, int refY, int dirX, int dirZ, out int groundY)
 		{
 			int x = cx * CellFx + CellFx / 2, z = cz * CellFx + CellFx / 2;
 			groundY = refY;
+			int along = dirX != 0 && dirZ != 0 ? 2896 : 4096;   // a diagonal step is a unit vector too
+			_ahead.set(dirX * along, 0, dirZ * along);
 
 			// Ground: an arrow down from above the neighbour's height, as the ground test.
 			bool ground = false;
@@ -385,6 +391,15 @@ namespace OpenFF.Client
 
 		// ---- the picture of the floor ----
 
+		// The floor is kept as a grid of cells, a byte each (what the map shows there), and drawn from a picture of four texels
+		// a cell, shaded by smoothing between the cells' middles, so its edges are smooth lines and not steps a cell wide.
+
+		private const int S = 4;   // texels a cell
+		private const byte ShowNone = 0, ShowFloor = 1, ShowWall = 2, ShowExit = 3, ShowSecret = 4;
+		private byte[] _grid;
+		private int _cw, _ch;
+		private int _dx0, _dy0, _dx1 = -1, _dy1;   // the part of the picture changed since it was last sent (empty when _dx1 < _dx0)
+
 		/// <summary>The cells about the party, shown from now on with fog of war (the floor is found before it is shown, so a hidden room is not given away).</summary>
 		private void MarkSeen(int pcx, int pcz)
 		{
@@ -395,34 +410,28 @@ namespace OpenFF.Client
 				long key = Key(pcx + dx, pcz + dz);
 				if (_memory.ContainsKey(key)) continue;
 				_memory[key] = _cells.TryGetValue(key, out Cell c) ? c.State : Void;
-				if (_pix != null && InPicture(pcx + dx, pcz + dz)) { _pix[(pcz + dz - _oz) * _w + (pcx + dx - _ox)] = ColourAt(pcx + dx, pcz + dz); _dirty = true; }
+				SetShown(pcx + dx, pcz + dz);
 			}
 		}
 
-		private bool InPicture(int cx, int cz) => cx >= _ox && cx < _ox + _w && cz >= _oz && cz < _oz + _h;
-
-		/// <summary>A cell's colour in the picture: what is found of it now, else what was kept of it; with fog of war, only if the party has been near.</summary>
-		private Color ColourAt(int cx, int cz)
+		/// <summary>What the map shows of a cell: what is found of it now, else what was kept of it; with fog of war, only if the party has been near.</summary>
+		private byte ShownState(int cx, int cz)
 		{
 			long key = Key(cx, cz);
 			bool remembered = _memory.TryGetValue(key, out byte kept);
-			if (Qol.MinimapFog && !remembered) return Color.Transparent;
-			return ColourOf(_cells.TryGetValue(key, out Cell c) ? c.State : remembered ? kept : Void);
-		}
-
-		private Color ColourOf(byte state)
-		{
+			if (Qol.MinimapFog && !remembered) return ShowNone;
+			byte state = _cells.TryGetValue(key, out Cell c) ? c.State : remembered ? kept : Void;
 			switch (state)
 			{
-				case Floor: return new Color(40, 62, 100, 255);
-				case Wall: case Edge: return new Color(205, 215, 235, 255);
-				case Secret: return Qol.MinimapPassages ? new Color(255, 150, 60, 255) : new Color(205, 215, 235, 255);
-				case Exit: return new Color(90, 220, 120, 255);
-				default: return Color.Transparent;
+				case Floor: return ShowFloor;
+				case Exit: return ShowExit;
+				case Wall: case Edge: return ShowWall;
+				case Secret: return Qol.MinimapPassages ? ShowSecret : ShowWall;
+				default: return ShowNone;
 			}
 		}
 
-		/// <summary>A cell found or changed: kept, and put in the picture if it is inside it (else the picture is made again, larger).</summary>
+		/// <summary>A cell found or changed: kept, and put in the picture (or the picture is made again, larger, when the cell is near its edge).</summary>
 		private void Put(int cx, int cz, Cell c)
 		{
 			long key = Key(cx, cz);
@@ -430,16 +439,63 @@ namespace OpenFF.Client
 			if (_memory.ContainsKey(key) && _memory[key] != c.State) _memory[key] = c.State;
 			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
 			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
-			_dirty = true;
-			if (_pix == null || cx - Pad < _ox || cx + Pad >= _ox + _w || cz - Pad < _oz || cz + Pad >= _oz + _h) { _realloc = true; return; }
-			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourAt(cx, cz);
+			if (_grid == null || cx - _ox < 4 || cz - _oz < 4 || cx - _ox >= _cw - 4 || cz - _oz >= _ch - 4) { _realloc = true; return; }
+			SetShown(cx, cz);
 		}
 
-		private void FillPixel(long key)
+		/// <summary>A cell's grid byte made again, and the texels it reaches shaded again.</summary>
+		private void SetShown(int cx, int cz)
 		{
-			int cx = (int)(key >> 32), cz = (int)(uint)key;
-			if (!InPicture(cx, cz)) return;
-			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourAt(cx, cz);
+			if (_grid == null) return;
+			int gx = cx - _ox, gz = cz - _oz;
+			if (gx < 0 || gz < 0 || gx >= _cw || gz >= _ch) return;
+			_grid[gz * _cw + gx] = ShownState(cx, cz);
+			ShadeRegion(gx * S - S / 2, gz * S - S / 2, gx * S + S + S / 2 - 1, gz * S + S + S / 2 - 1);
+		}
+
+		private void ShadeRegion(int x0, int y0, int x1, int y1)
+		{
+			x0 = Math.Max(0, x0); y0 = Math.Max(0, y0); x1 = Math.Min(_w - 1, x1); y1 = Math.Min(_h - 1, y1);
+			if (x1 < x0 || y1 < y0) return;
+			for (int y = y0; y <= y1; y++)
+				for (int x = x0; x <= x1; x++)
+					_pix[y * _w + x] = Shade(x, y);
+			if (_dx1 < _dx0) { _dx0 = x0; _dy0 = y0; _dx1 = x1; _dy1 = y1; }
+			else { _dx0 = Math.Min(_dx0, x0); _dy0 = Math.Min(_dy0, y0); _dx1 = Math.Max(_dx1, x1); _dy1 = Math.Max(_dy1, y1); }
+		}
+
+		private static float Soft(float x)
+		{
+			float t = Math.Clamp((x - 0.35f) / 0.3f, 0f, 1f);
+			return t * t * (3f - 2f * t);
+		}
+
+		/// <summary>One texel: the four cells whose middles are nearest, weighed by nearness, give how much floor, wall, way out and marked passage is here.</summary>
+		private Color Shade(int tx, int ty)
+		{
+			float u = (tx + 0.5f) / S - 0.5f, v = (ty + 0.5f) / S - 0.5f;
+			int i0 = (int)Math.Floor(u), j0 = (int)Math.Floor(v);
+			float a = u - i0, b = v - j0;
+			float f = 0, w = 0, e = 0, p = 0;
+			for (int k = 0; k < 4; k++)
+			{
+				int gi = i0 + (k & 1), gj = j0 + (k >> 1);
+				if (gi < 0 || gj < 0 || gi >= _cw || gj >= _ch) continue;
+				byte s = _grid[gj * _cw + gi];
+				if (s == ShowNone) continue;
+				float wt = ((k & 1) == 0 ? 1 - a : a) * ((k >> 1) == 0 ? 1 - b : b);
+				if (s == ShowFloor || s == ShowExit) f += wt;
+				if (s == ShowExit) e += wt;
+				if (s == ShowWall || s == ShowSecret) w += wt;
+				if (s == ShowSecret) p += wt;
+			}
+			float af = Soft(f), aw = Soft(w), ae = Soft(e);
+			float mark = w > 1e-4f ? Math.Clamp(p / w, 0f, 1f) : 0f;
+			// Wall first (pale, orange where a passage is marked), the floor over it, a way out over that; premultiplied.
+			float r = (205f + (255f - 205f) * mark) / 255f * aw, g = (215f + (150f - 215f) * mark) / 255f * aw, bl = (235f + (60f - 235f) * mark) / 255f * aw, alpha = aw;
+			r = 40f / 255f * af + r * (1 - af); g = 62f / 255f * af + g * (1 - af); bl = 100f / 255f * af + bl * (1 - af); alpha = af + alpha * (1 - af);
+			r = 90f / 255f * ae + r * (1 - ae); g = 220f / 255f * ae + g * (1 - ae); bl = 120f / 255f * ae + bl * (1 - ae); alpha = ae + alpha * (1 - ae);
+			return new Color(r, g, bl, alpha);
 		}
 
 		private void Rebuild()
@@ -450,21 +506,49 @@ namespace OpenFF.Client
 			if (_tex != null && _tex.IsDisposed) _realloc = true;
 			if (_realloc)
 			{
-				// The picture covers every cell found and a margin, with room to grow so it is not made again at every step.
-				_ox = _minX - Pad - 16; _oz = _minZ - Pad - 16;
-				_w = _maxX + Pad + 16 - _ox + 1; _h = _maxZ + Pad + 16 - _oz + 1;
+				// The grid covers every cell found and a margin, with room to grow so it is not made again at every step.
+				foreach (long key in _memory.Keys)   // and the cells kept from earlier visits
+				{
+					int mx = (int)(key >> 32), mz = (int)(uint)key;
+					if (mx < _minX) _minX = mx; if (mx > _maxX) _maxX = mx;
+					if (mz < _minZ) _minZ = mz; if (mz > _maxZ) _maxZ = mz;
+				}
+				_ox = _minX - 24; _oz = _minZ - 24;
+				_cw = _maxX - _minX + 1 + 48; _ch = _maxZ - _minZ + 1 + 48;
+				_grid = new byte[_cw * _ch];
+				foreach (long key in _cells.Keys) GridCell(key);
+				foreach (long key in _memory.Keys) GridCell(key);
+				_w = _cw * S; _h = _ch * S;
 				_pix = new Color[_w * _h];
-				foreach (long key in _cells.Keys) FillPixel(key);
-				foreach (long key in _memory.Keys) FillPixel(key);
+				_dx1 = -1;
+				ShadeRegion(0, 0, _w - 1, _h - 1);
 				_tex?.Dispose();
 				_tex = new Texture2D(GraphicsDevice, _w, _h);
-				_realloc = false; _dirty = true; _lastSet = -99;
-			}
-			if (_dirty && _frame - _lastSet >= 4)
-			{
 				_tex.SetData(_pix);
-				_dirty = false; _lastSet = _frame;
+				_realloc = false; _dx1 = -1; _lastSet = _frame;
+				return;
 			}
+			if (_dx1 >= _dx0 && _frame - _lastSet >= 3)
+			{
+				int rw = _dx1 - _dx0 + 1, rh = _dy1 - _dy0 + 1;
+				if (rw * rh >= _w * _h / 2) _tex.SetData(_pix);
+				else
+				{
+					// Only the rows that changed go to the card.
+					Color[] part = new Color[rw * rh];
+					for (int y = 0; y < rh; y++) Array.Copy(_pix, (_dy0 + y) * _w + _dx0, part, y * rw, rw);
+					_tex.SetData(0, new Rectangle(_dx0, _dy0, rw, rh), part, 0, part.Length);
+				}
+				_dx1 = -1; _lastSet = _frame;
+			}
+		}
+
+		private void GridCell(long key)
+		{
+			int cx = (int)(key >> 32), cz = (int)(uint)key;
+			int gx = cx - _ox, gz = cz - _oz;
+			if (gx < 0 || gz < 0 || gx >= _cw || gz >= _ch) return;
+			_grid[gz * _cw + gx] = ShownState(cx, cz);
 		}
 
 		// ---- the two small pictures: the party's arrow and a chest ----
@@ -578,14 +662,14 @@ namespace OpenFF.Client
 
 			bool solid = Qol.MinimapOpaque;
 			Vector2 centre = new Vector2(box.X + size / 2f, box.Y + size / 2f);
-			Vector2 party = new Vector2(px / (float)CellFx - _ox, pz / (float)CellFx - _oz);   // the party's place in the picture, in its pixels
+			Vector2 party = new Vector2((px / (float)CellFx - _ox) * S, (pz / (float)CellFx - _oz) * S);   // the party's place in the picture, in its texels
 
 			Rectangle oldScissor = GraphicsDevice.ScissorRectangle;
 			GraphicsDevice.ScissorRectangle = box;
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp, null, Scissor);
 			_batch.Draw(_pixel, box, solid ? new Color(8, 12, 24, 255) : new Color(0, 0, 0, 80));
 			// One picture of the floor, drawn once (so, no seams), turned about the party.
-			_batch.Draw(_tex, centre, null, solid ? Color.White : Color.White * 0.85f, rotation, party, scale, SpriteEffects.None, 0f);
+			_batch.Draw(_tex, centre, null, solid ? Color.White : Color.White * 0.85f, rotation, party, scale / S, SpriteEffects.None, 0f);
 
 			if (Qol.MinimapChests)
 			{
