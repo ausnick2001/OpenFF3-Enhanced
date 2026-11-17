@@ -40,7 +40,7 @@ namespace OpenFF.Client
 			switch (page)
 			{
 				case Page.Main: return new Layout(new Rectangle(152, 44, 496, 392), 120, 41, 34, false);
-				case Page.Map: return new Layout(new Rectangle(142, 50, 516, 400), 118, 33, 28, true);
+				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 106, 31, 26, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
@@ -432,8 +432,8 @@ namespace OpenFF.Client
 
 		// ---- minimap ----
 
-		// Minimap, Type, Rotation, Size, Style, Chests, Hidden passages, Back.
-		private const int MapRows = 8;
+		// Minimap, Type, Rotation, Size, Style, Chests, Hidden passages, Forget explored maps, Back.
+		private const int MapRows = 9;
 
 		private static readonly string[] MapSizes = { "Small", "Medium", "Large" };
 
@@ -450,6 +450,9 @@ namespace OpenFF.Client
 				case 5: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
 				case 6: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
 				case 7:
+					if (confirm) { Minimap.Forget(); _note = "every explored floor is forgotten"; }
+					return;
+				case 8:
 					if (confirm) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -467,6 +470,7 @@ namespace OpenFF.Client
 				case 4: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
 				case 5: return "a marker on each chest not yet opened";
 				case 6: return "complete maps only: walls that can open are marked";
+				case 7: return "what you have explored is kept for next time; this clears it all (for a new game)";
 				default: return "";
 			}
 		}
@@ -640,6 +644,7 @@ namespace OpenFF.Client
 						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 5: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
+						case 7: icon = UiTheme.Icon.Exit; return Kind.None;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -920,6 +925,7 @@ namespace OpenFF.Client
 						case 4: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
 						case 5: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
 						case 6: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
+						case 7: label = "Forget explored maps"; return;
 						default: label = "Back"; return;
 					}
 				}

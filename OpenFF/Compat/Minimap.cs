@@ -14,6 +14,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -29,8 +31,9 @@ namespace OpenFF.Client
 	{
 		private const int CellFx = 2 * 4096;        // a cell is 2 units
 		private const int SeeCells = 6;             // how near the party must have been for a cell to be shown, with fog of war
-		private const int Radius = 22;              // cells shown each way from the party
-		private const int Pad = Radius + 2;         // the picture's margin, so the shown part is always inside it
+		private const int ViewCells = 55;           // cells shown each way from the party
+		private const int RecheckCells = 14;        // how far from the party walls are looked at again
+		private const int Pad = ViewCells + 2;         // the picture's margin, so the shown part is always inside it
 		private const int Budget = 80;              // cells probed each frame
 		private const int ReachCells = 160;         // how far the fill goes from where the map was entered
 		private const int RecheckEvery = 150;       // frames before a wall is probed again (a passage may have opened)
@@ -53,7 +56,7 @@ namespace OpenFF.Client
 		private int _minX, _maxX, _minZ, _maxZ;
 		private bool _failed, _haveFixed, _dirty, _realloc, _lastPassages, _lastFog;
 		private int _seenX = int.MinValue, _seenZ;
-		private readonly HashSet<long> _seen = new HashSet<long>();
+		private Dictionary<long, byte> _memory = new Dictionary<long, byte>();   // the cells shown, by what they were when last found: kept between visits
 		private readonly List<(int dx, int dz)> _near = new List<(int, int)>();
 		private float _fixedX, _fixedZ;   // the camera's way when the map was entered, for the fixed map
 
@@ -65,6 +68,8 @@ namespace OpenFF.Client
 		private SpriteBatch _batch;
 		private Texture2D _pixel;
 
+		private int _myGen;
+		private static Minimap _instance;
 		private readonly GlobalScope.VecFx32 _pos = new GlobalScope.VecFx32();
 		private readonly GlobalScope.VecFx32 _local = new GlobalScope.VecFx32();
 		private readonly GlobalScope.VecFx32 _probe = new GlobalScope.VecFx32();
@@ -77,9 +82,9 @@ namespace OpenFF.Client
 		{
 			// Over the field and its windows' pictures, under the debug overlay and the screenshot.
 			DrawOrder = int.MaxValue - 6;
-			for (int dz = -Radius; dz <= Radius; dz++)
-				for (int dx = -Radius; dx <= Radius; dx++)
-					if (dx * dx + dz * dz <= Radius * Radius) _order.Add((dx, dz));
+			for (int dz = -RecheckCells; dz <= RecheckCells; dz++)
+				for (int dx = -RecheckCells; dx <= RecheckCells; dx++)
+					if (dx * dx + dz * dz <= RecheckCells * RecheckCells) _order.Add((dx, dz));
 			_order.Sort((a, b) => (a.dx * a.dx + a.dz * a.dz).CompareTo(b.dx * b.dx + b.dz * b.dz));
 			for (int dz = -SeeCells; dz <= SeeCells; dz++)
 				for (int dx = -SeeCells; dx <= SeeCells; dx++)
@@ -88,7 +93,9 @@ namespace OpenFF.Client
 
 		public static void Attach(Game game)
 		{
-			game.Components.Add(new Minimap(game));
+			_instance = new Minimap(game);
+			game.Components.Add(_instance);
+			game.Exiting += (s, e) => SaveStore();
 			Log.Write(LogChannel.General, "minimap: on in dungeons (the pause menu's Minimap page)");
 		}
 
@@ -101,7 +108,9 @@ namespace OpenFF.Client
 				if (!Locate(out int px, out int py, out int pz)) return;
 				string stage = GlobalScope.stg.CStageMng.CurrentName ?? "";
 				if (stage != _stage) NewStage(stage, px, pz);
+				if (_myGen != _forgetGen) { _myGen = _forgetGen; _memory = Recall(_stage); _realloc = true; _dirty = true; }
 				_frame++;
+				if (_frame % 1800 == 0) SaveStore();
 				Explore(px, py, pz);
 				Rebuild();
 				Paint(px, pz);
@@ -115,8 +124,10 @@ namespace OpenFF.Client
 
 		private void NewStage(string stage, int px, int pz)
 		{
+			if (_stage != null) SaveStore();   // the floor just left is kept
 			_stage = stage;
-			_cells.Clear(); _frontier.Clear(); _seen.Clear(); _seenX = int.MinValue;
+			_memory = Recall(stage);
+			_cells.Clear(); _frontier.Clear(); _seenX = int.MinValue;
 			_haveFixed = false; _recheckAt = 0;
 			_startX = CellOf(px); _startZ = CellOf(pz);
 			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
@@ -154,6 +165,86 @@ namespace OpenFF.Client
 		private static long Key(int cx, int cz) => ((long)cx << 32) ^ (uint)cz;
 
 		private static int CellOf(int fx) => (int)Math.Floor(fx / (double)CellFx);
+
+		// ---- the maps kept ----
+
+		// What the party has seen of each floor, by the floor's name, kept for the next visit and written to a file
+		// beside settings.json, so the maps are still there when the game is started again.
+		private static readonly Dictionary<string, Dictionary<long, byte>> Store = new Dictionary<string, Dictionary<long, byte>>();
+		private static bool _storeLoaded, _storeDirty;
+		private static int _forgetGen;
+
+		private static string StorePath => System.IO.Path.Combine(
+			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "minimap.bin");
+
+		private static Dictionary<long, byte> Recall(string stage)
+		{
+			if (!_storeLoaded) LoadStore();
+			if (stage == null) stage = "";
+			if (!Store.TryGetValue(stage, out Dictionary<long, byte> kept)) Store[stage] = kept = new Dictionary<long, byte>();
+			return kept;
+		}
+
+		private static void LoadStore()
+		{
+			_storeLoaded = true;
+			try
+			{
+				if (!File.Exists(StorePath)) return;
+				using (BinaryReader r = new BinaryReader(new GZipStream(File.OpenRead(StorePath), CompressionMode.Decompress)))
+				{
+					if (r.ReadInt32() != 1) return;
+					int stages = r.ReadInt32();
+					for (int i = 0; i < stages; i++)
+					{
+						string name = r.ReadString();
+						int count = r.ReadInt32();
+						Dictionary<long, byte> cells = new Dictionary<long, byte>(count);
+						for (int n = 0; n < count; n++) { long key = r.ReadInt64(); cells[key] = r.ReadByte(); }
+						Store[name] = cells;
+					}
+				}
+				Log.Write(LogChannel.General, "minimap: " + Store.Count + " floors kept from earlier");
+			}
+			catch (Exception ex) { Log.Write(LogChannel.General, "minimap: kept maps not read - " + ex.Message); Store.Clear(); }
+		}
+
+		private static void SaveStore()
+		{
+			if (!_storeDirty) return;
+			_storeDirty = false;
+			try
+			{
+				Directory.CreateDirectory(System.IO.Path.GetDirectoryName(StorePath));
+				string temp = StorePath + ".tmp";
+				using (BinaryWriter w = new BinaryWriter(new GZipStream(File.Create(temp), CompressionLevel.Fastest)))
+				{
+					w.Write(1);
+					int kept = 0;
+					foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store) if (kv.Value.Count > 0) kept++;
+					w.Write(kept);
+					foreach (KeyValuePair<string, Dictionary<long, byte>> kv in Store)
+					{
+						if (kv.Value.Count == 0) continue;
+						w.Write(kv.Key);
+						w.Write(kv.Value.Count);
+						foreach (KeyValuePair<long, byte> cell in kv.Value) { w.Write(cell.Key); w.Write(cell.Value); }
+					}
+				}
+				File.Copy(temp, StorePath, true);
+				File.Delete(temp);
+			}
+			catch (Exception ex) { Log.Write(LogChannel.General, "minimap: maps not saved - " + ex.Message); }
+		}
+
+		/// <summary>Every kept map is forgotten (the pause menu's Forget explored maps, for a new game).</summary>
+		public static void Forget()
+		{
+			Store.Clear();
+			_storeLoaded = true; _storeDirty = false; _forgetGen++;
+			try { if (File.Exists(StorePath)) File.Delete(StorePath); } catch (Exception ex) { Log.Write(LogChannel.General, "minimap: " + ex.Message); }
+			Log.Write(LogChannel.General, "minimap: kept maps forgotten");
+		}
 
 		// ---- finding the floor ----
 
@@ -264,16 +355,26 @@ namespace OpenFF.Client
 			foreach ((int dx, int dz) in _near)
 			{
 				long key = Key(pcx + dx, pcz + dz);
-				if (!_seen.Add(key)) continue;
-				if (_pix != null && _cells.TryGetValue(key, out Cell c) && InPicture(pcx + dx, pcz + dz)) { _pix[(pcz + dz - _oz) * _w + (pcx + dx - _ox)] = ColourOf(c.State, pcx + dx, pcz + dz); _dirty = true; }
+				if (_memory.ContainsKey(key)) continue;
+				_memory[key] = _cells.TryGetValue(key, out Cell c) ? c.State : Void;
+				_storeDirty = true;
+				if (_pix != null && InPicture(pcx + dx, pcz + dz)) { _pix[(pcz + dz - _oz) * _w + (pcx + dx - _ox)] = ColourAt(pcx + dx, pcz + dz); _dirty = true; }
 			}
 		}
 
 		private bool InPicture(int cx, int cz) => cx >= _ox && cx < _ox + _w && cz >= _oz && cz < _oz + _h;
 
-		private Color ColourOf(byte state, int cx, int cz)
+		/// <summary>A cell's colour in the picture: what is found of it now, else what was kept of it; with fog of war, only if the party has been near.</summary>
+		private Color ColourAt(int cx, int cz)
 		{
-			if (Qol.MinimapFog && !_seen.Contains(Key(cx, cz))) return Color.Transparent;
+			long key = Key(cx, cz);
+			bool remembered = _memory.TryGetValue(key, out byte kept);
+			if (Qol.MinimapFog && !remembered) return Color.Transparent;
+			return ColourOf(_cells.TryGetValue(key, out Cell c) ? c.State : remembered ? kept : Void);
+		}
+
+		private Color ColourOf(byte state)
+		{
 			switch (state)
 			{
 				case Floor: return new Color(40, 62, 100, 255);
@@ -287,12 +388,21 @@ namespace OpenFF.Client
 		/// <summary>A cell found or changed: kept, and put in the picture if it is inside it (else the picture is made again, larger).</summary>
 		private void Put(int cx, int cz, Cell c)
 		{
-			_cells[Key(cx, cz)] = c;
+			long key = Key(cx, cz);
+			_cells[key] = c;
+			if (_memory.ContainsKey(key) && _memory[key] != c.State) { _memory[key] = c.State; _storeDirty = true; }
 			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
 			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
 			_dirty = true;
 			if (_pix == null || cx - Pad < _ox || cx + Pad >= _ox + _w || cz - Pad < _oz || cz + Pad >= _oz + _h) { _realloc = true; return; }
-			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(c.State, cx, cz);
+			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourAt(cx, cz);
+		}
+
+		private void FillPixel(long key)
+		{
+			int cx = (int)(key >> 32), cz = (int)(uint)key;
+			if (!InPicture(cx, cz)) return;
+			_pix[(cz - _oz) * _w + (cx - _ox)] = ColourAt(cx, cz);
 		}
 
 		private void Rebuild()
@@ -307,11 +417,8 @@ namespace OpenFF.Client
 				_ox = _minX - Pad - 16; _oz = _minZ - Pad - 16;
 				_w = _maxX + Pad + 16 - _ox + 1; _h = _maxZ + Pad + 16 - _oz + 1;
 				_pix = new Color[_w * _h];
-				foreach (KeyValuePair<long, Cell> kv in _cells)
-				{
-					int cx = (int)(kv.Key >> 32), cz = (int)(uint)kv.Key;
-					if (kv.Value.State != Void) _pix[(cz - _oz) * _w + (cx - _ox)] = ColourOf(kv.Value.State, cx, cz);
-				}
+				foreach (long key in _cells.Keys) FillPixel(key);
+				foreach (long key in _memory.Keys) FillPixel(key);
 				_tex?.Dispose();
 				_tex = new Texture2D(GraphicsDevice, _w, _h);
 				_realloc = false; _dirty = true; _lastSet = -99;
@@ -335,7 +442,7 @@ namespace OpenFF.Client
 			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
 			int margin = Math.Max(8, (int)(view.Height * 0.03f));
 			Rectangle box = new Rectangle(view.Width - size - margin, margin, size, size);
-			float scale = size / (2f * (Radius - 1));   // pixels a cell
+			float scale = size / (2f * (ViewCells - 1));   // pixels a cell
 
 			// The camera's way on the ground, in the map's space: where the map's up is when it turns.
 			float fx = (GlobalScope.NNS_G3dGlb.camTarget.x - GlobalScope.NNS_G3dGlb.camPos.x) / 4096f;
