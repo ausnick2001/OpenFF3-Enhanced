@@ -39,7 +39,7 @@ namespace OpenFF.Client
 		{
 			switch (page)
 			{
-				case Page.Main: return new Layout(new Rectangle(152, 70, 496, 340), 150, 43, 36, false);
+				case Page.Main: return new Layout(new Rectangle(152, 56, 496, 368), 136, 43, 36, false);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
@@ -74,7 +74,37 @@ namespace OpenFF.Client
 		};
 
 		// The main page's rows: Abilities only with a mastery hero in the party.
-		private string[] MainRows() => AbilitiesRow ? new[] { "resume", "abilities", "settings", "qol", "exit" } : new[] { "resume", "settings", "qol", "exit" };
+		private string[] MainRows()
+		{
+			List<string> rows = new List<string> { "resume" };
+			if (AbilitiesRow) rows.Add("abilities");
+			rows.Add("settings"); rows.Add("qol");
+			if (CanLeaveToTitle) { rows.Add("load"); rows.Add("reset"); }
+			rows.Add("exit");
+			return rows.ToArray();
+		}
+
+		/// <summary>Set by the pause menu's Load game: the title, once up, opens its load screen.</summary>
+		public static bool LoadOnTitle;
+		private string _leave = "exit";   // what the confirmation page is for: exit | load | reset
+
+		/// <summary>Load game and Reset only where the game can go back to the title: out in the world, not on the title or in a battle.</summary>
+		private static bool CanLeaveToTitle => EngineApi.InWorld && !TitleEntries.Showing && Restart.Possible;
+
+		private void LeaveToTitle(bool thenLoad)
+		{
+			Close();
+			DisplaySettings.Current.Save();
+			Log.Write(LogChannel.General, "menu: " + (thenLoad ? "load game" : "reset") + ", to the title");
+			LoadOnTitle = thenLoad;
+			try
+			{
+				GlobalScope.wld.CBaseSystem.setTitle(b: true);
+				GlobalScope.wld.MapSound.stopBGM(15);
+				ModMenus.LeaveMenus();
+			}
+			catch (Exception ex) { LoadOnTitle = false; Log.Write(LogChannel.General, "menu: to the title: " + ex.Message); }
+		}
 
 		private int MainRow(string id) => Math.Max(0, Array.IndexOf(MainRows(), id));
 
@@ -211,7 +241,7 @@ namespace OpenFF.Client
 						if (id == "resume") Close();
 						else if (id == "settings") { _page = Page.Settings; _selected = 0; _note = ""; }
 						else if (id == "qol") { _page = Page.Qol; _selected = 0; _note = QolNote(0); }
-						else { _page = Page.Quit; _selected = 1; }
+						else { _leave = id; _page = Page.Quit; _selected = 1; }
 					}
 					break;
 				case Page.Qol:
@@ -234,11 +264,12 @@ namespace OpenFF.Client
 					}
 					break;
 				case Page.Quit:
-					if (cancel) { _page = Page.Main; _selected = MainRow("exit"); return; }
+					if (cancel) { _page = Page.Main; _selected = MainRow(_leave); return; }
 					if (confirm)
 					{
-						if (_selected == 0) { DisplaySettings.Current.Save(); Log.Write(LogChannel.General, "menu: exit game"); Game.Exit(); }
-						else { _page = Page.Main; _selected = MainRow("exit"); }
+						if (_selected == 0 && _leave != "exit") LeaveToTitle(_leave == "load");
+						else if (_selected == 0) { DisplaySettings.Current.Save(); Log.Write(LogChannel.General, "menu: exit game"); Game.Exit(); }
+						else { _page = Page.Main; _selected = MainRow(_leave); }
 					}
 					break;
 			}
@@ -525,7 +556,7 @@ namespace OpenFF.Client
 				{
 					string[] rows = MainRows();
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
-					icon = id == "resume" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : UiTheme.Icon.Exit;
+					icon = id == "resume" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : id == "load" ? UiTheme.Icon.Resume : id == "reset" ? UiTheme.Icon.Settings : UiTheme.Icon.Exit;
 					return Kind.None;
 				}
 				case Page.Qol:
@@ -648,7 +679,7 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _leave == "load" ? "Load game?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				Ui.Left(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
 				string sub = _page == Page.Main ? "The game goes on behind this."
 					: _page == Page.Settings ? "Kept in settings.json."
@@ -786,8 +817,10 @@ namespace OpenFF.Client
 					string[] rows = MainRows();
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
 					if (id == "abilities") { label = "Abilities"; value = "job ladders, free slots"; return; }
-					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : "Exit game";
+					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "load" ? "Load game" : id == "reset" ? "Reset" : "Exit game";
 					if (id == "qol") value = QolSummary();
+					else if (id == "load") value = "pick an older save";
+					else if (id == "reset") value = "back to the title";
 					return;
 				}
 				case Page.Qol:
@@ -827,7 +860,7 @@ namespace OpenFF.Client
 					label = row == DsButtons.Length ? "Reset to the defaults" : "Back";
 					return;
 				default:
-					label = row == 0 ? "Yes, exit" : "No, keep playing";
+					label = row == 0 ? (_leave == "exit" ? "Yes, exit" : _leave == "load" ? "Yes, load a save" : "Yes, to the title") : "No, keep playing";
 					return;
 			}
 		}
