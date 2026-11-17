@@ -173,13 +173,19 @@ internal static partial class GlobalScope
 				OpenFF.Client.FieldHud.NextShown(show);
 			}
 
-			/// <summary>OpenFF: a new text on a window that is still opening - its text waits for the window, whatever the speed (Fast shows a page whole).</summary>
-			private bool m_OpeningHold;
+			/// <summary>OpenFF: Fast shows a page whole, but only once its window is open - until then it types at the game's old Fast pace.</summary>
+			private bool m_InstantPending;
 
 			public void mwExecute()
 			{
 				OpenFF.Client.FieldHud.Tick();   // PORT: the layout's panels once the window is open, and what moves in it
 				dgs.DGSMessage dGSMessage = mm[m_Display].Message(m_MessageId);
+				if (m_InstantPending && dGSMessage != null && m_MessageId >= 0 && mwIsWindowOpen())
+				{
+					m_InstantPending = false;
+					dGSMessage.setDisplaySpeed(byte.MaxValue);
+					dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
+				}
 				if (m_State == 0)
 				{
 					if (m_Made_1)
@@ -195,7 +201,6 @@ internal static partial class GlobalScope
 						// of 0, where the phone build waited for more than 0 for ever: a mod's Say got no page-turn arrow).
 						else if (dGSMessage != null && m_MessageId >= 0)
 						{
-							m_OpeningHold = false;
 							mwResetMessageWait_();
 							m_State = 1;
 						}
@@ -404,7 +409,6 @@ internal static partial class GlobalScope
 					dGSMessage.setStyle(m_MessageAlign);
 					m_MessageAlign = 0u;
 				}
-				m_OpeningHold = m_State == 0 && m_Made_1;
 				mwResetMessageWait_();
 				if (m_NextWanted) mwShowNext(false);   // PORT: a new text: its arrow once it is all there, not the last one's
 				m_MessageNo = msg_no;
@@ -466,7 +470,6 @@ internal static partial class GlobalScope
 					dGSMessage.setStyle(m_MessageAlign);
 					m_MessageAlign = 0u;
 				}
-				m_OpeningHold = m_State == 0 && m_Made_1;
 				mwResetMessageWait_();
 				if (m_NextWanted) mwShowNext(false);   // PORT: a new text: its arrow once it is all there, not the last one's
 				m_MessageNo = -2;
@@ -719,22 +722,26 @@ internal static partial class GlobalScope
 					switch (opt.COptionManager.getSingleton().messageOption().messageSpeed())
 					{
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_SLOW:
+						m_InstantPending = false;
 						dGSMessage.setDisplayWait(mwLOW_MESSAGE_SPEED);
 						break;
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_NORMAL:
+						m_InstantPending = false;
 						dGSMessage.setDisplayWait(mwDEFAULT_MESSAGE_SPEED);
 						break;
 					case opt.MESSAGE_SPEED.MESSAGE_SPEED_FAST:
-						// OpenFF: Fast shows the page whole, at once (the game's Fast was a letter a frame, still slow) - once the window is open.
-						if (m_OpeningHold)
+						// OpenFF: Fast shows the page whole, at once (the game's Fast was a letter a frame, still slow) - once the window is open
+						// (mwExecute); until then, and for a text with no window of its own, at the game's own pace.
+						if (mwIsWindowOpen())
 						{
-							dGSMessage.setDisplayWait(255);
+							m_InstantPending = false;
+							dGSMessage.setDisplaySpeed(byte.MaxValue);
 						}
 						else
 						{
-							dGSMessage.setDisplaySpeed(byte.MaxValue);
-							dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
+							m_InstantPending = true;
 						}
+						dGSMessage.setDisplayWait(mwHIGH_MESSAGE_SPEED);
 						break;
 					default:
 						dGSMessage.setDisplayWait(mwDEFAULT_MESSAGE_SPEED);
