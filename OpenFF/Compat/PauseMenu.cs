@@ -51,6 +51,8 @@ namespace OpenFF.Client
 
 		public static PauseMenu Instance { get; private set; }
 		public static bool IsOpen => Instance != null && Instance._page != Page.Closed;
+		/// <summary>The game stands still while the menu is open: its last frame stays under the menu.</summary>
+		public static bool HoldsGame => IsOpen;
 
 		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Quit }
 		private Page _page = Page.Closed;
@@ -559,7 +561,7 @@ namespace OpenFF.Client
 				case 3: return "EXP from each battle, multiplied (x0 gives none)";
 				case 4: return "job EXP from each action in battle, multiplied";
 				case 5: return "Save in the menu on any map, towns and dungeons too";
-				case 6: return "off: no lowered stats for a few battles after a job change";
+				case 6: return "off: no lowered stats for a few battles after a job change. On: default";
 				case 7: return "on: similar to FFX - heroes act as soon as a command is input";
 				case 8: return "Corner note of what is changed. Speed and encounters: only those two, when not x1";
 				default: return "";
@@ -640,13 +642,13 @@ namespace OpenFF.Client
 					DisplaySettings.QolSettings q = Qol.S;
 					switch (row)
 					{
-						case 0: icon = UiTheme.Icon.Speed; if (Qol.Speed == 1) hint = "as the game plays"; return Kind.Stepper;
+						case 0: icon = UiTheme.Icon.Speed; return Kind.Stepper;
 						case 1: icon = UiTheme.Icon.Encounters; on = q.Encounters; return Kind.Switch;
 						case 2: icon = UiTheme.Icon.Encounters; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.Exp; return Kind.Stepper;
 						case 4: icon = UiTheme.Icon.JobExp; return Kind.Stepper;
 						case 5: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
-						case 6: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
+						case 6: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
 						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
@@ -773,9 +775,9 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				Ui.Left(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
-				string sub = _page == Page.Main ? "The game goes on behind this."
+				string sub = _page == Page.Main ? ""
 					: _page == Page.Settings ? "Kept in settings.json."
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
@@ -786,8 +788,15 @@ namespace OpenFF.Client
 				float subX = titleX + Ui.Width(graphics, title, titleSize) + 18, room = panel.Right - 30 - subX;
 				int fit = subSize;
 				while (fit > 7 && Ui.Width(graphics, sub, fit) > room) fit--;
-				if (Ui.Width(graphics, sub, fit) <= room) Ui.Left(graphics, sub, subX, titleY + 3, 30, fit, UiTheme.Sub);
+				if (sub.Length == 0) { }
+				else if (Ui.Width(graphics, sub, fit) <= room) Ui.Left(graphics, sub, subX, titleY + 3, 30, fit, UiTheme.Sub);
 				else Ui.Left(graphics, sub, titleX, titleY + 26, 16, 7, UiTheme.Sub);
+				// The version, top right of the main page.
+				if (_page == Page.Main)
+				{
+					string version = "v" + Updates.Current.ToString(3);
+					Ui.Left(graphics, version, panel.Right - 30 - Ui.Width(graphics, version, subSize + 1), titleY + 6, 30, subSize + 1, UiTheme.Sub);
+				}
 				for (int row = 0; row < count; row++)
 				{
 					Rectangle r = layout.RowAt(row);

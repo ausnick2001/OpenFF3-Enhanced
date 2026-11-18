@@ -69,11 +69,12 @@ namespace OpenFF.Client
 			Settings settings = Read();
 			bool explicitGame = Options.Get("game") != null;
 			bool explicitSource = Options.Get("source") != null;
-			string game = (Options.Get("game") ?? settings.Game ?? "ff3").Trim().ToLowerInvariant();
-			if (game != "ff3" && game != "ff4")
+			// This is an FF3 client: it looks for FF3's install only, whatever --game or an earlier launch.json says.
+			string game = "ff3";
+			string asked = (Options.Get("game") ?? settings.Game ?? "ff3").Trim().ToLowerInvariant();
+			if (asked != "ff3")
 			{
-				Log.Write(LogChannel.General, "launch: unknown game '" + game + "', using ff3");
-				game = "ff3";
+				Log.Write(LogChannel.General, "launch: '" + asked + "' asked for, but this client is for Final Fantasy III only; using ff3");
 			}
 			string source = (Options.Get("source") ?? settings.Source ?? "steam").Trim().ToLowerInvariant();
 			if (source != "steam" && source != "content")

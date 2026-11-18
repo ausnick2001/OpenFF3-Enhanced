@@ -100,8 +100,8 @@ namespace OpenFF.Client
 				Step(steps * speed);
 				return;
 			}
-			// An update offered before any game (UpdateScreen): the game held still under it, its last frame shown; a drive goes on.
-			if ((UpdateScreen.HoldsGame || GameFilesScreen.HoldsGame) && FrameCapture.HasFrame)
+			// An update offered before any game (UpdateScreen), or the pause menu: the game held still under it, its last frame shown; a drive goes on.
+			if ((UpdateScreen.HoldsGame || GameFilesScreen.HoldsGame || PauseMenu.HoldsGame) && FrameCapture.HasFrame)
 			{
 				if (steps > 0) Drive.Update();
 			}

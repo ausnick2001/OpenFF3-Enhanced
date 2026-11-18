@@ -47,7 +47,7 @@ namespace OpenFF.Client
 			{
 				Console.Error.WriteLine(
 					"OpenFF: no game content found.\n" +
-					"Expected a Steam install of Final Fantasy III or Final Fantasy IV (3D Remake),\n" +
+					"Expected a Steam install of Final Fantasy III (3D Remake),\n" +
 					"or a directory named with --content=<dir> (also FF3_CONTENT).");
 				return;
 			}
