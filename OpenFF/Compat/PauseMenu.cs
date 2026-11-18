@@ -40,7 +40,7 @@ namespace OpenFF.Client
 			switch (page)
 			{
 				case Page.Main: return new Layout(new Rectangle(152, 44, 496, 392), 120, 41, 34, false);
-				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 106, 31, 26, true);
+				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
@@ -432,10 +432,11 @@ namespace OpenFF.Client
 
 		// ---- minimap ----
 
-		// Minimap, Type, Rotation, Size, Style, Chests, Hidden passages, Forget explored maps, Back.
-		private const int MapRows = 9;
+		// Minimap, Type, Rotation, Size, Zoom, Style, Chests, Hidden passages, Forget explored maps, Back.
+		private const int MapRows = 10;
 
 		private static readonly string[] MapSizes = { "Small", "Medium", "Large" };
+		private static readonly string[] MapZooms = { "50%", "75%", "100%", "150%", "200%" };
 
 		private void ChangeMap(int row, int by, bool confirm)
 		{
@@ -446,13 +447,14 @@ namespace OpenFF.Client
 				case 1: q.MinimapFog = !q.MinimapFog; Qol.Changed("minimap " + (q.MinimapFog ? "fog of war" : "complete")); break;
 				case 2: q.MinimapRotate = !q.MinimapRotate; Qol.Changed("minimap " + (q.MinimapRotate ? "turns with the camera" : "fixed")); break;
 				case 3: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
-				case 4: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
-				case 5: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
-				case 6: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
-				case 7:
+				case 4: q.MinimapZoom = Math.Clamp(q.MinimapZoom + by, 0, MapZooms.Length - 1); Qol.Changed("minimap zoom " + MapZooms[q.MinimapZoom]); break;
+				case 5: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
+				case 6: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
+				case 7: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
+				case 8:
 					if (confirm) { Minimap.Forget(); _note = "every explored floor is forgotten"; }
 					return;
-				case 8:
+				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -467,10 +469,11 @@ namespace OpenFF.Client
 				case 1: return "fog of war: only the parts you have been near;  complete: the whole floor from the start";
 				case 2: return "off: the map stays as the camera first looked;  on: up is where the camera looks";
 				case 3: return "how big the map is in its corner";
-				case 4: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
-				case 5: return "a marker on each chest not yet opened";
-				case 6: return "complete maps only: walls that can open are marked";
-				case 7: return "your explored floors are saved with the game; this clears them (until you save again)";
+				case 4: return "how much of the floor shows: lower is further out, higher is closer in (the size changes the frame, not the scale)";
+				case 5: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
+				case 6: return "a marker on each chest not yet opened";
+				case 7: return "complete maps only: walls that can open are marked";
+				case 8: return "your explored floors are saved with the game; this clears them (until you save again)";
 				default: return "";
 			}
 		}
@@ -641,10 +644,11 @@ namespace OpenFF.Client
 						case 1: icon = UiTheme.Icon.Quality; return Kind.Stepper;
 						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
-						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
-						case 5: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
-						case 6: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
-						case 7: icon = UiTheme.Icon.Exit; return Kind.None;
+						case 4: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 5: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 6: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
+						case 7: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
+						case 8: icon = UiTheme.Icon.Exit; return Kind.None;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -922,10 +926,11 @@ namespace OpenFF.Client
 						case 1: label = "Type"; value = q.MinimapFog ? "Fog of war" : "Complete"; return;
 						case 2: label = "Rotation"; value = q.MinimapRotate ? "Turns with the camera" : "Fixed"; return;
 						case 3: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
-						case 4: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
-						case 5: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
-						case 6: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
-						case 7: label = "Forget explored maps"; return;
+						case 4: label = "Zoom"; value = MapZooms[Math.Clamp(q.MinimapZoom, 0, MapZooms.Length - 1)]; return;
+						case 5: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
+						case 6: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
+						case 7: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;
+						case 8: label = "Forget explored maps"; return;
 						default: label = "Back"; return;
 					}
 				}

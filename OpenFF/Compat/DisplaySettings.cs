@@ -101,6 +101,7 @@ namespace OpenFF.Client
 			[JsonPropertyName("minimapRotate")] public bool MinimapRotate { get; set; }
 			/// <summary>0 small, 1 medium, 2 large.</summary>
 			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 1;
+			[JsonPropertyName("minimapZoom")] public int MinimapZoom { get; set; } = 2;
 			/// <summary>A solid map; false lets the game show through.</summary>
 			[JsonPropertyName("minimapOpaque")] public bool MinimapOpaque { get; set; }
 			/// <summary>A marker on each chest not yet opened.</summary>

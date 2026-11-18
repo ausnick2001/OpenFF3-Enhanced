@@ -45,6 +45,7 @@ namespace OpenFF.Client
 		private struct Cell { public byte State; public int GroundY; public int Stamp; public sbyte DirX, DirZ; }   // DirX/DirZ: the way it was probed from, kept for probing it again
 
 		private static readonly float[] Sizes = { 0.26f, 0.34f, 0.44f };
+		public static readonly float[] Zooms = { 0.5f, 0.75f, 1f, 1.5f, 2f };   // the map zoom: 100% is the scale the map was first made at
 		private static readonly RasterizerState Scissor = new RasterizerState { ScissorTestEnable = true, CullMode = CullMode.None };
 
 		private readonly Dictionary<long, Cell> _cells = new Dictionary<long, Cell>();
@@ -340,11 +341,16 @@ namespace OpenFF.Client
 			{
 				(int cx, int cz) = _frontier.Dequeue();
 				Cell from = _cells[Key(cx, cz)];
+				// The four ways along the axes first, then the diagonals, which only go between two cells the party could walk
+				// (a wall one cell thick on a slant must not be squeezed through, or the fill leaks into rooms beyond it).
+				for (int pass = 0; pass < 2; pass++)
 				for (int dz = -1; dz <= 1; dz++)
 				{
 					for (int dx = -1; dx <= 1; dx++)
 					{
 						if (dx == 0 && dz == 0) continue;
+						if ((dx != 0 && dz != 0) != (pass == 1)) continue;
+						if (pass == 1 && !(Walkable(cx + dx, cz) && Walkable(cx, cz + dz))) continue;
 						int nx = cx + dx, nz = cz + dz;
 						if (Math.Abs(nx - _startX) > ReachCells || Math.Abs(nz - _startZ) > ReachCells) continue;
 						if (_cells.ContainsKey(Key(nx, nz))) continue;
@@ -352,7 +358,7 @@ namespace OpenFF.Client
 						byte state = ProbeCell(first, mapFlags, colFlags, nx, nz, from.GroundY, dx, dz, out int gy);
 						if (state == Void) state = Edge;   // where the floor ends, the map has an edge
 						Put(nx, nz, new Cell { State = state, GroundY = gy, Stamp = _frame, DirX = (sbyte)dx, DirZ = (sbyte)dz });
-						if (state == Floor || state == Exit) _frontier.Enqueue((nx, nz));
+						if (_cells[Key(nx, nz)].State == Floor || _cells[Key(nx, nz)].State == Exit) _frontier.Enqueue((nx, nz));
 					}
 				}
 			}
@@ -370,6 +376,8 @@ namespace OpenFF.Client
 				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
 			}
 		}
+
+		private bool Walkable(int cx, int cz) => _cells.TryGetValue(Key(cx, cz), out Cell c) && (c.State == Floor || c.State == Exit);
 
 		/// <summary>
 		/// What the party would find stepping into a cell, going the way (dirX, dirZ): the game's walls only push back from one
@@ -962,7 +970,7 @@ namespace OpenFF.Client
 			int size = Math.Max(96, (int)(view.Height * Sizes[Math.Clamp(Qol.MinimapSize, 0, 2)]));
 			int margin = Math.Max(8, (int)(view.Height * 0.03f));
 			Rectangle box = new Rectangle(view.Width - size - margin, margin, size, size);
-			float scale = size / (2f * (ViewCells - 1));   // pixels a cell
+			float scale = view.Height * 0.00315f * Zooms[Math.Clamp(Qol.MinimapZoom, 0, Zooms.Length - 1)];   // pixels a cell: the zoom, not the size, says how much of the floor shows
 
 			// The camera's way on the ground, in the map's space: where the map's up is when it turns.
 			float fx = (GlobalScope.NNS_G3dGlb.camTarget.x - GlobalScope.NNS_G3dGlb.camPos.x) / 4096f;

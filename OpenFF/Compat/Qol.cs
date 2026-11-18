@@ -58,6 +58,7 @@ namespace OpenFF.Client
 		public static bool MinimapFog => S.MinimapFog;
 		public static bool MinimapRotate => S.MinimapRotate;
 		public static int MinimapSize => S.MinimapSize;
+		public static int MinimapZoom => S.MinimapZoom;
 		public static bool MinimapOpaque => S.MinimapOpaque;
 		public static bool MinimapChests => S.MinimapChests;
 		public static bool MinimapPassages => S.MinimapPassages;
