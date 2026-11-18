@@ -380,6 +380,8 @@ namespace OpenFF.Client
 		public static void Hand(SpriteBatch b, Rectangle r, float tipX, Viewport v)
 		{
 			if (_hand == null) return;
+			// It bobs as icon_yubi.NANR has it: where it is, then a step to the right, each pose 8 of the game's 30 frames a second.
+			if (Environment.TickCount64 / 267 % 2 == 1) tipX += 2.5f;
 			const float size = 38f;
 			b.Draw(_hand, Px(tipX - size * 45f / 48f, r.Y + r.Height / 2f - size * 12.5f / 48f, size, size, v), new Rectangle(0, 0, _hand.Width / 2, _hand.Height), Color.White);
 		}

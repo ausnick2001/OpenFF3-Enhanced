@@ -14,8 +14,15 @@ namespace Crystal.Editor
 {
 	internal static class OpenFFClient
 	{
-		public static string SettingsPath => Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "launch.json");
+		// The client keeps it in userdata\settings beside OpenFF.exe (Crystal sits beside the client in a release); the older place is %LOCALAPPDATA%\OpenFF.
+		public static string SettingsPath
+		{
+			get
+			{
+				string beside = Path.Combine(AppContext.BaseDirectory, "userdata", "settings", "launch.json");
+				return File.Exists(beside) ? beside : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "launch.json");
+			}
+		}
 
 		/// <summary>The client's mods folder (it need not exist yet), or null when no client is known.</summary>
 		public static string ModsFolder()

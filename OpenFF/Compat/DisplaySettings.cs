@@ -140,8 +140,7 @@ namespace OpenFF.Client
 			}
 		}
 
-		public static string Path => System.IO.Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "settings.json");
+		public static string Path => System.IO.Path.Combine(DataFolder.Settings, "settings.json");
 
 		public static DisplaySettings Current { get; private set; } = new DisplaySettings();
 

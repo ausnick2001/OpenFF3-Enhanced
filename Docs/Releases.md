@@ -4,8 +4,41 @@ What each release carries, and how one is made. The download is one zip,
 `OpenFF-<version>-win-x64.zip`: unzip anywhere, run `OpenFF.exe` to play, `crystal.exe` to
 edit and make mods. It needs the Steam copies of the games on the machine (Final Fantasy III
 and/or Final Fantasy IV, the 3D remakes); none of their data is in the zip or in this
-repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. How a release
+repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF.exe`. How a release
 is made is in `Docs/Releasing.md`; each version's section below is its release's description.
+
+## 0.9.0 - OpenFF3 Enhanced (2026-11-18)
+
+Final Fantasy III made more playable: battles where each hero chooses when their turn comes, a menu in the look of the game's own party menu with the quality-of-life boosters the Pixel Remaster has, a dungeon minimap, higher-quality textures and pictures, and a smoother game with VSync on. This release is for FF3; it starts Final Fantasy III from the Steam install. Everything the game writes - saves, settings, achievements - now lives in a `userdata` folder beside `OpenFF.exe`: delete the game's folder and it is all gone, or give `--data-dir=<folder>` to put it elsewhere. The first run copies what the older places held (`%APPDATA%\FF3`, `%LOCALAPPDATA%\OpenFF`) into it, and leaves those copies where they were.
+
+**Added**
+- Battles turn by turn (the default; Quality of life > Turn-based battles, `--classic-battle` for the game's own order for one run): each combatant acts at their turn in speed order, a hero stepping forward once to act and back. The camera stays on the command view.
+- Battle windows in the party menu's blue, the command list as one panel with a line between the rows, five tighter rows and a help line for each command (`--classic-windows` keeps the game's boxes). Party names in the name font.
+- The OpenFF3 Enhanced menu - Esc, or Start / Select (Share) on a pad: Settings, Quality of life, Minimap, Reset and Exit, with the version in the corner, in the party menu's look - the blue grain, the silver border, the lines between rows, shadowed lettering, the game's own pointing hand bobbing at the chosen row. The mod list, the update screen and the game-files check are dressed the same. The game stands still while the menu is open.
+- Quality of life: Speed (F8 in play), Random encounters (F11), Encounter rate (0.5x, 1x, 2x, 4x), Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, and an Indicator in the corner of what has been changed (Off, Speed and encounters, All).
+- Dungeon minimap (Quality of life > Minimap): Fog of war or Complete; Size; Zoom 50-200%; Area uncovered 100-200% (how much of the map the party uncovers, fog of war only); a Transparent or solid style; unopened chests; hidden passages; every exit drawn as a door from the game's own door texture; a smooth outline along the floor's edge and the walls; an arrow for the hero. Explored floors are kept in the save, and Forget explored maps (asks to confirm) clears them.
+- Settings in the menu: Window (windowed, borderless, full screen), Window size, Anti-aliasing, VSync, Frame rate, Run, Updates, Check for updates, Check game files, Button icons, Pad buttons.
+- Button icons (Auto, PlayStation, Xbox, Switch, Keyboard), from the `pad-icons` folder beside the game; Steam's `%key_assign N%` button names in the dialogue show the player's own button.
+- Fonts: a `fonts` folder beside the game with `menus`, `dialogue`, `names` and `title` folders - drop a font in and it is used. The speaker's name has its own face; the story text (prologue, cutscenes) has a pale glow behind it so it reads over the picture (`storyGlow` 0-3 in settings.json); MS UI Gothic (.ttc) faces work. Text speed Fast shows a page at once.
+- Higher-quality textures: a mod's PNG replaces a texture at any size (named as the texture, or with its package: `j104.eye.png`, `files_j104.ntxp.eye.png`), drawn with linear filtering. Larger replacement pictures are fitted to the party faces, the title sheet, the name screen's pictures and the pointing hand (`icon_yubi.NCBR` and `.NCGR` in a mod's `files` folder, at any upscale factor).
+- The party screen shows each hero's job level after the job name; Status shows the job and its level on the name row and the job points still needed for the next job level.
+- Mastery sample: FF3's own 23 jobs only; Freelancer and Onion Knight keep the game's Magic command; a job change or a change of set abilities returns gear the hero may no longer wear to the bag.
+- Command line: `--data-dir`, `--no-gpu-drain`, `--log-stalls` (every frame over 50 ms, with where the time went: game step, engine, drawing, garbage collector, textures); `--help` lists every option.
+
+**Changed**
+- Starts Final Fantasy III from the Steam install; the release's `mods` folder starts empty.
+- On the world map a full push of the stick walks; it no longer runs (Settings > Run chooses).
+- The field's on-screen Map and Menu (touch) buttons are hidden by default (`--show-field-buttons`); the company logos are skipped (`--show-logos`).
+- Saves, settings, achievements and the game-files check's cache moved into `userdata` beside the game (see above); the updater leaves that folder, `mods` and `logs` alone.
+
+**Fixes**
+- Stutter with VSync on: the first time a model, text or picture was shown, the driver held about three frames queued and the texture upload waited for all of them - about 50 ms each time. The queue is now emptied right after each frame is shown, so the upload returns at once, and replaced textures are released a frame later.
+- Shops: L / R (or left / right) on a pad switch between Buy and Sell; the tab had worked by touch only.
+- The Equipment menu on a pad: Circle from the slots steps up to the command row (Equip, Remove, Remove all) and a chosen command now runs; after a job change the hero is already chosen, so the character pick is skipped once.
+- Unarmed heroes strike as in the original FF3.
+- Messages: a yellow indented line keeps the body font; Fast waits for the window to open before showing a page whole.
+- Progression: previewing a save slot no longer overwrites a hero's live ABP.
+- The minimap: floors of the slot or autosave that is loaded are the ones applied; cliff tops, floor pockets too narrow to stand in and gaps behind walls are no longer filled in (Complete mode can still fill in areas behind walls - its note says so).
 
 ## 0.3.6 - FF4's battle and menus (2026-10-10)
 

@@ -31,7 +31,7 @@ namespace OpenFF.Client
 		public static string GameName => Launch.Game == "ff4" ? "Final Fantasy IV" : "Final Fantasy III";
 		public static string Error { get; private set; }
 
-		private static string Folder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF");
+		private static string Folder => DataFolder.Settings;
 		private static string CachePath => Path.Combine(Folder, "game-files-" + Launch.Game + ".json");
 		private static string DismissedPath => Path.Combine(Folder, "game-files-" + Launch.Game + ".ok");
 

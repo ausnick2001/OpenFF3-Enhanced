@@ -11,7 +11,7 @@
 //   waits for the game (the --wait process) and for anything else running from the install folder (Crystal) to close;
 //   copies the release's files over the install's, each file it replaces kept in <install>\.update-backup first;
 //   leaves the player's things alone - mods\ keeps its files (a mod the release brings is added only when not there),
-//   logs\ is not touched, and saves and settings are in %LocalAppData%\OpenFF, outside the folder anyway;
+//   logs\ and userdata\ (the saves and settings) are not touched;
 //   takes away what the release no longer has in Data\ (the client's own data, which it would read);
 //   on any failure puts every file back as it was; then starts the game (--run, with its --arg's).
 

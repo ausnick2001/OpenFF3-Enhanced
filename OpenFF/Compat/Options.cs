@@ -62,9 +62,10 @@ namespace OpenFF.Client
 			("steam-cells-off", "FF3_STEAM_CELLS_OFF", "", "Draw a Steam install's cell banks as they are, without the phone layout table"),
 			("text", "FF3_TEXT", "atlas", "Text from the phone build's glyph atlases instead of TrueType"),
 			("font", "FF3_FONT", "<file|dir>", "TrueType/OpenType face to use first (default: the Steam install's, then Content\\Fonts, then Windows)"),
-			("save-dir", "FF3_SAVE_DIR", "<dir>", "Keep this run's saves there instead of %APPDATA%\\FF3 - the game's slots, the mods' save chunks, achievements (a test run on a throwaway folder)"),
+			("data-dir", "FF3_DATA_DIR", "<dir>", "Where the game keeps its saves, settings and achievements (default: the userdata folder beside OpenFF.exe - delete the game's folder and it is all gone; nothing is brought over from older places when this is given)"),
+			("save-dir", "FF3_SAVE_DIR", "<dir>", "Keep this run's saves there instead of in the data folder - the game's slots, the mods' save chunks, achievements (a test run on a throwaway folder)"),
 			("title-font", "FF3_TITLE_FONT", "<file>", "The face the title screen's commands are drawn in (default: Windows' Times New Roman; none found, the pictures)"),
-			("size", "FF3_SIZE", "<WxH>", "Window size for this run, e.g. 1600x960 (the lasting one is in %LocalAppData%\\OpenFF\\settings.json)"),
+			("size", "FF3_SIZE", "<WxH>", "Window size for this run, e.g. 1600x960 (the lasting one is in userdata\\settings\\settings.json)"),
 			("fps", "FF3_FPS", "30|60|max", "What the display shows this run: 30 - the game's frames as they are; 60 - smoothed, a frame interpolated between each two of the game's (on a display sixty does not divide, the nearest even rate above sixty: 72 on 144 Hz); max - smoothed at the display's rate. The game's logic runs 30 steps a second in every mode (lasting: fps in settings.json)"),
 			("fullscreen", "FF3_FULLSCREEN", "", "This run full screen (a display mode switch); Alt+Enter toggles in play"),
 			("borderless", "FF3_BORDERLESS", "", "This run full screen as a frameless window at the desktop's size"),
@@ -93,7 +94,7 @@ namespace OpenFF.Client
 		/// </summary>
 		private static readonly HashSet<string> PathOptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 		{
-			"log-file", "content", "content-override", "dump", "dump-fonts", "screenshot-dir", "mod", "project", "font", "drive", "trace", "save-dir", "title-font",
+			"log-file", "content", "content-override", "dump", "dump-fonts", "screenshot-dir", "mod", "project", "font", "drive", "trace", "save-dir", "data-dir", "title-font",
 		};
 
 		/// <summary>Where this run was started from: relative paths on its command line are relative to it (Restart starts the next run there too).</summary>

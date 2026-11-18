@@ -18,14 +18,18 @@ namespace OpenFF.Client
 		private static readonly HashSet<string> Names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "icon_yubi" };
 		private static readonly Dictionary<string, (int W, int H)> _original = new Dictionary<string, (int, int)>(StringComparer.OrdinalIgnoreCase);
 
-		/// <summary>How much larger (across, down) a sheet's picture is than the game's own, 1 when it is not an upscaled listed sheet.</summary>
-		public static void Scale(byte[] png, int width, int height, out float scaleU, out float scaleV)
+		/// <summary>How much larger (across, down) a sheet's picture is than the game's own, 1 when it is not an upscaled listed sheet. The engine divides this by the padded texture's size.</summary>
+		public static void Scale(byte[] png, out float scaleU, out float scaleV)
 		{
 			scaleU = scaleV = 1f;
 			try
 			{
 				string file = png == null ? null : TextureOverrides.SourceOf(png);
-				if (file == null) return;
+				if (file == null || png.Length < 24) return;
+				// The picture's own size, from its header: the texture the engine makes is padded up to powers of two (192 x 96 -> 256 x 128),
+				// and the scale is of the picture, not of the padding.
+				int width = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
+				int height = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
 				string stem = Path.GetFileNameWithoutExtension(file.Replace('\\', '/'));
 				if (!Names.Contains(stem)) return;
 				if (!_original.TryGetValue(stem, out (int W, int H) original))

@@ -37,8 +37,7 @@ namespace OpenFF.Client
 			[JsonPropertyName("updated")] public string Updated { get; set; }
 		}
 
-		public static string SettingsPath => Path.Combine(
-			Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "launch.json");
+		public static string SettingsPath => Path.Combine(DataFolder.Settings, "launch.json");
 
 		/// <summary>What was decided, for the log and the title.</summary>
 		public static string Game { get; private set; } = "ff3";

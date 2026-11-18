@@ -24,6 +24,16 @@ namespace Crystal.Editor
 {
 	internal static class InstalledMods
 	{
+		/// <summary>The client's cache of its game-files check: in userdata\settings beside the client when it keeps one there, else the older %LOCALAPPDATA%\OpenFF.</summary>
+		private static string GameFilesCache(string game)
+		{
+			string name = "game-files-" + game + ".json";
+			string beside = System.IO.Path.Combine(AppContext.BaseDirectory, "userdata", "settings", name);
+			return System.IO.File.Exists(beside) || System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(beside))
+				? beside
+				: System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", name);
+		}
+
 		public sealed class OpenFFMod
 		{
 			public string Key { get; set; }
@@ -162,7 +172,7 @@ namespace Crystal.Editor
 					{
 						check.Result = OpenFF.Content.GameFiles.Check(root, OpenFF.Content.GameFiles.Read(list),
 							// The client's own cache of the check (sizes, times, hashes): what OpenFF has read already is not read again.
-							System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "game-files-" + game + ".json"),
+							GameFilesCache(game),
 							(got, total) => { check.Got = got; check.Total = total; });
 					}
 					catch (Exception ex) { Console.Error.WriteLine("  mods      the game files of {0}: {1}", root, ex.Message); }

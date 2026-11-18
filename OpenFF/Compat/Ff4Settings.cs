@@ -29,7 +29,7 @@ namespace OpenFF.Client
 
 		private static Ff4Settings _current;
 
-		public static string FilePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "ff4-settings.json");
+		public static string FilePath => Path.Combine(DataFolder.Settings, "ff4-settings.json");
 
 		public static Ff4Settings Current
 		{

@@ -10909,7 +10909,7 @@ internal static partial class GlobalScope
 								pImgProxy.H = (ushort)sizeH;
 								iMAGE_TABLE.tex = num;
 								// PORT: a mod's upscale of a listed sheet (the hand) is cut by the same cells, scaled to match.
-								OpenFF.Client.UpscaledSheets.Scale(pSrcData.m_aPng as byte[], sizeW, sizeH, out float upU, out float upV);
+								OpenFF.Client.UpscaledSheets.Scale(pSrcData.m_aPng as byte[], out float upU, out float upV);
 								iMAGE_TABLE.texScaleU = upU / (float)sizeW;
 								iMAGE_TABLE.texScaleV = upV / (float)sizeH;
 							}

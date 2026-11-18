@@ -16,15 +16,14 @@ namespace OpenFF.Client
 		/// <summary>--save-dir, when a run keeps its saves apart (a test on a throwaway folder); null for the player's own.</summary>
 		public static string Override => string.IsNullOrWhiteSpace(Options.Get("save-dir")) ? null : Options.Get("save-dir");
 
-		/// <summary>%APPDATA%\FF3 (or --save-dir), created on first use.</summary>
+		/// <summary>The saves folder of the data folder beside the game (--save-dir for one run's own), created on first use.</summary>
 		public static string Directory_
 		{
 			get
 			{
 				if (_directory == null)
 				{
-					_directory = Override ?? Path.Combine(
-						Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "FF3");
+					_directory = Override ?? DataFolder.Saves;
 					System.IO.Directory.CreateDirectory(_directory);
 					Log.Write(LogChannel.File, "save directory: " + _directory + (Override != null ? " (--save-dir)" : ""));
 					// A folder of the run's own has no older saves to bring over.

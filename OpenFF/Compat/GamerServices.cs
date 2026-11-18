@@ -248,8 +248,7 @@ namespace Microsoft.Xna.Framework.GamerServices
 		{
 			try
 			{
-				string dir = OpenFF.Client.SaveFiles.Override ?? Path.Combine(
-					Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FF3");
+				string dir = OpenFF.Client.SaveFiles.Override ?? OpenFF.Client.DataFolder.Achievements;
 				Directory.CreateDirectory(dir);
 				_storePath = Path.Combine(dir, "achievements.txt");
 				if (File.Exists(_storePath))

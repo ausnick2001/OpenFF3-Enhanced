@@ -43,8 +43,8 @@ namespace OpenFF.Client
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
-				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 106, 27, 24, true);
+				case Page.Settings: return new Layout(new Rectangle(142, 30, 516, 446), 96, 28, 25f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -732,7 +732,7 @@ namespace OpenFF.Client
 			float titleY = panel.Y + 16, dividerY = panel.Y + 62, hintY = panel.Bottom - 22;
 			UiTheme.Icon? titleIcon = TitleIcon();
 			float titleX = panel.X + 30;
-			Rectangle note = new Rectangle(panel.X + 20, (int)(layout.Top + count * layout.Step + 4), panel.Width - 40, compact ? 22 : 28);
+			Rectangle note = new Rectangle(panel.X + 20, (int)(layout.Top + count * layout.Step + 4), panel.Width - 40, compact ? 22 : 36);
 
 			// The values' places: a stepper's box and a switch, sized to what they show.
 			Rectangle[] valueBox = new Rectangle[count];
@@ -744,14 +744,15 @@ namespace OpenFF.Client
 					Rectangle r = layout.RowAt(row);
 					Kind kind = RowKind(row, out _, out _, out _);
 					RowText(row, out _, out string value);
-					int h = (int)Math.Round(r.Height - 6f);
+					int h = (int)Math.Round(r.Height - 3f);   // nearly the row's whole height, so the lettering sits inside it
+					int top = r.Y + (r.Height - h) / 2;
 					if (kind == Kind.Stepper)
 					{
-						int w = Math.Max(140, (int)Math.Ceiling(Ui.Width(graphics, value ?? "", rowSize)) + (int)(h * 2.5f) + 24);
+						int w = Math.Max(150, (int)Math.Ceiling(Ui.Width(graphics, value ?? "", rowSize)) + (int)(h * 2.5f) + 36);
 						w = Math.Min(w, r.Width - 190);
-						valueBox[row] = new Rectangle(r.Right - 8 - w, r.Y + 3, w, h);
+						valueBox[row] = new Rectangle(r.Right - 8 - w, top, w, h);
 					}
-					else if (kind == Kind.Switch) valueBox[row] = new Rectangle(r.Right - 8 - 62, r.Y + 4, 62, h - 2);
+					else if (kind == Kind.Switch) valueBox[row] = new Rectangle(r.Right - 8 - 80, top, 80, h);
 				}
 			}
 			finally { TrueTypeText.TitleFace = false; }
@@ -841,11 +842,36 @@ namespace OpenFF.Client
 						L(graphics, hint, valueBox[row].X - 12 - w, r.Y, r.Height, rowSize - 1, UiTheme.Hint);
 					}
 				}
-				if (layout.Note && !string.IsNullOrEmpty(_note)) L(graphics, _note, note.X + 14, note.Y, note.Height, FitSize(graphics, _note, note.Width - 28, noteSize), UiTheme.Ink);
+				if (layout.Note && !string.IsNullOrEmpty(_note))
+				{
+					// The description: its first letter capital, on as many as two lines of the box's width (a third shrinks it).
+					string text = char.ToUpperInvariant(_note[0]) + _note.Substring(1);
+					int size = noteSize;
+					List<string> lines = WrapNote(graphics, text, note.Width - 28, size);
+					while (lines.Count > 2 && size > 7) lines = WrapNote(graphics, text, note.Width - 28, --size);
+					if (lines.Count > 2) lines = lines.GetRange(0, 2);
+					float lineH = 16f, y0 = note.Y + (note.Height - lines.Count * lineH) / 2f;
+					for (int i = 0; i < lines.Count; i++) L(graphics, lines[i], note.X + 14, y0 + i * lineH, lineH, size, UiTheme.Ink);
+				}
 				for (int i = 0; i < hints.Length; i++) Ui.HintText(graphics, hints[i].Item1, hints[i].Item2, hintX[i], hintY, 22, hintSize);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();
+		}
+
+		/// <summary>The words broken into lines no wider than a room, at a size.</summary>
+		private static List<string> WrapNote(GlobalScope.Graphics graphics, string text, float room, int size)
+		{
+			List<string> lines = new List<string>();
+			string line = "";
+			foreach (string word in text.Split(' '))
+			{
+				string tryLine = line.Length == 0 ? word : line + " " + word;
+				if (line.Length > 0 && Ui.Width(graphics, tryLine, size) > room) { lines.Add(line); line = word; }
+				else line = tryLine;
+			}
+			if (line.Length > 0) lines.Add(line);
+			return lines;
 		}
 
 		/// <summary>The largest size (down to a floor) at which the text is no wider than the room: a face wider than the one the menu was laid out for must not run out of its box.</summary>
