@@ -87,7 +87,8 @@ internal static partial class GlobalScope
 										return false;
 									}
 									m_WorkFrame++;
-									if (m_WorkFrame < m_AddTiming)
+									// PORT: the encounter rate (quality of life) makes the rolls come further apart or closer together.
+									if (m_WorkFrame < System.Math.Max(1, (int)System.Math.Round(m_AddTiming / OpenFF.Client.Qol.EncounterRate)))
 									{
 										return false;
 									}

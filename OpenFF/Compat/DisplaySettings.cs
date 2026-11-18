@@ -84,6 +84,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("speed")] public int Speed { get; set; } = 1;
 			/// <summary>Random battles; scripted ones always come.</summary>
 			[JsonPropertyName("encounters")] public bool Encounters { get; set; } = true;
+			/// <summary>How often random battles come: 0.5, 1, 2 or 4 times as often.</summary>
+			[JsonPropertyName("encounterRate")] public double EncounterRate { get; set; } = 1;
 			/// <summary>Battle EXP multiplier, 0-100.</summary>
 			[JsonPropertyName("exp")] public double Exp { get; set; } = 1;
 			/// <summary>Job EXP multiplier, 0-100.</summary>

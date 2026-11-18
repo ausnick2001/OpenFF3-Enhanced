@@ -47,6 +47,9 @@ namespace OpenFF.Client
 
 		/// <summary>Whether random battles come (scripted ones always do).</summary>
 		public static bool Encounters => S.Encounters;
+		public static readonly double[] Rates = { 0.5, 1, 2, 4 };
+		/// <summary>How many times as often random battles come (the menu offers 0.5, 1, 2, 4).</summary>
+		public static double EncounterRate => S.EncounterRate > 0 ? S.EncounterRate : 1;
 
 		public static bool SaveAnywhere => S.SaveAnywhere;
 
@@ -170,6 +173,7 @@ namespace OpenFF.Client
 			{
 				if (Speed != 1) lines.Add("Speed " + Times(Speed));
 				if (!s.Encounters) lines.Add("No encounters");
+				else if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounters " + Times(EncounterRate));
 				if (Math.Abs(s.Exp - 1) > 1e-9) lines.Add("EXP " + Times(s.Exp));
 				if (Math.Abs(s.JobExp - 1) > 1e-9) lines.Add("Job EXP " + Times(s.JobExp));
 				if (s.SaveAnywhere) lines.Add("Save anywhere");

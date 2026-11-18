@@ -44,7 +44,7 @@ namespace OpenFF.Client
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 34, 516, 442), 100, 25, 22f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 108, 29, 26, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 106, 27, 24, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -471,15 +471,15 @@ namespace OpenFF.Client
 		{
 			switch (row)
 			{
-				case 0: return "a small map of the walls around you, in dungeons and caves";
-				case 1: return "fog of war: only the parts you have been near;  complete: the whole floor from the start - it may also fill in areas behind walls that you cannot reach";
-				case 2: return "off: the map stays as the camera first looked;  on: up is where the camera looks";
+				case 0: return "Turns minimap off or on. Minimap may spoil hidden passages/chests";
+				case 1: return "Complete - whole floor visible from the start. Will fill inaccessible areas behind walls.";
+				case 2: return "Fixed: Map always points North. Rotates: Map points the same direction as the player";
 				case 3: return "how big the map is in its corner";
-				case 4: return "how much of the floor shows: lower is further out, higher is closer in (the size changes the frame, not the scale)";
-				case 5: return "transparent: only the map itself is drawn, the game shows through where there is no floor";
-				case 6: return "a marker on each chest not yet opened";
+				case 4: return "How zoomed the map is. Lower % = more of the map visible";
+				case 5: return "Transparent - game partially visible behind minimap";
+				case 6: return "Shows unopened chests on minimap";
 				case 7: return "complete maps only: walls that can open are marked";
-				case 8: return "your explored floors are saved with the game; this clears them (until you save again)";
+				case 8: return "Fog of war only: deletes all map progress made";
 				default: return "";
 			}
 		}
@@ -488,13 +488,13 @@ namespace OpenFF.Client
 		private static string MapSummary()
 		{
 			DisplaySettings.QolSettings q = Qol.S;
-			return q.Minimap ? (q.MinimapFog ? "fog of war" : "complete") + (q.MinimapRotate ? ", turns" : ", fixed") : "off";
+			return q.Minimap ? (q.MinimapFog ? "fog of war" : "complete") + (q.MinimapRotate ? ", rotates" : ", fixed") : "off";
 		}
 
 		// ---- quality of life ----
 
-		// Speed, Random encounters, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Indicator, Back.
-		private const int QolRows = 9;
+		// Speed, Random encounters, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Indicator, Back.
+		private const int QolRows = 10;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -511,30 +511,34 @@ namespace OpenFF.Client
 					Qol.Changed("random encounters " + (q.Encounters ? "on" : "off"));
 					break;
 				case 2:
+					q.EncounterRate = Qol.Next(Qol.Rates, Qol.EncounterRate, by);
+					Qol.Changed("encounter rate " + Qol.Times(q.EncounterRate));
+					break;
+				case 3:
 					q.Exp = Qol.Next(Qol.Multipliers, q.Exp, by);
 					Qol.Changed("EXP " + Qol.Times(q.Exp));
 					break;
-				case 3:
+				case 4:
 					q.JobExp = Qol.Next(Qol.Multipliers, q.JobExp, by);
 					Qol.Changed("job EXP " + Qol.Times(q.JobExp));
 					break;
-				case 4:
+				case 5:
 					q.SaveAnywhere = !q.SaveAnywhere;
 					Qol.Changed("save anywhere " + (q.SaveAnywhere ? "on" : "off"));
 					break;
-				case 5:
+				case 6:
 					q.JobAdjustment = !q.JobAdjustment;
 					Qol.Changed("job change adjustment " + (q.JobAdjustment ? "on" : "off"));
 					break;
-				case 6:
+				case 7:
 					q.TurnBased = !q.TurnBased;
 					Qol.Changed("turn-based battles " + (q.TurnBased ? "on" : "off"));
 					break;
-				case 7:
+				case 8:
 					q.Indicator = !q.Indicator;
 					Qol.Changed("indicator " + (q.Indicator ? "on" : "off"));
 					break;
-				case 8:
+				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -548,12 +552,13 @@ namespace OpenFF.Client
 			{
 				case 0: return "the whole game runs faster; F8 while playing (Shift+F8 back)";
 				case 1: return "off: no random battles, story fights still happen; F11";
-				case 2: return "EXP from each battle, multiplied (x0 gives none)";
-				case 3: return "job EXP from each action in battle, multiplied";
-				case 4: return "Save in the menu on any map, towns and dungeons too";
-				case 5: return "off: no lowered stats for a few battles after a job change";
-				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
-				case 7: return "a note in the corner of what is on";
+				case 2: return "how often random battles come: 0.5x is half as often, 4x is four times";
+				case 3: return "EXP from each battle, multiplied (x0 gives none)";
+				case 4: return "job EXP from each action in battle, multiplied";
+				case 5: return "Save in the menu on any map, towns and dungeons too";
+				case 6: return "off: no lowered stats for a few battles after a job change";
+				case 7: return "on: similar to FFX - heroes act as soon as a command is input";
+				case 8: return "a note in the corner of what is on";
 				default: return "";
 			}
 		}
@@ -565,6 +570,7 @@ namespace OpenFF.Client
 			List<string> on = new List<string>();
 			if (Qol.Speed != 1) on.Add("speed " + Qol.Times(Qol.Speed));
 			if (!q.Encounters) on.Add("no encounters");
+			else if (Math.Abs(Qol.EncounterRate - 1) > 1e-9) on.Add("encounters " + Qol.Times(Qol.EncounterRate));
 			if (Math.Abs(q.Exp - 1) > 1e-9) on.Add("EXP " + Qol.Times(q.Exp));
 			if (Math.Abs(q.JobExp - 1) > 1e-9) on.Add("job EXP " + Qol.Times(q.JobExp));
 			if (q.SaveAnywhere) on.Add("save anywhere");
@@ -632,12 +638,13 @@ namespace OpenFF.Client
 					{
 						case 0: icon = UiTheme.Icon.Speed; if (Qol.Speed == 1) hint = "as the game plays"; return Kind.Stepper;
 						case 1: icon = UiTheme.Icon.Encounters; on = q.Encounters; return Kind.Switch;
-						case 2: icon = UiTheme.Icon.Exp; return Kind.Stepper;
-						case 3: icon = UiTheme.Icon.JobExp; return Kind.Stepper;
-						case 4: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
-						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
-						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
-						case 7: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
+						case 2: icon = UiTheme.Icon.Encounters; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.Exp; return Kind.Stepper;
+						case 4: icon = UiTheme.Icon.JobExp; return Kind.Stepper;
+						case 5: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
+						case 6: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
+						case 7: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
+						case 8: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -915,12 +922,13 @@ namespace OpenFF.Client
 					{
 						case 0: label = "Speed"; value = Qol.Times(Qol.Speed); return;
 						case 1: label = "Random encounters"; value = q.Encounters ? "On" : "Off"; return;
-						case 2: label = "Battle EXP"; value = Qol.Times(q.Exp); return;
-						case 3: label = "Job EXP"; value = Qol.Times(q.JobExp); return;
-						case 4: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
-						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
-						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
-						case 7: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
+						case 2: label = "Encounter rate"; value = Qol.Times(Qol.EncounterRate); return;
+						case 3: label = "Battle EXP"; value = Qol.Times(q.Exp); return;
+						case 4: label = "Job EXP"; value = Qol.Times(q.JobExp); return;
+						case 5: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
+						case 6: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
+						case 7: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
+						case 8: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}
@@ -931,7 +939,7 @@ namespace OpenFF.Client
 					{
 						case 0: label = "Minimap"; value = q.Minimap ? "On" : "Off"; return;
 						case 1: label = "Type"; value = q.MinimapFog ? "Fog of war" : "Complete"; return;
-						case 2: label = "Rotation"; value = q.MinimapRotate ? "Turns with the camera" : "Fixed"; return;
+						case 2: label = "Rotation"; value = q.MinimapRotate ? "Rotates" : "Fixed"; return;
 						case 3: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
 						case 4: label = "Zoom"; value = MapZooms[Math.Clamp(q.MinimapZoom, 0, MapZooms.Length - 1)]; return;
 						case 5: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
