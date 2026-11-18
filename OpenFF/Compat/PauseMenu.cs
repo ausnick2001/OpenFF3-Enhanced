@@ -472,7 +472,7 @@ namespace OpenFF.Client
 			switch (row)
 			{
 				case 0: return "a small map of the walls around you, in dungeons and caves";
-				case 1: return "fog of war: only the parts you have been near;  complete: the whole floor from the start";
+				case 1: return "fog of war: only the parts you have been near;  complete: the whole floor from the start - it may also fill in areas behind walls that you cannot reach";
 				case 2: return "off: the map stays as the camera first looked;  on: up is where the camera looks";
 				case 3: return "how big the map is in its corner";
 				case 4: return "how much of the floor shows: lower is further out, higher is closer in (the size changes the frame, not the scale)";
