@@ -72,24 +72,32 @@ namespace OpenFF.Client
 			_glow = MakeGlow(device, 64, 20);
 			_diamond = MakeDiamond(device, 32);
 			_noise = MakeNoise(device);
-			// The game's own hand: icon_yubi's picture (the sprite's NCBR is a 96 x 48 PNG, two 48 x 48 frames - the white hand
-			// and the grey one, each with its shadow), read from the game's files like any other.
+			// The hand. Data\ui\hand.png first if there is one (a remaster: the same two frames side by side as the game's, the
+			// white hand on the left, at any size), else the game's own icon_yubi (its NCBR is a 96 x 48 PNG of two 48 x 48 frames,
+			// the white hand and the grey one, each with its shadow), read from the game's files like any other.
 			_hand = null;
 			try
 			{
-				uint size = GlobalScope.ds.g_File.getSize("icon_yubi.NCBR");
-				if (size > 0)
+				string own = Path.Combine(AppContext.BaseDirectory, "Data", "ui", "hand.png");
+				byte[] bytes = null;
+				if (File.Exists(own)) bytes = File.ReadAllBytes(own);
+				else
 				{
-					byte[] bytes = new byte[size];
-					if (GlobalScope.ds.g_File.load(bytes, "icon_yubi.NCBR"))
-						using (System.IO.MemoryStream png = new System.IO.MemoryStream(bytes))
-						{
-							Texture2D loaded = Texture2D.FromStream(device, png);
-							Texture2D mipped = WithMipmaps(loaded);
-							if (!ReferenceEquals(mipped, loaded)) loaded.Dispose();
-							_hand = mipped;
-						}
+					uint size = GlobalScope.ds.g_File.getSize("icon_yubi.NCBR");
+					if (size > 0)
+					{
+						bytes = new byte[size];
+						if (!GlobalScope.ds.g_File.load(bytes, "icon_yubi.NCBR")) bytes = null;
+					}
 				}
+				if (bytes != null)
+					using (System.IO.MemoryStream png = new System.IO.MemoryStream(bytes))
+					{
+						Texture2D loaded = Texture2D.FromStream(device, png);
+						Texture2D mipped = WithMipmaps(loaded);
+						if (!ReferenceEquals(mipped, loaded)) loaded.Dispose();
+						_hand = mipped;
+					}
 			}
 			catch (Exception ex) { Log.Write(LogChannel.General, "ui: the hand: " + ex.Message); }
 		}
@@ -277,7 +285,7 @@ namespace OpenFF.Client
 			Frame(b, r, v);
 		}
 
-		private static readonly Color PartyBlue = new Color(24, 38, 78, 255);   // with the grain over it: the party menu's (42, 54, 87), measured
+		private static readonly Color PartyBlue = new Color(17, 29, 66, 255);   // with the grain over it, a little under the party menu's measured (42, 54, 87)
 		private static readonly Color Silver = new Color(204, 206, 214, 255);
 
 		/// <summary>The party menu's window: blue with a fine grain, a silver border (a darker line inside it), rounded.</summary>
@@ -285,10 +293,11 @@ namespace OpenFF.Client
 		{
 			if (dim) Ui.Fill(b, new Rectangle(0, 0, v.Width, v.Height), new Color(0, 0, 0, 120));
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
-			int e = Math.Max(2, (int)Math.Round(2.4f * Sx(v)));
-			Ui.RoundPlate(b, new Rectangle(p.X - e, p.Y - e, p.Width + 2 * e, p.Height + 2 * e), Silver, v, 10f);
-			Ui.RoundPlate(b, new Rectangle(p.X - e / 3, p.Y - e / 3, p.Width + 2 * (e / 3), p.Height + 2 * (e / 3)), new Color(90, 96, 122, 255), v, 9f);
-			Ui.RoundPlate(b, p, PartyBlue, v, 8f);
+			int e = Math.Max(2, (int)Math.Round(2.4f * Sx(v))), cr = Math.Max(3, (int)Math.Round(8f * Sx(v))), m = Math.Max(1, e / 3);
+			// Silver, a darker line inside it, the blue: the corners one round the other, each as far out as the layer inside it.
+			Ui.RoundPlatePx(b, new Rectangle(p.X - e, p.Y - e, p.Width + 2 * e, p.Height + 2 * e), Silver, cr + e);
+			Ui.RoundPlatePx(b, new Rectangle(p.X - m, p.Y - m, p.Width + 2 * m, p.Height + 2 * m), new Color(90, 96, 122, 255), cr + m);
+			Ui.RoundPlatePx(b, p, PartyBlue, cr);
 			Rectangle g = Inset(p, Math.Max(2, e));
 			b.Draw(_noise, g, new Rectangle(0, 0, Math.Max(1, g.Width / 2), Math.Max(1, g.Height / 2)), new Color(255, 255, 255, 46));
 		}
@@ -319,8 +328,8 @@ namespace OpenFF.Client
 		{
 			if (PartyStyle)
 			{
-				Ui.Fill(b, Px(cx - width / 2, y, width, 1.4f, v), new Color(20, 30, 70, 230));
-				Ui.Fill(b, Px(cx - width / 2, y + 1.4f, width, 1.2f, v), new Color(110, 128, 196, 150));
+				Ui.Fill(b, Px(cx - width / 2, y, width, 1.6f, v), new Color(8, 13, 30, 250));
+				Ui.Fill(b, Px(cx - width / 2, y + 1.6f, width, 1.4f, v), new Color(84, 104, 164, 200));
 				return;
 			}
 			if (_divider == null) { Ui.Fill(b, Px(cx - width / 2, y, width, 1, v), Gold); return; }
@@ -342,9 +351,9 @@ namespace OpenFF.Client
 			{
 				// The party menu's rows are not plates: a faint lit band for the chosen one, a dark line under each with a light one below it.
 				if (lit) Ui.RoundPlate(b, p, new Color(255, 255, 255, 30), v, 4f);
-				int ly = p.Bottom + Math.Max(1, (int)Math.Round(Sy(v) * 1.2f));
-				Ui.Fill(b, new Rectangle(p.X, ly, p.Width, 1), new Color(18, 28, 64, 235));
-				Ui.Fill(b, new Rectangle(p.X, ly + 1, p.Width, 1), new Color(96, 116, 190, 120));
+				int ly = p.Bottom + Math.Max(1, (int)Math.Round(Sy(v) * 1.2f)), th = Math.Max(2, (int)Math.Round(Sy(v) * 1.3f));
+				Ui.Fill(b, new Rectangle(p.X, ly, p.Width, th), new Color(8, 13, 30, 250));
+				Ui.Fill(b, new Rectangle(p.X, ly + th, p.Width, Math.Max(2, th - 1)), new Color(84, 104, 164, 190));
 				return;
 			}
 			if (!lit)
@@ -372,7 +381,7 @@ namespace OpenFF.Client
 		{
 			if (_hand == null) return;
 			const float size = 38f;
-			b.Draw(_hand, Px(tipX - size * 45f / 48f, r.Y + r.Height / 2f - size * 12.5f / 48f, size, size, v), new Rectangle(0, 0, 48, 48), Color.White);
+			b.Draw(_hand, Px(tipX - size * 45f / 48f, r.Y + r.Height / 2f - size * 12.5f / 48f, size, size, v), new Rectangle(0, 0, _hand.Width / 2, _hand.Height), Color.White);
 		}
 
 		/// <summary>A soft glow of a colour round a text-space box, spread by the given text-space distance.</summary>

@@ -50,7 +50,7 @@ namespace OpenFF.Client
 				_pixel = new Texture2D(device, 1, 1);
 				_pixel.SetData(new[] { Color.White });
 				_disc = MakeDisc(device, 64);
-				_round = MakeRound(device, 32, 8);
+				_round = MakeRound(device, 128, 32);
 			}
 		}
 
@@ -71,21 +71,43 @@ namespace OpenFF.Client
 			return t;
 		}
 
-		/// <summary>A rounded square of which the corners are drawn: nine-sliced into a plate with soft corners.</summary>
+		/// <summary>A rounded square of which the corners are drawn: nine-sliced into a plate with soft corners. Large, anti-aliased by
+		/// 4 x 4 samples a texel, with mipmaps - drawn small (a button's corner) or large (a window's) its edge stays smooth.</summary>
 		private static Texture2D MakeRound(GraphicsDevice device, int size, int radius)
 		{
 			Color[] px = new Color[size * size];
 			for (int y = 0; y < size; y++)
 				for (int x = 0; x < size; x++)
 				{
-					float dx = Math.Max(Math.Max(radius - x, x - (size - 1 - radius)), 0);
-					float dy = Math.Max(Math.Max(radius - y, y - (size - 1 - radius)), 0);
-					float d = (float)Math.Sqrt(dx * dx + dy * dy);
-					float a = Math.Clamp(radius + 0.5f - d, 0f, 1f);
-					px[y * size + x] = Color.White * a;
+					float cover = 0f;
+					for (int sy = 0; sy < 4; sy++)
+						for (int sx = 0; sx < 4; sx++)
+						{
+							float fx = x + (sx + 0.5f) / 4f, fy = y + (sy + 0.5f) / 4f;
+							float dx = Math.Max(Math.Max(radius - fx, fx - (size - radius)), 0);
+							float dy = Math.Max(Math.Max(radius - fy, fy - (size - radius)), 0);
+							if (dx * dx + dy * dy <= (float)radius * radius) cover += 1f / 16f;
+						}
+					px[y * size + x] = Color.White * cover;
 				}
-			Texture2D t = new Texture2D(device, size, size);
-			t.SetData(px);
+			int levels = 1;
+			for (int n = size; n > 1; n >>= 1) levels++;
+			Texture2D t = new Texture2D(device, size, size, true, SurfaceFormat.Color);
+			t.SetData(0, null, px, 0, px.Length);
+			Color[] prev = px;
+			for (int level = 1, n = size / 2; level < levels; level++, n /= 2)
+			{
+				Color[] next = new Color[n * n];
+				int pn = n * 2;
+				for (int y = 0; y < n; y++)
+					for (int x = 0; x < n; x++)
+					{
+						Color c0 = prev[(2 * y) * pn + 2 * x], c1 = prev[(2 * y) * pn + 2 * x + 1], c2 = prev[(2 * y + 1) * pn + 2 * x], c3 = prev[(2 * y + 1) * pn + 2 * x + 1];
+						next[y * n + x] = new Color((c0.R + c1.R + c2.R + c3.R + 2) / 4, (c0.G + c1.G + c2.G + c3.G + 2) / 4, (c0.B + c1.B + c2.B + c3.B + 2) / 4, (c0.A + c1.A + c2.A + c3.A + 2) / 4);
+					}
+				t.SetData(level, null, next, 0, next.Length);
+				prev = next;
+			}
 			return t;
 		}
 
@@ -103,10 +125,13 @@ namespace OpenFF.Client
 
 		/// <summary>A plate with rounded corners: the middle and the four edges as plain fills, the corners from the round texture.</summary>
 		public static void RoundPlate(SpriteBatch b, Rectangle r, Color colour, Viewport v, float radius = 8f)
+			=> RoundPlatePx(b, r, colour, Math.Max(2, (int)Math.Round(radius * v.Width / W)));
+
+		/// <summary>The same with the corner's radius in screen pixels, so plates drawn one inside another can keep their corners concentric.</summary>
+		public static void RoundPlatePx(SpriteBatch b, Rectangle r, Color colour, int cr)
 		{
-			int cr = Math.Max(2, (int)Math.Round(radius * v.Width / W));
-			cr = Math.Min(cr, Math.Min(r.Width, r.Height) / 2);
-			int s = _round.Width, q = 8;   // the texture's corner is 8 of its 32
+			cr = Math.Max(1, Math.Min(cr, Math.Min(r.Width, r.Height) / 2));
+			int s = _round.Width, q = s / 4;   // the texture's corner is a quarter of it
 			// Corners.
 			b.Draw(_round, new Rectangle(r.X, r.Y, cr, cr), new Rectangle(0, 0, q, q), colour);
 			b.Draw(_round, new Rectangle(r.Right - cr, r.Y, cr, cr), new Rectangle(s - q, 0, q, q), colour);
