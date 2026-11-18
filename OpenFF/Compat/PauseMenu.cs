@@ -331,27 +331,27 @@ namespace OpenFF.Client
 					i = i < 0 ? (by > 0 ? 0 : Sizes.Length - 1) : (i + by + Sizes.Length) % Sizes.Length;
 					s.Width = Sizes[i].W; s.Height = Sizes[i].H;
 					if (s.Mode == "windowed") ApplyDisplay(gdm);
-					else _note = "the size is the window's; borderless and fullscreen use the desktop's";
+					else _note = "";
 					break;
 				}
 				case 2:
 				{
 					int i = Array.IndexOf(Msaas, s.Msaa); if (i < 0) i = 0;
 					s.Msaa = Msaas[(i + by + Msaas.Length) % Msaas.Length];
-					_note = "anti-aliasing applies at the next start";
+					_note = "";
 					break;
 				}
 				case 3:
 					s.VSync = !s.VSync;
 					if (gdm != null) { gdm.SynchronizeWithVerticalRetrace = s.VSync; try { gdm.ApplyChanges(); } catch (Exception) { } }
-					_note = FpsNote(s.Fps);   // VSync changes what the frame rate does
+					_note = "";
 					break;
 				case 4:
 				{
 					string[] rates = { "30", "60", "max" };
 					int i = Array.IndexOf(rates, s.Fps); if (i < 0) i = 1;
 					s.Fps = rates[(i + by + rates.Length) % rates.Length];
-					_note = FpsNote(s.Fps);
+					_note = "";
 					break;
 				}
 				case 5:
@@ -362,7 +362,7 @@ namespace OpenFF.Client
 					string[] modes = { "ask", "auto", "off" };
 					int i = Array.IndexOf(modes, Updates.Mode); if (i < 0) i = 0;
 					s.Updates = modes[(i + by + modes.Length) % modes.Length];
-					_note = s.Updates == "ask" ? "a new version is offered at the next start" : s.Updates == "auto" ? "a new version is downloaded and installed at the next start" : "never looks for updates";
+					_note = "";
 					break;
 				}
 				case 7:
@@ -376,7 +376,7 @@ namespace OpenFF.Client
 				{
 					int i = Array.IndexOf(Ui.PadStyles, Ui.NormalisePadStyle(s.PadStyle));
 					s.PadStyle = Ui.PadStyles[(i + by + Ui.PadStyles.Length) % Ui.PadStyles.Length];
-					_note = Ui.PadStyleNote(s.PadStyle);
+					_note = "";
 					break;
 				}
 				case 10:
@@ -476,11 +476,11 @@ namespace OpenFF.Client
 		{
 			switch (row)
 			{
-				case 0: return "Turns minimap off or on. Minimap may spoil hidden passages/chests";
-				case 1: return "Complete - whole floor visible from the start. Will fill inaccessible areas behind walls.";
+				case 0: return "Minimap off or on. May spoil hidden passages and chests";
+				case 1: return "Complete: the whole floor is shown from the start, even behind walls";
 				case 2: return "how big the map is in its corner";
 				case 3: return "How zoomed the map is. Lower % = more of the map visible";
-				case 4: return "Fog of war only: amount of map uncovered by player. Higher % may spoil hidden passages";
+				case 4: return "Fog of war: amount of map uncovered. Higher % may spoil secrets";
 				case 5: return "Transparent - game partially visible behind minimap";
 				case 6: return "Shows unopened chests on minimap";
 				case 7: return "complete maps only: walls that can open are marked";
@@ -558,15 +558,15 @@ namespace OpenFF.Client
 		{
 			switch (row)
 			{
-				case 0: return "the whole game runs faster; F8 while playing (Shift+F8 back)";
+				case 0: return "The whole game runs faster. F8 while playing, Shift+F8 back";
 				case 1: return "off: no random battles, story fights still happen; F11";
-				case 2: return "how often random battles come: 0.5x is half as often, 4x is four times";
-				case 3: return "EXP from each battle, multiplied (x0 gives none)";
+				case 2: return "Increase or decrease frequency of random battles, default is 1x";
+				case 3: return "EXP from each battle, multiplied";
 				case 4: return "job EXP from each action in battle, multiplied";
-				case 5: return "Save in the menu on any map, towns and dungeons too";
-				case 6: return "off: no lowered stats for a few battles after a job change. On: default";
+				case 5: return "";
+				case 6: return "Off: no lowered stats after a job change. On: the game's default";
 				case 7: return "on: similar to FFX - heroes act as soon as a command is input";
-				case 8: return "Corner note of what is changed. Speed and encounters: only those two, when not x1";
+				case 8: return "Text overlay in top-left corner indicating what features are on";
 				default: return "";
 			}
 		}
@@ -846,14 +846,12 @@ namespace OpenFF.Client
 				}
 				if (layout.Note && !string.IsNullOrEmpty(_note))
 				{
-					// The description: its first letter capital, on as many as two lines of the box's width (a third shrinks it).
+					// The description: its first letter capital, on one line, the size shrunk until it fits the box.
 					string text = char.ToUpperInvariant(_note[0]) + _note.Substring(1);
 					int size = noteSize;
-					List<string> lines = WrapNote(graphics, text, note.Width - 28, size);
-					while (lines.Count > 2 && size > 7) lines = WrapNote(graphics, text, note.Width - 28, --size);
-					if (lines.Count > 2) lines = lines.GetRange(0, 2);
-					float lineH = 16f, y0 = note.Y + (note.Height - lines.Count * lineH) / 2f;
-					for (int i = 0; i < lines.Count; i++) L(graphics, lines[i], note.X + 14, y0 + i * lineH, lineH, size, UiTheme.Ink);
+					float room = note.Width - 28;
+					while (size > 6 && Ui.Width(graphics, text, size) > room) size--;
+					L(graphics, text, note.X + 14, note.Y, note.Height, size, UiTheme.Ink);
 				}
 				for (int i = 0; i < hints.Length; i++) Ui.HintText(graphics, hints[i].Item1, hints[i].Item2, hintX[i], hintY, 22, hintSize);
 			}
