@@ -40,6 +40,8 @@ copy /y dist\samples\Survivors\Survivors.dll dist\OpenFF\Samples\Survivors\ >nul
 copy /y dist\samples\Rogue\Rogue.dll dist\OpenFF\Samples\Rogue\ >nul || goto fail
 rem The PlayStation button pictures (Settings > Button icons), which the client reads from pad-icons beside OpenFF.exe.
 robocopy pad-icons dist\OpenFF\pad-icons /e /njh /njs /ndl /nfl /nc /ns >nul
+rem The fonts that come with it (fonts\menus, fonts\names and their licences), which the client reads from fonts beside OpenFF.exe.
+robocopy fonts dist\OpenFF\fonts /e /njh /njs /ndl /nfl /nc /ns >nul
 rem The guide: the HTML tutorials Crystal opens with Help, readable on their own too.
 if exist Docs\Guide robocopy Docs\Guide dist\OpenFF\Guide /e /njh /njs /ndl /nfl /nc /ns >nul
 if exist dist\OpenFF-%VERSION%-win-x64.zip del dist\OpenFF-%VERSION%-win-x64.zip
