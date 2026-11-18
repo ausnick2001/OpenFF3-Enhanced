@@ -37,7 +37,13 @@ namespace OpenFF.Client
 		}
 
 		private static GraphicsDevice _device;
-		private static Texture2D _frame, _panel, _divider, _crest, _icons, _grad, _glow, _diamond;
+		private static Texture2D _frame, _panel, _divider, _crest, _icons, _grad, _glow, _diamond, _hand, _noise;
+
+		/// <summary>The party menu's look (the pause menu draws in it): blue textured panels with a silver border, a hand for the cursor. Off for the other screens.</summary>
+		public static bool PartyStyle;
+
+		/// <summary>What a lit row's text and values are written in.</summary>
+		public static Color LitInk => PartyStyle ? Color.White : GoldBright;
 
 		public static void Ensure(GraphicsDevice device)
 		{
@@ -52,6 +58,40 @@ namespace OpenFF.Client
 			_grad = MakeGradient(device);
 			_glow = MakeGlow(device, 64, 20);
 			_diamond = MakeDiamond(device, 32);
+			_noise = MakeNoise(device);
+			_hand = null;
+			try
+			{
+				using (System.IO.MemoryStream png = new System.IO.MemoryStream(Convert.FromBase64String(UiHand.Png)))
+				{
+					Texture2D loaded = Texture2D.FromStream(device, png);
+					Texture2D mipped = WithMipmaps(loaded);
+					if (!ReferenceEquals(mipped, loaded)) loaded.Dispose();
+					_hand = mipped;
+				}
+			}
+			catch (Exception ex) { Log.Write(LogChannel.General, "ui: the hand: " + ex.Message); }
+		}
+
+		// The party menu's blue: a fine grain over it, tiled.
+		private static Texture2D MakeNoise(GraphicsDevice device)
+		{
+			const int n = 128;
+			Random rng = new Random(33);
+			float[] g = new float[n * n];
+			for (int i = 0; i < g.Length; i++) g[i] = (float)(rng.NextDouble() * 2 - 1);
+			Color[] px = new Color[n * n];
+			for (int y = 0; y < n; y++)
+				for (int x = 0; x < n; x++)
+				{
+					// A little smoothing, wrapped, so the grain is soft and tiles.
+					float v = g[y * n + x] * 0.5f + (g[y * n + (x + 1) % n] + g[y * n + (x + n - 1) % n] + g[((y + 1) % n) * n + x] + g[((y + n - 1) % n) * n + x]) * 0.125f;
+					int c = (int)Math.Clamp(128 + v * 70f, 0, 255);
+					px[y * n + x] = new Color(c, c, c, 255);
+				}
+			Texture2D tex = new Texture2D(device, n, n);
+			tex.SetData(px);
+			return tex;
 		}
 
 		private static Texture2D Load(string name)
@@ -202,6 +242,7 @@ namespace OpenFF.Client
 		/// <summary>The panel: the game dimmed, the navy fill with its texture and crest, the gold frame round it.</summary>
 		public static void Panel(SpriteBatch b, Rectangle r, Viewport v, bool dim = true)
 		{
+			if (PartyStyle) { PartyPanel(b, r, v, dim); return; }
 			if (dim) Ui.Fill(b, new Rectangle(0, 0, v.Width, v.Height), new Color(0, 0, 0, 150));
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
 			Ui.Fill(b, p, new Color(12, 26, 64, 250));
@@ -213,6 +254,22 @@ namespace OpenFF.Client
 				b.Draw(_crest, Px(r.Right - size - 10, r.Y + 8, size, size, v), new Color(255, 255, 255, 34));
 			}
 			Frame(b, r, v);
+		}
+
+		private static readonly Color PartyBlue = new Color(43, 60, 120, 255);
+		private static readonly Color Silver = new Color(204, 206, 214, 255);
+
+		/// <summary>The party menu's window: blue with a fine grain, a silver border (a darker line inside it), rounded.</summary>
+		private static void PartyPanel(SpriteBatch b, Rectangle r, Viewport v, bool dim)
+		{
+			if (dim) Ui.Fill(b, new Rectangle(0, 0, v.Width, v.Height), new Color(0, 0, 0, 120));
+			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			int e = Math.Max(2, (int)Math.Round(2.4f * Sx(v)));
+			Ui.RoundPlate(b, new Rectangle(p.X - e, p.Y - e, p.Width + 2 * e, p.Height + 2 * e), Silver, v, 10f);
+			Ui.RoundPlate(b, new Rectangle(p.X - e / 3, p.Y - e / 3, p.Width + 2 * (e / 3), p.Height + 2 * (e / 3)), new Color(90, 96, 122, 255), v, 9f);
+			Ui.RoundPlate(b, p, PartyBlue, v, 8f);
+			Rectangle g = Inset(p, Math.Max(2, e));
+			b.Draw(_noise, g, new Rectangle(0, 0, Math.Max(1, g.Width / 2), Math.Max(1, g.Height / 2)), new Color(255, 255, 255, 46));
 		}
 
 		/// <summary>The gold frame: its corners' filigree, its two lines along the panel's edges.</summary>
@@ -239,6 +296,12 @@ namespace OpenFF.Client
 		/// <summary>The divider under a title: its ornament at (cx, y) at its own shape, its lines stretched out to the width.</summary>
 		public static void Divider(SpriteBatch b, float cx, float y, float width, Viewport v, float height = 11f)
 		{
+			if (PartyStyle)
+			{
+				Ui.Fill(b, Px(cx - width / 2, y, width, 1.4f, v), new Color(20, 30, 70, 230));
+				Ui.Fill(b, Px(cx - width / 2, y + 1.4f, width, 1.2f, v), new Color(110, 128, 196, 150));
+				return;
+			}
 			if (_divider == null) { Ui.Fill(b, Px(cx - width / 2, y, width, 1, v), Gold); return; }
 			// The picture's content lies in rows 56..120; its ornament in the columns 451..573 of 1024.
 			int srcY = (int)(_divider.Height * 56 / 183f), srcH = (int)(_divider.Height * 64 / 183f);
@@ -254,6 +317,15 @@ namespace OpenFF.Client
 		public static void Row(SpriteBatch b, Rectangle r, bool lit, Viewport v, bool diamonds = false)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			if (PartyStyle)
+			{
+				// The party menu's rows are not plates: a faint lit band for the chosen one, a dark line under each with a light one below it.
+				if (lit) Ui.RoundPlate(b, p, new Color(255, 255, 255, 30), v, 4f);
+				int ly = p.Bottom + Math.Max(1, (int)Math.Round(Sy(v) * 1.2f));
+				Ui.Fill(b, new Rectangle(p.X, ly, p.Width, 1), new Color(18, 28, 64, 235));
+				Ui.Fill(b, new Rectangle(p.X, ly + 1, p.Width, 1), new Color(96, 116, 190, 120));
+				return;
+			}
 			if (!lit)
 			{
 				Ui.RoundPlate(b, p, RowEdge, v);
@@ -271,6 +343,14 @@ namespace OpenFF.Client
 				b.Draw(_diamond, Px(r.X - d / 2, r.Y + r.Height / 2f - d / 2, d, d, v), GoldBright);
 				b.Draw(_diamond, Px(r.Right - d / 2, r.Y + r.Height / 2f - d / 2, d, d, v), GoldBright);
 			}
+		}
+
+		/// <summary>The hand beside a lit row: its fingertip a little before where the row's text starts, level with the row's middle.</summary>
+		public static void Hand(SpriteBatch b, Rectangle r, float tipX, Viewport v)
+		{
+			if (_hand == null) return;
+			float w = 44f, h = w * UiHand.Height / UiHand.Width;
+			b.Draw(_hand, Px(tipX - w, r.Y + r.Height / 2f - h * UiHand.TipY / UiHand.Height, w, h, v), Color.White);
 		}
 
 		/// <summary>A soft glow of a colour round a text-space box, spread by the given text-space distance.</summary>
@@ -295,6 +375,18 @@ namespace OpenFF.Client
 		public static void Stepper(SpriteBatch b, Rectangle r, bool lit, Viewport v)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			if (PartyStyle)
+			{
+				Ui.RoundPlate(b, p, lit ? Silver : new Color(150, 156, 180, 255), v, 5f);
+				Ui.RoundPlate(b, Inset(p, 1), new Color(20, 30, 74, 255), v, 5f);
+				float pc = r.Height * 1.25f;
+				Color pl = new Color(110, 120, 168, 255);
+				Ui.Fill(b, Px(r.X + pc, r.Y + 1, 1, r.Height - 2, v), pl);
+				Ui.Fill(b, Px(r.Right - pc, r.Y + 1, 1, r.Height - 2, v), pl);
+				Ui.IconAt(b, Ui.Icon.Left, r.X + pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, Color.White, v);
+				Ui.IconAt(b, Ui.Icon.Right, r.Right - pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, Color.White, v);
+				return;
+			}
 			Ui.RoundPlate(b, p, lit ? new Color(150, 118, 52, 230) : InsetEdge, v);
 			Ui.RoundPlate(b, Inset(p, 1), InsetFill, v);
 			float cell = r.Height * 1.25f;
@@ -317,6 +409,14 @@ namespace OpenFF.Client
 		public static void Switch(SpriteBatch b, Rectangle r, bool on, bool lit, Viewport v)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			if (PartyStyle)
+			{
+				Ui.RoundPlate(b, p, lit ? Silver : new Color(150, 156, 180, 255), v);
+				Ui.RoundPlate(b, Inset(p, 1), on ? new Color(52, 94, 190, 255) : new Color(20, 30, 74, 255), v);
+				float pd = r.Height * 0.62f, pcx = r.X + r.Height * 0.62f, pcy = r.Y + r.Height / 2f;
+				Ui.GlyphDisc(b, pcx, pcy, pd, on ? Color.White : new Color(150, 156, 176, 255), v);
+				return;
+			}
 			Ui.RoundPlate(b, p, on ? new Color(90, 140, 220, 230) : new Color(92, 100, 122, 220), v);
 			Ui.RoundPlate(b, Inset(p, 1), on ? new Color(10, 26, 62, 245) : new Color(10, 16, 32, 245), v);
 			float d = r.Height * 0.68f, cx = r.X + r.Height * 0.62f, cy = r.Y + r.Height / 2f;
@@ -331,6 +431,12 @@ namespace OpenFF.Client
 		public static void NoteBox(SpriteBatch b, Rectangle r, Viewport v)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			if (PartyStyle)
+			{
+				Ui.RoundPlate(b, p, Silver, v, 7f);
+				Ui.RoundPlate(b, Inset(p, Math.Max(1, (int)Math.Round(Sx(v) * 1.6f))), new Color(30, 44, 96, 255), v, 6f);
+				return;
+			}
 			Ui.RoundPlate(b, p, new Color(196, 156, 74, 230), v);
 			Ui.RoundPlate(b, Inset(p, 1), new Color(6, 14, 38, 235), v);
 		}

@@ -440,11 +440,12 @@ namespace OpenFF.Client
 
 		// ---- minimap ----
 
-		// Minimap, Type, Rotation, Size, Zoom, Style, Chests, Hidden passages, Forget explored maps, Back.
+		// Minimap, Type, Size, Zoom, Area uncovered, Style, Chests, Hidden passages, Forget explored maps, Back.
 		private const int MapRows = 10;
 
 		private static readonly string[] MapSizes = { "Small", "Medium", "Large" };
 		private static readonly string[] MapZooms = { "50%", "75%", "100%", "150%", "200%" };
+		private static readonly string[] MapAreas = { "100%", "125%", "150%", "175%", "200%" };
 
 		private void ChangeMap(int row, int by, bool confirm)
 		{
@@ -453,9 +454,9 @@ namespace OpenFF.Client
 			{
 				case 0: q.Minimap = !q.Minimap; Qol.Changed("minimap " + (q.Minimap ? "on" : "off")); break;
 				case 1: q.MinimapFog = !q.MinimapFog; Qol.Changed("minimap " + (q.MinimapFog ? "fog of war" : "complete")); break;
-				case 2: q.MinimapRotate = !q.MinimapRotate; Qol.Changed("minimap " + (q.MinimapRotate ? "turns with the camera" : "fixed")); break;
-				case 3: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
-				case 4: q.MinimapZoom = Math.Clamp(q.MinimapZoom + by, 0, MapZooms.Length - 1); Qol.Changed("minimap zoom " + MapZooms[q.MinimapZoom]); break;
+				case 2: q.MinimapSize = ((q.MinimapSize + by) % 3 + 3) % 3; Qol.Changed("minimap size " + MapSizes[q.MinimapSize]); break;
+				case 3: q.MinimapZoom = Math.Clamp(q.MinimapZoom + by, 0, MapZooms.Length - 1); Qol.Changed("minimap zoom " + MapZooms[q.MinimapZoom]); break;
+				case 4: q.MinimapSee = Math.Clamp(q.MinimapSee + by, 0, MapAreas.Length - 1); Qol.Changed("minimap area uncovered " + MapAreas[q.MinimapSee]); break;
 				case 5: q.MinimapOpaque = !q.MinimapOpaque; Qol.Changed("minimap " + (q.MinimapOpaque ? "opaque" : "transparent")); break;
 				case 6: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
 				case 7: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
@@ -475,9 +476,9 @@ namespace OpenFF.Client
 			{
 				case 0: return "Turns minimap off or on. Minimap may spoil hidden passages/chests";
 				case 1: return "Complete - whole floor visible from the start. Will fill inaccessible areas behind walls.";
-				case 2: return "Fixed: Map always points North. Rotates: Map points the same direction as the player";
-				case 3: return "how big the map is in its corner";
-				case 4: return "How zoomed the map is. Lower % = more of the map visible";
+				case 2: return "how big the map is in its corner";
+				case 3: return "How zoomed the map is. Lower % = more of the map visible";
+				case 4: return "Fog of war only: amount of map uncovered by player. Higher % may spoil hidden passages";
 				case 5: return "Transparent - game partially visible behind minimap";
 				case 6: return "Shows unopened chests on minimap";
 				case 7: return "complete maps only: walls that can open are marked";
@@ -490,7 +491,7 @@ namespace OpenFF.Client
 		private static string MapSummary()
 		{
 			DisplaySettings.QolSettings q = Qol.S;
-			return q.Minimap ? (q.MinimapFog ? "fog of war" : "complete") + (q.MinimapRotate ? ", rotates" : ", fixed") : "off";
+			return q.Minimap ? (q.MinimapFog ? "fog of war" : "complete") : "off";
 		}
 
 		// ---- quality of life ----
@@ -661,9 +662,9 @@ namespace OpenFF.Client
 					{
 						case 0: icon = UiTheme.Icon.Window; on = q.Minimap; return Kind.Switch;
 						case 1: icon = UiTheme.Icon.Quality; return Kind.Stepper;
-						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
-						case 4: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 4: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 5: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 6: icon = UiTheme.Icon.Quality; on = q.MinimapChests; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Indicator; on = q.MinimapPassages; return Kind.Switch;
@@ -700,6 +701,27 @@ namespace OpenFF.Client
 		public override void Draw(GameTime gameTime)
 		{
 			if (_page == Page.Closed || RenderTest.Active) return;
+			// The menu is dressed like the party menu; the other screens keep the gold theme.
+			UiTheme.PartyStyle = true;
+			try { DrawMenu(); }
+			finally { UiTheme.PartyStyle = false; }
+		}
+
+		// Text with a soft black shadow, as the party menu's has.
+		private static void L(GlobalScope.Graphics g, string text, float x, float top, float h, int size, Color c)
+		{
+			Ui.Left(g, text, x + 1, top + 1, h, size, new Color(0, 0, 0, 210));
+			Ui.Left(g, text, x, top, h, size, c);
+		}
+
+		private static void C(GlobalScope.Graphics g, string text, Rectangle r, int size, Color c)
+		{
+			Ui.Centred(g, text, new Rectangle(r.X + 1, r.Y + 1, r.Width, r.Height), size, new Color(0, 0, 0, 210));
+			Ui.Centred(g, text, r, size, c);
+		}
+
+		private void DrawMenu()
+		{
 			GlobalScope.Graphics graphics = GlobalScope.m_Graphics;
 			if (graphics == null) return;
 			EnsureResources();
@@ -712,7 +734,7 @@ namespace OpenFF.Client
 			int rowSize = compact ? 9 : _page == Page.Main || _page == Page.Quit ? 12 : 11, titleSize = _page == Page.Main ? 19 : 16, subSize = 9, hintSize = 9, noteSize = 9;
 			float titleY = panel.Y + 16, dividerY = panel.Y + 62, hintY = panel.Bottom - 22;
 			UiTheme.Icon? titleIcon = TitleIcon();
-			float titleX = panel.X + 30 + (titleIcon.HasValue ? 40 : 0);
+			float titleX = panel.X + 30;
 			Rectangle note = new Rectangle(panel.X + 20, (int)(layout.Top + count * layout.Step + 4), panel.Width - 40, compact ? 22 : 28);
 
 			// The values' places: a stepper's box and a switch, sized to what they show.
@@ -749,20 +771,19 @@ namespace OpenFF.Client
 			}
 			finally { TrueTypeText.TitleFace = false; }
 
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearWrap);
 			UiTheme.Panel(_batch, panel, view);
 			UiTheme.Divider(_batch, panel.Center.X, dividerY, panel.Width - 60, view);
-			if (titleIcon.HasValue) UiTheme.IconAt(_batch, titleIcon.Value, panel.X + 48, titleY + 15, 40, view);
 			for (int row = 0; row < count; row++)
 			{
 				Rectangle r = layout.RowAt(row);
 				bool lit = row == _selected;
 				UiTheme.Row(_batch, r, lit, view, diamonds: lit && (_page == Page.Main || _page == Page.Quit));
 				Kind kind = RowKind(row, out UiTheme.Icon? icon, out bool on, out _);
-				if (icon.HasValue) UiTheme.IconAt(_batch, icon.Value, r.X + 24, r.Y + r.Height / 2f, compact ? r.Height * 1.0f : r.Height * 1.08f, view);
+				if (lit) UiTheme.Hand(_batch, r, r.X + 40, view);
 				if (kind == Kind.Stepper) UiTheme.Stepper(_batch, valueBox[row], lit, view);
 				else if (kind == Kind.Switch) UiTheme.Switch(_batch, valueBox[row], on, lit, view);
-				else if (kind == Kind.Page) Ui.IconAt(_batch, Ui.Icon.Right, r.Right - 20, r.Y + r.Height / 2f, r.Height * 0.5f, lit ? UiTheme.GoldBright : UiTheme.Ink, view);
+				else if (kind == Kind.Page) Ui.IconAt(_batch, Ui.Icon.Right, r.Right - 20, r.Y + r.Height / 2f, r.Height * 0.5f, lit ? UiTheme.LitInk : UiTheme.Ink, view);
 			}
 			if (layout.Note && !string.IsNullOrEmpty(_note)) UiTheme.NoteBox(_batch, note, view);
 			for (int i = 0; i < hints.Length; i++) Ui.HintShape(_batch, hints[i].Item1, hintX[i], hintY, 22, view);
@@ -776,7 +797,7 @@ namespace OpenFF.Client
 			try
 			{
 				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
-				Ui.Left(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
+				L(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
 				string sub = _page == Page.Main ? ""
 					: _page == Page.Settings ? "Kept in settings.json."
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
@@ -789,13 +810,13 @@ namespace OpenFF.Client
 				int fit = subSize;
 				while (fit > 7 && Ui.Width(graphics, sub, fit) > room) fit--;
 				if (sub.Length == 0) { }
-				else if (Ui.Width(graphics, sub, fit) <= room) Ui.Left(graphics, sub, subX, titleY + 3, 30, fit, UiTheme.Sub);
-				else Ui.Left(graphics, sub, titleX, titleY + 26, 16, 7, UiTheme.Sub);
+				else if (Ui.Width(graphics, sub, fit) <= room) L(graphics, sub, subX, titleY + 3, 30, fit, UiTheme.Sub);
+				else L(graphics, sub, titleX, titleY + 26, 16, 7, UiTheme.Sub);
 				// The version, top right of the main page.
 				if (_page == Page.Main)
 				{
 					string version = "v" + Updates.Current.ToString(3);
-					Ui.Left(graphics, version, panel.Right - 30 - Ui.Width(graphics, version, subSize + 1), titleY + 6, 30, subSize + 1, UiTheme.Sub);
+					L(graphics, version, panel.Right - 30 - Ui.Width(graphics, version, subSize + 1), titleY + 6, 30, subSize + 1, UiTheme.Sub);
 				}
 				for (int row = 0; row < count; row++)
 				{
@@ -803,27 +824,27 @@ namespace OpenFF.Client
 					bool lit = row == _selected;
 					Kind kind = RowKind(row, out UiTheme.Icon? icon, out bool on, out string hint);
 					RowText(row, out string label, out string value);
-					float labelX = r.X + (icon.HasValue || _page != Page.Buttons ? 52 : 14);
-					Ui.Left(graphics, label, labelX, r.Y, r.Height, rowSize, lit ? Color.White : UiTheme.Ink);
+					float labelX = r.X + 46;
+					L(graphics, label, labelX, r.Y, r.Height, rowSize, lit ? Color.White : UiTheme.Ink);
 					switch (kind)
 					{
 						case Kind.Stepper:
-							Ui.Centred(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]), FitSize(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]).Width - 10, rowSize), lit ? UiTheme.GoldBright : UiTheme.Ink);
+							C(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]), FitSize(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]).Width - 10, rowSize), lit ? UiTheme.LitInk : UiTheme.Ink);
 							break;
 						case Kind.Switch:
-							Ui.Centred(graphics, on ? "On" : "Off", UiTheme.SwitchWord(valueBox[row]), rowSize - 1, on ? UiTheme.Ink : UiTheme.Hint);
+							C(graphics, on ? "On" : "Off", UiTheme.SwitchWord(valueBox[row]), rowSize - 1, on ? UiTheme.Ink : UiTheme.Hint);
 							break;
 						case Kind.Text:
-							if (value != null) { float w = Ui.Width(graphics, value, rowSize); Ui.Left(graphics, value, r.Right - 14 - w, r.Y, r.Height, rowSize, lit ? UiTheme.GoldBright : UiTheme.Hint); }
+							if (value != null) { float w = Ui.Width(graphics, value, rowSize); L(graphics, value, r.Right - 14 - w, r.Y, r.Height, rowSize, lit ? UiTheme.LitInk : UiTheme.Hint); }
 							break;
 					}
 					if (hint != null && valueBox[row].Width > 0)
 					{
 						float w = Ui.Width(graphics, hint, rowSize - 1);
-						Ui.Left(graphics, hint, valueBox[row].X - 12 - w, r.Y, r.Height, rowSize - 1, UiTheme.Hint);
+						L(graphics, hint, valueBox[row].X - 12 - w, r.Y, r.Height, rowSize - 1, UiTheme.Hint);
 					}
 				}
-				if (layout.Note && !string.IsNullOrEmpty(_note)) Ui.Left(graphics, _note, note.X + 14, note.Y, note.Height, FitSize(graphics, _note, note.Width - 28, noteSize), UiTheme.Ink);
+				if (layout.Note && !string.IsNullOrEmpty(_note)) L(graphics, _note, note.X + 14, note.Y, note.Height, FitSize(graphics, _note, note.Width - 28, noteSize), UiTheme.Ink);
 				for (int i = 0; i < hints.Length; i++) Ui.HintText(graphics, hints[i].Item1, hints[i].Item2, hintX[i], hintY, 22, hintSize);
 			}
 			finally { TrueTypeText.TitleFace = false; }
@@ -952,9 +973,9 @@ namespace OpenFF.Client
 					{
 						case 0: label = "Minimap"; value = q.Minimap ? "On" : "Off"; return;
 						case 1: label = "Type"; value = q.MinimapFog ? "Fog of war" : "Complete"; return;
-						case 2: label = "Rotation"; value = q.MinimapRotate ? "Rotates" : "Fixed"; return;
-						case 3: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
-						case 4: label = "Zoom"; value = MapZooms[Math.Clamp(q.MinimapZoom, 0, MapZooms.Length - 1)]; return;
+						case 2: label = "Size"; value = MapSizes[Math.Clamp(q.MinimapSize, 0, 2)]; return;
+						case 3: label = "Zoom"; value = MapZooms[Math.Clamp(q.MinimapZoom, 0, MapZooms.Length - 1)]; return;
+						case 4: label = "Area uncovered"; value = MapAreas[Math.Clamp(q.MinimapSee, 0, MapAreas.Length - 1)]; return;
 						case 5: label = "Style"; value = q.MinimapOpaque ? "Opaque" : "Transparent"; return;
 						case 6: label = "Chests"; value = q.MinimapChests ? "On" : "Off"; return;
 						case 7: label = "Hidden passages"; value = q.MinimapPassages ? "Marked" : "Not marked"; return;

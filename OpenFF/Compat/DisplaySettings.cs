@@ -104,6 +104,8 @@ namespace OpenFF.Client
 			/// <summary>0 small, 1 medium, 2 large.</summary>
 			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 1;
 			[JsonPropertyName("minimapZoom")] public int MinimapZoom { get; set; } = 2;
+			/// <summary>How much of the map the party uncovers with fog of war: 0 is 100% (as first made), up to 4, 200%.</summary>
+			[JsonPropertyName("minimapSee")] public int MinimapSee { get; set; }
 			/// <summary>A solid map; false lets the game show through.</summary>
 			[JsonPropertyName("minimapOpaque")] public bool MinimapOpaque { get; set; }
 			/// <summary>A marker on each chest not yet opened.</summary>

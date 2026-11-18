@@ -30,7 +30,9 @@ namespace OpenFF.Client
 	internal sealed class Minimap : DrawableGameComponent
 	{
 		private const int CellFx = 2 * 4096;        // a cell is 2 units
-		private const int SeeCells = 6;             // how near the party must have been for a cell to be shown, with fog of war
+		private const int SeeCells = 6;             // how near the party must have been for a cell to be shown, with fog of war (at 100%)
+		public static readonly float[] Areas = { 1f, 1.25f, 1.5f, 1.75f, 2f };   // the area uncovered, times SeeCells
+		private int _see = SeeCells;
 		private const int ViewCells = 55;           // cells shown each way from the party
 		private const int RecheckCells = 14;        // how far from the party walls are looked at again
 		private const int Pad = ViewCells + 2;         // the picture's margin, so the shown part is always inside it
@@ -90,9 +92,25 @@ namespace OpenFF.Client
 				for (int dx = -RecheckCells; dx <= RecheckCells; dx++)
 					if (dx * dx + dz * dz <= RecheckCells * RecheckCells) _order.Add((dx, dz));
 			_order.Sort((a, b) => (a.dx * a.dx + a.dz * a.dz).CompareTo(b.dx * b.dx + b.dz * b.dz));
-			for (int dz = -SeeCells; dz <= SeeCells; dz++)
-				for (int dx = -SeeCells; dx <= SeeCells; dx++)
-					if (dx * dx + dz * dz <= SeeCells * SeeCells) _near.Add((dx, dz));
+			RebuildNear();
+		}
+
+		private void RebuildNear()
+		{
+			_near.Clear();
+			for (int dz = -_see; dz <= _see; dz++)
+				for (int dx = -_see; dx <= _see; dx++)
+					if (dx * dx + dz * dz <= _see * _see) _near.Add((dx, dz));
+		}
+
+		/// <summary>The area the party uncovers, as the setting has it: the cells about it are looked at again when it changes.</summary>
+		private void SyncSee()
+		{
+			int see = (int)Math.Round(SeeCells * Areas[Math.Clamp(Qol.MinimapSee, 0, Areas.Length - 1)]);
+			if (see == _see) return;
+			_see = see;
+			RebuildNear();
+			_seenX = int.MinValue;
 		}
 
 		public static void Attach(Game game)
@@ -113,6 +131,7 @@ namespace OpenFF.Client
 				if (stage != _stage) NewStage(stage, px, pz);
 				if (_myGen != _forgetGen) { _myGen = _forgetGen; _memory = Recall(_stage); _realloc = true; _dirty = true; }
 				_frame++;
+				SyncSee();
 				Explore(px, py, pz);
 				Rebuild();
 				Paint(px, pz);
@@ -442,7 +461,7 @@ namespace OpenFF.Client
 				SetShown(pcx + dx, pcz + dz);
 			}
 			// ...and the ring just outside, whose walls now border seen floor.
-			int ring = SeeCells + 1;
+			int ring = _see + 1;
 			for (int dz = -ring; dz <= ring; dz++)
 				for (int dx = -ring; dx <= ring; dx++)
 					if (Math.Max(Math.Abs(dx), Math.Abs(dz)) == ring || !_memory.ContainsKey(Key(pcx + dx, pcz + dz)))
