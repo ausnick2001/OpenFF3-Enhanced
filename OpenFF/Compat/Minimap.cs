@@ -34,13 +34,13 @@ namespace OpenFF.Client
 		private const int ViewCells = 55;           // cells shown each way from the party
 		private const int RecheckCells = 14;        // how far from the party walls are looked at again
 		private const int Pad = ViewCells + 2;         // the picture's margin, so the shown part is always inside it
-		private const int Budget = 80;              // cells probed each frame
+		private const int Budget = 48;              // cells probed each frame
 		private const int ReachCells = 160;         // how far the fill goes from where the map was entered
 		private const int RecheckEvery = 150;       // frames before a wall is probed again (a passage may have opened)
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
 		private const int FloorRange = 24576;       // 6 units: ground further from the neighbour's than this is another floor
 
-		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
+		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5, Bumped = 6;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Bumped: the party was stopped here (the walls the probe missed); Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
 		private struct Cell { public byte State; public int GroundY; public int Stamp; public sbyte DirX, DirZ; }   // DirX/DirZ: the way it was probed from, kept for probing it again
 
@@ -66,7 +66,7 @@ namespace OpenFF.Client
 		private int _w, _h, _ox, _oz;
 
 		private SpriteBatch _batch;
-		private Texture2D _pixel, _arrow, _chest, _stairs, _door;
+		private Texture2D _pixel, _arrow, _chest, _door;
 		private float _faceX, _faceZ;   // the way the hero faces, in the map's space
 		private readonly GlobalScope.VecFx32 _dirA = new GlobalScope.VecFx32();
 		private readonly GlobalScope.VecFx32 _dirB = new GlobalScope.VecFx32();
@@ -113,6 +113,7 @@ namespace OpenFF.Client
 				if (_myGen != _forgetGen) { _myGen = _forgetGen; _memory = Recall(_stage); _realloc = true; _dirty = true; }
 				_frame++;
 				Explore(px, py, pz);
+				Bump(px, pz);
 				Rebuild();
 				Paint(px, pz);
 			}
@@ -123,12 +124,44 @@ namespace OpenFF.Client
 			}
 		}
 
+		// The fail-safe: when a direction is held and the party does not move, the party has met something the probe missed,
+		// and a short wall is drawn there, a little ahead, the way the party faces.
+		private int _lastPx, _lastPz, _still;
+		private bool _bumped, _haveLast;
+
+		private void Bump(int px, int pz)
+		{
+			bool pressing = (GlobalScope.dv.CDeviceManager.getInstance().Pad().pad_trs(0) & 0xF) != 0;
+			long dx = px - _lastPx, dz = pz - _lastPz;
+			bool still = _haveLast && dx * dx + dz * dz < 40L * 40L;
+			_lastPx = px; _lastPz = pz; _haveLast = true;
+			if (!pressing || !still) { _still = 0; _bumped = false; return; }
+			if (++_still < 8 || _bumped) return;
+			float len = (float)Math.Sqrt(_faceX * _faceX + _faceZ * _faceZ);
+			if (len < 1e-3f) return;
+			float fx = _faceX / len, fz = _faceZ / len;
+			_bumped = true;
+			// A point just past the party's reach (a bit more than the party's radius), and a cell either side of it.
+			float ahead = 3.6f * 4096f;
+			for (int side = -1; side <= 1; side++)
+			{
+				int wx = px + (int)(fx * ahead + -fz * side * CellFx), wz = pz + (int)(fz * ahead + fx * side * CellFx);
+				int cx = CellOf(wx), cz = CellOf(wz);
+				if (cx == CellOf(px) && cz == CellOf(pz)) continue;
+				long key = Key(cx, cz);
+				if (_cells.TryGetValue(key, out Cell old) && old.State != Floor) continue;   // already a wall (or a way out)
+				_memory[key] = Bumped;
+				Put(cx, cz, new Cell { State = Floor, GroundY = old.GroundY, Stamp = _frame });   // Put turns it into Bumped, through the memory
+			}
+			Log.Write(LogChannel.General, "minimap: stopped at a wall the probe missed, marked");
+		}
+
 		private void NewStage(string stage, int px, int pz)
 		{
 			_stage = stage;
 			_memory = Recall(stage);
 			_cells.Clear(); _frontier.Clear(); _seenX = int.MinValue;
-			_haveFixed = false; _recheckAt = 0;
+			_haveFixed = false; _recheckAt = 0; _haveLast = false;
 			_startX = CellOf(px); _startZ = CellOf(pz);
 			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
 			_tex?.Dispose(); _tex = null; _pix = null; _grid = null;
@@ -297,6 +330,7 @@ namespace OpenFF.Client
 			MarkSeen(pcx, pcz);
 			if (!_cells.TryGetValue(Key(pcx, pcz), out Cell here) || (here.State != Floor && here.State != Exit))
 			{
+				if (_memory.TryGetValue(Key(pcx, pcz), out byte pm) && pm == Bumped) _memory[Key(pcx, pcz)] = Floor;   // the party stands here: not a wall
 				Put(pcx, pcz, new Cell { State = Floor, GroundY = py, Stamp = _frame });
 				_frontier.Enqueue((pcx, pcz));
 			}
@@ -375,7 +409,24 @@ namespace OpenFF.Client
 				}
 			}
 
-			// The walls the party is subject to (the character's wall test: the map's flags against the character's).
+			// The walls the party is subject to (the character's wall test: the map's flags against the character's). A wall only pushes back from
+			// its front, so a cell is looked at going the way the fill came and then each of the four ways along the axes: whichever way a wall
+			// faces, one of them meets it.
+			int wall = WallAt(first, mapFlags, colFlags, x, z, groundY, _ahead);
+			for (int d = 0; d < 4 && wall == 0; d++)
+			{
+				_ahead2.set(d == 0 ? 4096 : d == 1 ? -4096 : 0, 0, d == 2 ? 4096 : d == 3 ? -4096 : 0);
+				wall = WallAt(first, mapFlags, colFlags, x, z, groundY, _ahead2);
+			}
+			if (wall != 0) return wall == 1 ? Wall : Secret;
+			return Floor;
+		}
+
+		private readonly GlobalScope.VecFx32 _ahead2 = new GlobalScope.VecFx32(0, 0, 4096);
+
+		/// <summary>0: no wall; 1: a wall; 2: a wall of one of the classes that can be switched.</summary>
+		private int WallAt(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int x, int z, int groundY, GlobalScope.VecFx32 dir)
+		{
 			for (int i = 0; i < 5; i++)
 			{
 				if ((mapFlags & (16 << i)) == 0 || (colFlags & (32 << i)) == 0) continue;
@@ -383,11 +434,11 @@ namespace OpenFF.Client
 				{
 					if (!r.rorActivity()) continue;
 					_probe.set(x, groundY, z);
-					if (r.rorEvaluateSphere(_probe, _ahead, WallRadiusFx, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_WALL_01 + i, _result)
-						&& !(_result.normal.x == 0 && _result.normal.y == 0 && _result.normal.z == 0)) return i == 0 ? Wall : Secret;
+					if (r.rorEvaluateSphere(_probe, dir, WallRadiusFx, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_WALL_01 + i, _result)
+						&& !(_result.normal.x == 0 && _result.normal.y == 0 && _result.normal.z == 0)) return i == 0 ? 1 : 2;
 				}
 			}
-			return Floor;
+			return 0;
 		}
 
 		// ---- the picture of the floor ----
@@ -399,7 +450,6 @@ namespace OpenFF.Client
 		private const byte ShowNone = 0, ShowFloor = 1, ShowWall = 2, ShowExit = 3, ShowSecret = 4;
 		private byte[] _grid;
 		private readonly List<Vector2> _exits = new List<Vector2>();
-		private readonly List<bool> _exitIsDoor = new List<bool>();   // for each of those: a door (set in a wall, or beside a door object) or stairs   // where the ways out are, in cells (the middle of each run of exit cells)
 		private bool _exitsDirty = true;
 		private int _exitsAt;
 		private int _cw, _ch;
@@ -434,7 +484,7 @@ namespace OpenFF.Client
 			if (Qol.MinimapFog && !remembered)
 			{
 				// Not seen yet: but a wall (or edge) touching floor that has been seen is the floor's border, so it is shown.
-				if (state != Wall && state != Edge && state != Secret) return ShowNone;
+				if (state != Wall && state != Edge && state != Secret && state != Bumped) return ShowNone;
 				bool border = false;
 				for (int dz = -1; dz <= 1 && !border; dz++)
 					for (int dx = -1; dx <= 1 && !border; dx++)
@@ -445,7 +495,7 @@ namespace OpenFF.Client
 			{
 				case Floor: return ShowFloor;
 				case Exit: return ShowExit;
-				case Wall: case Edge: return ShowWall;
+				case Wall: case Edge: case Bumped: return ShowWall;
 				case Secret: return Qol.MinimapPassages ? ShowSecret : ShowWall;
 				default: return ShowNone;
 			}
@@ -455,6 +505,7 @@ namespace OpenFF.Client
 		private void Put(int cx, int cz, Cell c)
 		{
 			long key = Key(cx, cz);
+			if (c.State == Floor && _memory.TryGetValue(key, out byte kept0) && kept0 == Bumped) { c.State = Bumped; c.Stamp = int.MaxValue; }   // a place the party was stopped stays a wall
 			_cells[key] = c;
 			if (_memory.ContainsKey(key) && _memory[key] != c.State) _memory[key] = c.State;
 			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
@@ -576,7 +627,7 @@ namespace OpenFF.Client
 		/// <summary>The ways out: each run of exit cells is one, put at its middle.</summary>
 		private void FindExits()
 		{
-			_exits.Clear(); _exitIsDoor.Clear();
+			_exits.Clear();
 			_exitsDirty = false; _exitsAt = _frame;
 			if (_grid == null) return;
 			bool[] done = new bool[_grid.Length];
@@ -593,8 +644,8 @@ namespace OpenFF.Client
 					int gx = at % _cw, gz = at / _cw;
 					sx += gx; sz += gz; count++;
 					if (gx < x0) x0 = gx; if (gx > x1) x1 = gx; if (gz < z0) z0 = gz; if (gz > z1) z1 = gz;
-					for (int dz = -3; dz <= 3; dz++)   // runs with a gap of a few cells are one way out
-						for (int dx = -3; dx <= 3; dx++)
+					for (int dz = -6; dz <= 6; dz++)   // runs with a gap of a few cells are one way out
+						for (int dx = -6; dx <= 6; dx++)
 						{
 							int nx = gx + dx, nz = gz + dz;
 							if (nx < 0 || nz < 0 || nx >= _cw || nz >= _ch) continue;
@@ -604,52 +655,12 @@ namespace OpenFF.Client
 				}
 				Vector2 mid = new Vector2(_ox + sx / count + 0.5f, _oz + sz / count + 0.5f);
 				_exits.Add(mid);
-				_exitIsDoor.Add(IsDoor(x0, x1, z0, z1, mid));
 			}
 		}
 
 		private bool WallAt(int gx, int gz)
 		{
 			return gx >= 0 && gz >= 0 && gx < _cw && gz < _ch && _grid[gz * _cw + gx] == ShowWall;
-		}
-
-		/// <summary>A way out is a door when it sits in a wall (wall at both ends of the run), or a door-like map object stands at it; otherwise stairs.</summary>
-		private bool IsDoor(int x0, int x1, int z0, int z1, Vector2 mid)
-		{
-			bool across = false, down = false;
-			for (int z = z0; z <= z1 && !across; z++) across = WallAt(x0 - 1, z) && WallAt(x1 + 1, z);
-			for (int x = x0; x <= x1 && !down; x++) down = WallAt(x, z0 - 1) && WallAt(x, z1 + 1);
-			if (across || down) return true;
-			try
-			{
-				GlobalScope.pl.CPlayerManager players = GlobalScope.wld.CBaseSystem.Current.PlayerMng();
-				for (int i = 0; i < (int)GlobalScope.pl.MAP_OBJECT_NUM; i++)
-				{
-					GlobalScope.map.CMapObject o = players.MapObject(i);
-					if (o == null || o.getCharacterId() == -1 || !DoorLike(o.MapObjType())) continue;
-					_pos.copy(o.getPosition());
-					GlobalScope.MTX_MultVec43(_pos, _inv, _local);
-					float dx = _local.x / (float)CellFx - mid.X, dz = _local.z / (float)CellFx - mid.Y;
-					if (dx * dx + dz * dz <= 9f) return true;
-				}
-			}
-			catch (Exception) { }
-			return false;
-		}
-
-		private static bool DoorLike(GlobalScope.map.MAP_OBJECT_TYPE t)
-		{
-			switch (t)
-			{
-				case GlobalScope.map.MAP_OBJECT_TYPE.URU_DOOR:
-				case GlobalScope.map.MAP_OBJECT_TYPE.CASTLE_GATE:
-				case GlobalScope.map.MAP_OBJECT_TYPE.CASTLE_GATE2:
-				case GlobalScope.map.MAP_OBJECT_TYPE.JAIL_CELL:
-				case GlobalScope.map.MAP_OBJECT_TYPE.SILKS_GATE:
-				case GlobalScope.map.MAP_OBJECT_TYPE.WATER_TEMPLE_GATE:
-					return true;
-			}
-			return false;
 		}
 
 		private void GridCell(long key)
@@ -702,192 +713,6 @@ namespace OpenFF.Client
 			tex.SetData(pixels);
 			return tex;
 		}
-
-		// The stairs icon (a royalty-free staircase picture, 64 x 64, with a dark outline added), as premultiplied RGBA bytes in base64.
-		private const string StairData =
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAUAAAAUAAABIAAAASEAAAEiAAABIQAAAR4AAAAPAAAABAAAAAEAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAABQAAABEBAQIuAwULeAcLF68HDBm4BwwZuAcMGbgGCxWrAgQHZAABASYAAAAOAAAABgAAAAEAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAEAAAAGAAAADQAAASUCAwdhBwwXsAsTJuMMFizzDhYs9g4WLPYOFiz2DBYs8goSJN0GCRKdAQIFTgAAAR4AAAAJAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAJAAABHgECBU4GCROf" +
-				"DBQl3A4YLvMOGC78Ehw1/3R/lf+/y9r/Ul50/w4YMP4OGC78Dxgu7woRIdEEBw2HAQECOQAAABYAAAAHAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAcAAAAWAQEDOgQHDYcKESHRDxcs7w4YLvsOGDD+TVht/7bC" +
-				"1f/m8v//4u7//+Lu//+eqb3/Mj1U/w4YMP4OGC76Dxcr6AcNG74DBQlwAAEBKgAAABAAAAAFAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAABQAAABAAAQErAwUJcAcNG78PFyvoDhgu+g4YMP4zPlX/oKu+/+fz///k8f//1+P7/9jk/P/Z5Pz/" +
-				"6fb//9zn+v+BjKL/HSc//w4YMP0OFy32DBQo4QYLFaoCAwZaAAABIwAAAA0AAAAFAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAABAAAACwAAASMCAwZbBgsWrAwUKOEOFy32Dhgw/R4oQP+BjKL/2ub5/+j1///Y5Pv/2OT7/9vn/v/b5/7/2+f+/9jk+//b6P//6/j//8jU" +
-				"5/9ga4H/Dhgx/w4YLvwPGS/yCxIk2AUIEJQBAgNEAAABGwAAAAgAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAACgEB" +
-				"Az4FCBCVCxIl2Q8ZL/IOGC78Dxky/2Jtgv/J1uj/6/f//9zo///Y5Pv/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2eX8/9fj+v/g7P//6fb//6+8zv9CTWT/" +
-				"Dhgw/g4YLvsPFyzsCRAfyQMGDH0BAQIyAAAAEwAAAAUAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAARwFCBCTDBMm5A4YLvoOGDD+" +
-				"RU9m/7K+0v/q9v//4Oz//9fj+v/Z5fz/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2eT8/9jj+//l8v//4u7//5Kdsf8oM0v/Dhgw/Q4W" +
-				"LvkOFinlBwwYtgIECGYAAQEmAAAADgAAAAUAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAEfBgoVpA0XK/EtN07+mKK2/+Pv///l8f//1+P7/9nl" +
-				"/P/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/1+P6/9nk/P/q9v//1ODy/3J9k/8VHzj/Dhgw/Q8YLvYMFCbe" +
-				"BgkToAEDBVEAAAEfAAAACgAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAABHwgNF6YMFizylKK8/+79///Z5Pz/2OT7/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/1+P7/93q///r+P//vsvc/1JddP8OGDD/Dhgu/A8YLfALESLTBAcOigEB" +
-				"AzwAAAAYAAAABwAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAR8IDBemDBYs8o6duf/O4P3/ytn0/9jl/f/d6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/Z5fz/1+P6/+Pv///n9P//o67D/zZAV/8OGDD+Dhgu+g8XLOkIDhvAAwUJcgABASsAAAAQ" +
-				"AAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAUAAAEhCAwXpgwWLPKPnbj/0uT//8LT8P/G1/T/0N/5/9vn/v/c6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/Y5Pv/2OT7/+j0///c6Pn/hI+k/x8pQv8OGDD9DhYs9gwUKOEGCxasAgMFVgAAABAAAAACAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAL" +
-				"AQECLgkNGa8MFizzjp24/9Lk///D1PH/xtf0/8TW8//J2fX/1OH6/9zo///c6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/Y5Pv/2+f+/+v3///L1+r/ZG+F/w8ZMv8OGC78DBUq7wcNGrsAAQEpAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAUAAAATAQECMgMGDH8NFSfcERsw/I6d" +
-				"uP/S5P//w9Tx/8bX9P/G1/T/xdb0/8XW8//L2/b/1+T8/9zo///b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9rm/P/X4/r/3+z//+n2//+0wNL/RlBm/w8ZMPoKECHPAQECLwAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAABQAAAA4AAQEmAgQIZgcMGLYOFynmDhYv+Q4YMP+Mm7f/0eP//8PU8f/G1/T/" +
-				"xtf0/8bX9P/G1/T/xdbz/8bX9P/O3fj/2eb9/93o///b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2uf+/9nl/P/a5fz/4/L//7LH5f8UHzf6CRAg0AEBAi8AAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAACQAAAR8BAwVRBgkToQwUJt4PGC72Dhgw/RQfN/9xfZL/0N3v/83c9//D1PL/xdb0/8bX9P/G1/T/xtf0/8bX" +
-				"9P/G1/T/xdbz/8fY9f/S4Pr/2+f+/9zo///b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/a5/7/2+f+/97p///a5v3/" +
-				"wNTx/6zG6/+Zstb/FiE5+gkQINEBAQIwAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAABAAAACgEBAjkEBw6LCxEi1A8YLfAOGC78Dhgw/1NedP+/y97/6/f//97q///b5/7/1eL7/8na9f/E1vP/xtf0/8bX9P/G1/T/xtf0/8bX9P/G1/T/" +
-				"xNbz/8ra9f/V4/z/3Oj//9zo/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/a5v7/3en//93o///K2/b/sMjq/6S/5P+tyO3/n7fa/xch" +
-				"OfoJECDRAQECLwAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAwAAAR8GChSk" +
-				"DBQn5g4YLvoOGDD+N0JZ/6Wvw//n9P//4u///9fj+v/Z5fz/2+f+/9zo///b5/7/0eD6/8fY9P/F1vP/xtf0/8bX9P/G1/T/xtf0/8bX9P/F1vT/xdb0/83c" +
-				"9//Y5f3/3ej//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9rm/v/c6P//3un//9Hg+f+2zO3/p8Ln/6nD5/+pw+b/rcjt/5222v8XITj6CQ8gzwEBAi8AAAAF" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAQAAQEmCQ4dwg8XLvckLkX/hpKm/93p" +
-				"/P/n9P//1+P6/9jk+//b5/7/2+f+/9vn/v/b5/7/2+f+/93o///Z5f3/zt34/8XW9P/F1vP/xtf0/8bX9P/G1/T/xtf0/8bX9P/F1vP/xtf0/9Df+f/a5/7/" +
-				"3Oj//9vn/v/b5/7/2ub+/9vn/v/e6v//1+T8/73R8P+pw+f/p8Ln/6vF6P+qxOj/qMLm/63I7f+et9r/FyI5+gkPIM8BAQIvAAAABQAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAEAQICJwkPHcURGTD4rbrU/+/9///a5vz/2OT7/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/3Of+/9zo///W4/z/y9v2/8XW8//F1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/E1vP/yNn1/9Ph+v/c6P//3Oj+/97p" +
-				"///b5/7/xNf0/6zG6f+nwub/qsTo/6vE6P+qxOj/qsTo/6jC5v+tyOz/n7fb/xciOfoJDyDPAQECLwAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAABAECAicIDx3FEhoy+K/A3P/L3Pn/0t/4/9zo/v/c6P//2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/b5/7/3Oj//9zn/v/T4fr/yNn1/8TW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8XW9P/E1vP/y9v2/9fk/P/N3ff/scnr/6fB5v+pw+j/" +
-				"q8Xo/6rE6P+qxOj/qsTo/6rE6P+owub/rcjs/5+42/8YIjr6CRAg0AEBAjAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAQBAgIoCA8dxRIaMfiuvdn/y938/8PV8f/L2/b/1+T8/9zo///c5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/3Oj//9rm/v/Q3/n/xtf0/8XW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8bX8//D1fP/qcTn/6jD5/+rxej/qsTo/6rE6P+qxOj/qsTo/6rE" +
-				"6P+qxOj/qMLm/63I7P+gudv/GCM6+gkQINABAQIwAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAIAAAAHAQICLgkPHsgRGjH4rr3Z/8ze/P/F1fH/xdbz/8XX9P/O3fj/2eb9/93o///b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/3ej//9jl/f/M3Pf/xdbz/8XW9P/G1/T/xtf0/8bX9P/H2PT/w9Xz/6vF6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+tx+z/" +
-				"n7jc/xgjOvoJECDRAQECMAAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUAAAAKAAABHwME" +
-				"B1sKESLWExwz+q692f/M3vz/xdXx/8bX9P/G1/T/xNbz/8fY9P/S4Pn/2+f+/9zo///b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/c6P7/" +
-				"3Oj//9Xi+//K2vb/xNbz/8bX9P/G1/T/x9j0/8PV8/+rxej/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rcfs/5+53P8YIzv6CRAg0QEB" +
-				"AjAAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAcAAAAXAQEDOwQHDogLEiPUEBkv9g4YMP+puNX/" +
-				"zd/9/8XV8f/G1/T/xtf0/8bX9P/G1/T/xNbz/8na9v/V4vv/3Oj//9zo/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/c6P//2+f+/9Lg" +
-				"+v/H2PX/xNbz/8fY9P/D1fP/q8Xo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLm/63H7P+hudz/GSQ7+gkQINEBAQIxAAAABQAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABQAAABAAAQErAwUJcgcNG78PFyzoDhgu+g4YMP82QFj/wdDo/8fY9v/D1PH/xtf0/8bX" +
-				"9P/G1/T/xtf0/8bX9P/F1vT/xdbz/8zc9//Y5f3/3ej//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/d6P//2eb9/87d+P/G1/T/" +
-				"wdTy/6vF6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+tx+z/obnc/xkjO/sKECHSAQECMQAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAASICAwZcBgsWrQwVKOEOFiz2Dhgw/R8pQf+Dj6P/2+f4/+Dr///T4Pn/ytr2/8TW8//G1/T/xtf0/8bX9P/G1/T/" +
-				"xtf0/8bX9P/F1vP/xtf0/9De+f/a5v7/3ej//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/c6P7/2eb9/8ra9v+qxOj/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rcfs/6G63f8ZIzz7ChAh0gEBAjIAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAwAAAR8EBw+OChEj2Q4YL/IOGC78Dxky/2RvhP/K1un/6vf//9vn/v/Z5fz/3ej//9vn/v/S4Pn/x9j1/8XW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8bX" +
-				"9P/E1vP/yNn1/9Ph+v/c6P7/3Oj//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9rm/v/c5/7/3un//9Xj+/+5z+//qcPn/6rE6P+qxOj/qsTo/6rE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/qMLm/63H7P+hut3/GiQ8+woQIdIBAQIyAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAYBAQI0CRAg0A4W" +
-				"LvkOGDD+RlBo/7S+0v/q9///4Oz//9fj+v/Z5fz/2+f+/9vn/v/b5/7/3ej//9nm/f/O3fj/xtf0/8XW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8XX9P/E1vP/" +
-				"y9v2/9bj/P/c6P//3Of+/9vn/v/b5/7/2uf+/9vn/v/e6f//2eX9/8HU8v+qxOj/p8Ln/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC" +
-				"5v+tx+z/obre/xokPPsKESHTAQECMwAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAGAQECNwsTJNwVHzf9jpqy/+fz///k8f//" +
-				"1+P6/9nl/P/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/c5/7/3ej//9fk/P/L2/b/xdbz/8XW9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8XW8//F1vT/zt34/9nl" +
-				"/f/d6P//2+f+/93p///c6P//ydn2/6/I6v+mweb/qsTo/6vE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rcfr/6G63v8aJTz7" +
-				"ChEh0wEBAjMAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAABgICAzgKEiPcICpC/cna9v/S4Pr/2OP7/9zo///b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/c6P//3Oj+/9Th+v/I2fX/xNbz/8bX9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8TW8//H2PT/0d/5/9vn/v/Q3/n/" +
-				"tMvt/6fC5v+pw+f/q8Xo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLm/6zH6/+hut7/GyU9+woRIdMBAQI0AAAABQAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAYCAgM4ChIj3B4pQP26yuj/x9j2/8fX8//U4vv/3Oj+/9zo/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9vn/v/d6P//2ub+/9Df+f/G1/T/xdbz/8bX9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/C1fP/qcPn/6fC5/+rxej/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+sx+v/o7ve/xslPfsKESHTAQECNAAAAAUAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAGAgIDOAoSI9seKUD9vczq/8na9//D1PL/xdbz/8zb9//X5Pz/3Oj//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/d6P//2OX9/83c9//F1vP/xdb0/8bX9P/G1/T/xtf0/8bX9P/I2PX/vdHx/6nD5/+rxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rMfr/6O83v8cJj77ChEh1AEBAjUAAAAFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAABAAAACAICAzcKESHVHig/+73M6f/J2vf/xNXy/8bX9P/F1vP/xtf0/8/e+P/a5v7/3ej//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9zo/v/c6P//1eP7/8ra9v/E1vP/xtf0/8bX9P/G1/T/yNj1/77S8f+pw+f/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/qMLm/6zH6/+jvN7/HCY++woRIdQBAQI1AAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAABgAAABQCAwVK" +
-				"ChEj2B4nP/u8zen/ydr3/8TV8v/G1/T/xtf0/8bX9P/E1vP/yNj1/9Ph+v/b5/7/3Oj//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9zo" +
-				"///b5/7/0uD6/8fY9f/E1vP/xtf0/8jY9f++0vH/qcPo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/" +
-				"qsTo/6jC5v+sx+v/o7zg/xwnP/sKESHVAQECNgAAAAUAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAFAAAADAAAASICAwVXBwsWrA4YLfAfKUH+u8zp/8na" +
-				"9//E1fL/xtf0/8bX9P/G1/T/xtf0/8XX9P/E1vP/ytr2/9bj+//c6P//3Oj+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/93o///Z5v3/" +
-				"z974/8XX9P/G1/T/v9Lx/6nD6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rMbr/6O9" +
-				"4P8dJz/7ChEh1QEBAjcAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAIAAABGwECA0MFCA+SCxIj1xAaL/IOGC78GCM7/77O6//H2ff/xNXy/8bX9P/G1/T/" +
-				"xtf0/8bX9P/G1/T/xtf0/8XW8//F1vT/zd33/9jl/f/d6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/3Of+/93o///W5Pz/zdz3/8DT" +
-				"8f+pw+j/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLm/6zG6/+jvOD/HSdA+woRIdUBAQI3" +
-				"AAAABgAAAAAAAAAAAAAAAAAAAAMAAAATAQECMQMGC3sJEB/IDxcs6w4YLvsOGDD+Pkhg/6y4y//Z5vv/ydn0/8XW8//F1/T/xtf0/8bX9P/G1/T/xtf0/8bX" +
-				"9P/G1/T/xtf0/8XW8//H1/T/0d/5/9vn/v/c6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/a5v7/3un//97p//+/0/H/qMPn/6vE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+sxuv/o7zh/x0pQP0KEiTdAQEDOgAAAAcAAAAAAAAAAAAA" +
-				"AAIAAAAYAgMHYgcMGLQOFSnkDhYu+Q4YMP0mMEj/jpqv/+Ds/v/m8v//2+f+/9zo/v/T4fr/yNj1/8TW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/G1/T/" +
-				"xtf0/8TW8//J2fX/1OL7/9zo///c6P7/2+f+/9vn/v/b5/7/2+f+/9rm/v/c6P//3un//9Df+f+1zO3/qcPn/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owub/rMbr/6O83v8eKUH9ChIk3QEBAzoAAAAHAAAAAAAAAAAAAAAKAQIERgkPHswMFiz0" +
-				"Dhgw/RQeN/9vepH/0d3w/+r3///Z5fz/2OT7/9vn/v/b5/7/3Oj//9rm/v/Q3vn/xtf0/8XW8//G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/G1/T/xdb0/8XW" +
-				"8//L2/f/1+T8/9zo///c5/7/2ub+/9vn/v/f6v//1uT8/7zR8P+pw+f/qMLn/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLl/6rE6P+rxen/HipD/QoSJN0BAQM6AAAABwAAAAAAAAABAAAADQEDBVELEybgEhwz/VJccv+9ytz/6vf//97q" +
-				"///X4/r/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/3ej//9jl/P/M3Pf/xdbz/8XW9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/G1/T/xdbz/8bX9P/P3vj/" +
-				"2eb9/97p///a5/7/xNf0/6zG6f+nwub/qsTo/6vE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE" +
-				"6P+pwub/p8Hk/67I7f+30/r/g5m7/xYiOv0LEyXdAQEDOgAAAAcAAAAAAAAAAQAAAA0CAwVSCxMl4TdCW/3g8P//4+///9jk/P/Z5fz/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/b5/7/2+f+/9vn/v/c6P7/3Oj//9Xi+//J2vX/xNbz/8bX9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/G1/T/xNbz/8nZ9f/L3Pb/scnr/6bB" +
-				"5v+pxOj/q8Xo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+mweX/qsXp/7bS+P+btNj/" +
-				"S1x5/w8ZMf8OGC76ChEi1AEBAjcAAAAHAAAAAAAAAAEAAAANAgMFUgsTJeE8RmD9zN37/8bW8v/V4/v/3Oj//9zo/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn" +
-				"/v/b5/7/2+f+/9vn/v/c6P//2+f+/9Lg+v/H2PX/xNbz/8bX9P/G1/T/xtf0/8bX9P/G1/T/xtf0/8bX9P/I2PX/uc7u/6bC5v+rxej/qsTo/6rE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+owub/tND2/6nC5/9jd5X/GSQ9/w4YMP0OFi32ChIl3gYJ" +
-				"Ep0AAAEkAAAABQAAAAAAAAAAAAAADAIDBVILEyXhO0Ve/c7g/v/E1fH/xdbz/8zc9//Y5f3/3ej//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/" +
-				"2+f+/9vn/v/d6P//2eb9/87d+P/F1vT/xdbz/8bX9P/G1/T/xtf0/8bX9P/G1/T/yNj1/7zQ7/+ow+f/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLm/6bB5P+xzPH/ss3y/3qQsf8pNVD/Dhgw/g4YLvoOFyvoBw0bvgMECW8AAQEnAAAACAAAAAEAAAAA" +
-				"AAAAAAAAAAwCAwVSCxMl4TpEXv3O4P7/xdbx/8bX9P/F1vP/xtf0/9De+f/a5v7/3Oj//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9zn" +
-				"/v/c6P//1+T8/8vb9//F1vP/xdb0/8bX9P/G1/T/xtf0/8jY9f+70O//qMPn/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/" +
-				"qsTo/6rE6P+qxOj/p8Hk/63H7P+20vj/j6bJ/z1LZ/8OGDD+Dhgu+w8XLO8KESHQBAcNhgEBAjkAAAAXAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAMAQMFUQsT" +
-				"JeE6RF39zt/9/8XW8f/G1/T/xtf0/8bX9P/E1vP/yNn1/9Ph+v/c6P7/3Oj//9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9zo///c6P//" +
-				"0+H6/8jZ9f/E1vP/xtf0/8bX9P/I2PX/u9Dv/6jD5/+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+oweX/qsTo/7bS" +
-				"+P+gud3/U2SC/xEbM/8OGC78Dhgu8wsTJdsGCRKcAQIETAAAAR0AAAAKAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAEDBVALEyXhOkRd/czc+v/D1PD/" +
-				"xtf0/8bX9P/G1/T/xtf0/8XX9P/F1vP/y9v2/9bj/P/c6P//3Of+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9zo///a5/7/0N/5/8bX" +
-				"9P/E1vP/yNj1/7vQ7/+ow+f/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6jC5v+owuX/tM/1/6vG6v9rfp7/HSlB/w4YMP0OFi33" +
-				"DBQp4wcMF7ACAwdhAAABJQAAAA0AAAAGAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsBAwVQCxMl4TZAWf3V6P//zN37/8PT8P/E1fL/xtf0/8bX" +
-				"9P/G1/T/xtf0/8XW8//F1/T/zt34/9nm/f/d6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/93o///Y5f3/zNz3/8bX9P+6z+//" +
-				"qMPn/6rE6P+qxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+qxOj/qMLm/6fB5P+wy/D/s8/1/4GWuP8uO1b/Dhgw/g4YLvoOFyvqCA4cwwMFCnYAAQEtAAAAEgAA" +
-				"AAUAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALAQIFTwsTJuATHDX9U195/7PD3//U5///x9j1/8PU8P/G1/T/xtf0/8bX9P/G1/T/" +
-				"xtf0/8XW8//H2PT/0eD5/9vn/v/c6P//2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2+f+/9zo///a5v3/vtLx/6fC5/+qxOj/qsTo/6rE" +
-				"6P+qxOj/qsTo/6rE6P+qxOj/psHk/6zG6/+20vn/la3P/0NTb/8OGDD/Dhgu/A4YLfALESLUBAcPjQEBAz4AAAAZAAAABwAAAAMAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACgECBEUJDx/NDBYs9A4YMP0ZJDz/cH6Y/8PU8P/S5P//xNXx/8TV8f/G1/T/xtf0/8bX9P/G1/T/xtf0/8TW" +
-				"8//J2fX/1eL7/9zo///c6P7/2+f+/9vn/v/b5/7/2+f+/9vn/v/b5/7/2uf+/93p///c6P7/ydr2/6/I6v+pxOj/qsTo/6rE6P+qxOj/qsTo/6rE6P+owuX/" +
-				"qMLm/7XR9/+jveH/WmyK/xMeNv8OGDD9Dhgu9gwUJt4GCROhAgMFUgAAASAAAAAKAAAABQAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAMAAAEaAgQIaAcNGrwOFyrnDhYu+Q4YMP4sN0//jJu3/8/h/f/O4P3/w9Pw/8TV8v/G1/T/xtf0/8bX9P/G1/T/xdb0/8XW8//M3Pf/" +
-				"1+T8/93o///b5/7/2+f+/9vn/v/a5v7/3Oj//97p///P3vn/tMvs/6bB5v+pw+f/qsTo/6rE6P+qxOj/qsTo/6nD5v+oweT/ss7z/6/J7v9xhqb/IS5H/w4Y" +
-				"MP0OFi75DRYp5QcMGLYCBAhnAAEBJgAAAA4AAAAFAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAwAAABQBAQI2BAYNhAoQIM4PFy7uDhgu+w4YMP5EUGn/p7bR/9Tm///J2/j/w9Pw/8bX9P/G1/T/xtf0/8bX9P/G1/T/xdbz/8bX9P/Q3vn/2ub9/9zo" +
-				"///c6P7/3+n//9Xj+/+70O//qMPn/6jC5/+rxej/qsTo/6rE6P+qxOj/qMLm/6fB5P+vye7/tdD3/4edv/8zQl3/Dhgw/g4YLvsOFyvsCRAfyQMGDH0BAQIy" +
-				"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" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAkAAAEcAQIERwUIEZkLFCXaDhkv8g4YLvwPGTL/ZXOM/5+z0f9BUm7/Dhgw/g4YLvwOFy7v" +
-				"CxEi0wQHDosBAQM8AAAAFwAAAAcAAAADAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAABgAAAA0AAAEkAgMGXAYLFqwLEybiDBYs8w4WLPYOFiz2DhYs9gwWLPIKEiTdBgkTngECBU8AAAEfAAAACQAA" +
-				"AAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAACAAAABgAAABAAAQErAwUKdAcLF64HDBi3BwwYtwcMGLcGCxWrAgQIZQABASYAAAAOAAAABgAAAAEAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAABAAAABQAAABMAAAEfAAABIQAAASEAAAEhAAABHgAAABAAAAAEAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-				"AAAAAA==";
 
 		// The door icon (the game's own wooden door texture, 64 x 64, with a dark outline added), as premultiplied RGBA bytes in base64.
 		private const string DoorData =
@@ -1085,16 +910,6 @@ namespace OpenFF.Client
 			return tex;
 		}
 
-		private static Texture2D MakeStairs(GraphicsDevice device)
-		{
-			byte[] raw = Convert.FromBase64String(StairData);
-			Color[] pixels = new Color[StairSize * StairSize];
-			for (int i = 0; i < pixels.Length; i++) pixels[i] = new Color(raw[i * 4], raw[i * 4 + 1], raw[i * 4 + 2], raw[i * 4 + 3]);
-			Texture2D tex = new Texture2D(device, StairSize, StairSize);
-			tex.SetData(pixels);
-			return tex;
-		}
-
 		/// <summary>A small chest: a red lid, a silver band, a blue base and a gold lock, as the game's chests look.</summary>
 		private static Texture2D MakeChest(GraphicsDevice device)
 		{
@@ -1140,7 +955,6 @@ namespace OpenFF.Client
 			if (_pixel == null || _pixel.IsDisposed) { _pixel = new Texture2D(GraphicsDevice, 1, 1); _pixel.SetData(new[] { Color.White }); }
 			if (_arrow == null || _arrow.IsDisposed) _arrow = MakeArrow(GraphicsDevice);
 			if (_chest == null || _chest.IsDisposed) _chest = MakeChest(GraphicsDevice);
-			if (_stairs == null || _stairs.IsDisposed) _stairs = MakeStairs(GraphicsDevice);
 			if (_door == null || _door.IsDisposed) _door = MakeDoor(GraphicsDevice);
 			if (_exitsDirty && _frame - _exitsAt >= 20) FindExits();
 
@@ -1209,7 +1023,7 @@ namespace OpenFF.Client
 				float u = ox * (-fz) + oz * fx, v = ox * fx + oz * fz;
 				Vector2 at = centre + new Vector2(u * scale, -v * scale);
 				if (at.X < box.X + half || at.X > box.Right - half || at.Y < box.Y + half || at.Y > box.Bottom - half) continue;
-				_batch.Draw(e < _exitIsDoor.Count && _exitIsDoor[e] ? _door : _stairs, at, null, Color.White, 0f, new Vector2(StairSize / 2f, StairSize / 2f), across / StairSize, SpriteEffects.None, 0f);
+				_batch.Draw(_door, at, null, Color.White, 0f, new Vector2(StairSize / 2f, StairSize / 2f), across / StairSize, SpriteEffects.None, 0f);
 			}
 		}
 
