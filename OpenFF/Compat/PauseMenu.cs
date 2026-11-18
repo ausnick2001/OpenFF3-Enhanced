@@ -701,10 +701,7 @@ namespace OpenFF.Client
 		public override void Draw(GameTime gameTime)
 		{
 			if (_page == Page.Closed || RenderTest.Active) return;
-			// The menu is dressed like the party menu; the other screens keep the gold theme.
-			UiTheme.PartyStyle = true;
-			try { DrawMenu(); }
-			finally { UiTheme.PartyStyle = false; }
+			DrawMenu();
 		}
 
 		// Text with a soft black shadow, as the party menu's has.

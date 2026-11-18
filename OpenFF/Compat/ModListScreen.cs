@@ -351,7 +351,6 @@ namespace OpenFF.Client
 
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
 			UiTheme.Panel(_batch, panel, view);
-			UiTheme.IconAt(_batch, UiTheme.Icon.Settings, panel.X + 48, panel.Y + 32, 40, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 80, panel.Width - 60, view);
 			for (int row = 0; row < RowsPerPage; row++)
 			{
@@ -360,8 +359,9 @@ namespace OpenFF.Client
 				Rectangle r = RowRect(row);
 				bool lit = index == _selected, on = _mods[index].Enabled;
 				UiTheme.Row(_batch, r, lit, view);
+				if (lit) UiTheme.Hand(_batch, r, r.X + 40, view);
 				// The checkbox: a gold tick on the lit row, a blue one on an enabled mod, empty when it is off.
-				Rectangle box = new Rectangle(r.X + 10, r.Y + 5, (int)RowH - 10, (int)RowH - 10);
+				Rectangle box = new Rectangle(r.X + 46, r.Y + 5, (int)RowH - 10, (int)RowH - 10);
 				Color edge = lit ? UiTheme.GoldBright : on ? new Color(110, 160, 240, 255) : new Color(110, 118, 140, 255);
 				UiTheme.Box(_batch, box, edge, new Color(6, 14, 36, 240), view);
 				if (on) Ui.IconAt(_batch, Ui.Icon.Check, box.Center.X, box.Center.Y, box.Height * 1.05f, lit ? UiTheme.GoldBright : new Color(120, 180, 255, 255), view);
@@ -402,15 +402,15 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = true;
 			try
 			{
-				Ui.Left(graphics, "Mods", panel.X + 78, panel.Y + 12, 34, titleSize, UiTheme.Ink);
+				UiTheme.Left(graphics, "Mods", panel.X + 30, panel.Y + 12, 34, titleSize, UiTheme.Ink);
 				string sub = _mods.Count == 0
 					? "No mods yet. A mod is a folder in the mods folder beside the game."
 					: _mods.Count + " mod(s) in the mods folder beside the game" + (_conflicts > 0 ? "     " + _conflicts + " shared file(s), the earlier wins" : "");
-				Ui.Left(graphics, sub, panel.X + 80, panel.Y + 46, 20, subSize, UiTheme.Sub);
+				UiTheme.Left(graphics, sub, panel.X + 32, panel.Y + 46, 20, subSize, UiTheme.Sub);
 				if (_mods.Count > RowsPerPage)
 				{
 					string page = (_scroll + 1) + "-" + Math.Min(_mods.Count, _scroll + RowsPerPage) + " of " + _mods.Count;
-					Ui.Left(graphics, page, panel.Right - 30 - Ui.Width(graphics, page, subSize), panel.Y + 46, 20, subSize, UiTheme.Sub);
+					UiTheme.Left(graphics, page, panel.Right - 30 - Ui.Width(graphics, page, subSize), panel.Y + 46, 20, subSize, UiTheme.Sub);
 				}
 				for (int row = 0; row < RowsPerPage; row++)
 				{
@@ -420,11 +420,11 @@ namespace OpenFF.Client
 					Rectangle r = RowRect(row);
 					bool lit = index == _selected, on = mod.Enabled;
 					string name = (index + 1) + ".  " + Fit(mod.DisplayName, 26) + (string.IsNullOrWhiteSpace(mod.Manifest.Version) ? "" : "   " + mod.Manifest.Version);
-					Ui.Left(graphics, name, r.X + 40, r.Y, r.Height, rowSize, lit ? Color.White : on ? UiTheme.Ink : UiTheme.Hint);
+					UiTheme.Left(graphics, name, r.X + 46 + (int)RowH, r.Y, r.Height, rowSize, lit ? Color.White : on ? UiTheme.Ink : UiTheme.Hint);
 					SampleMods.Status sample = StatusOf(mod);
 					string standing = sample == null ? null : Updatable(sample) ? "update (U)" : sample.State == SampleMods.State.UpToDate ? "sample" : null;
 					string what = standing == null ? Describe(mod) : standing + ",  " + Describe(mod);
-					Ui.Left(graphics, Fit(what, 26), r.X + (int)(r.Width * 0.54f), r.Y, r.Height, descSize, Updatable(sample) ? UiTheme.GoldBright : lit ? new Color(255, 236, 190, 255) : UiTheme.Hint);
+					UiTheme.Left(graphics, Fit(what, 26), r.X + (int)(r.Width * 0.54f), r.Y, r.Height, descSize, Updatable(sample) ? new Color(255, 224, 138, 255) : lit ? new Color(235, 240, 252, 255) : UiTheme.Hint);
 				}
 				// The hints: the keyboard's keys in gold with what they do, or the pad's buttons.
 				if (pad)
@@ -439,17 +439,17 @@ namespace OpenFF.Client
 					float x = footer.Center.X - (total - 22) / 2;
 					foreach ((string k, string w) in keys)
 					{
-						Ui.Left(graphics, k, x, footer.Y + 4, 18, footSize, UiTheme.GoldBright);
+						UiTheme.Left(graphics, k, x, footer.Y + 4, 18, footSize, UiTheme.Sub);
 						x += Ui.Width(graphics, k, footSize) + 6;
-						Ui.Left(graphics, w, x, footer.Y + 4, 18, footSize, UiTheme.Ink);
+						UiTheme.Left(graphics, w, x, footer.Y + 4, 18, footSize, UiTheme.Ink);
 						x += Ui.Width(graphics, w, footSize) + 22;
 					}
 				}
 				string note = _message ?? (Updatable(StatusOf(_selected < _mods.Count ? _mods[_selected] : null))
 					? "The shipped " + StatusOf(_mods[_selected]).Sample + " sample is newer - U (Y on a pad) updates it."
 					: Restart.Possible ? "Closing the list restarts the game with your changes." : "Changes apply at the next start.");
-				Ui.Centred(graphics, note, new Rectangle(footer.X, footer.Y + 23, footer.Width, 18), footSize - 1, UiTheme.Sub);
-				Ui.Centred(graphics, "Back", back, 11, UiTheme.Ink);
+				UiTheme.Centred(graphics, note, new Rectangle(footer.X, footer.Y + 23, footer.Width, 18), footSize - 1, UiTheme.Sub);
+				UiTheme.Centred(graphics, "Back", back, 11, UiTheme.Ink);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();

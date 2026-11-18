@@ -197,7 +197,7 @@ namespace OpenFF.Client
 				graphics.SetImageScale(1f, 1f);
 				graphics.DrawStringStart();
 				string text = "Checking for updates...";
-				Ui.Left(graphics, text, Ui.W - 16 - Ui.Width(graphics, text, 8), Ui.H - 30, 20, 8, new Color(120, 120, 130, 255));
+				UiTheme.Left(graphics, text, Ui.W - 16 - Ui.Width(graphics, text, 8), Ui.H - 30, 20, 8, new Color(120, 120, 130, 255));
 				graphics.DrawStringEnd();
 				return;
 			}
@@ -215,10 +215,9 @@ namespace OpenFF.Client
 
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
 			UiTheme.Panel(_batch, panel, view);
-			UiTheme.IconAt(_batch, stage == Updates.Stage.Failed ? UiTheme.Icon.Exit : UiTheme.Icon.Resume, panel.X + 48, panel.Y + 31, 36, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 78, panel.Width - 60, view);
 			if (progress) UiTheme.Progress(_batch, bar, stage == Updates.Stage.Downloading ? fraction : 1f, view);
-			for (int i = 0; i < rows.Length; i++) UiTheme.Row(_batch, RowRect(i, rows.Length), i == _selected, view, diamonds: i == _selected);
+			for (int i = 0; i < rows.Length; i++) { Rectangle rr = RowRect(i, rows.Length); UiTheme.Row(_batch, rr, i == _selected, view); if (i == _selected) UiTheme.Hand(_batch, rr, rr.X + 44, view); }
 			// The notes' scrollbar while they are longer than their room: the track, and the part in view.
 			if (stage == Updates.Stage.Available && _noteCount > _noteFit && _noteFit > 0)
 			{
@@ -238,8 +237,8 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = true;
 			try
 			{
-				Ui.Left(graphics, title, panel.X + 74, panel.Y + 14, 34, 15, UiTheme.Ink);
-				if (sub.Length > 0) Ui.Left(graphics, sub, panel.X + 76, panel.Y + 46, 20, 8, UiTheme.Sub);
+				UiTheme.Left(graphics, title, panel.X + 30, panel.Y + 14, 34, 15, UiTheme.Ink);
+				if (sub.Length > 0) UiTheme.Left(graphics, sub, panel.X + 32, panel.Y + 46, 20, 8, UiTheme.Sub);
 				float y = panel.Y + 92;
 				if (stage == Updates.Stage.Available)
 				{
@@ -248,23 +247,23 @@ namespace OpenFF.Client
 					_noteCount = notes.Count;
 					_noteFit = NoteRows(rows.Length);
 					_scroll = Math.Clamp(_scroll, 0, Math.Max(0, _noteCount - _noteFit));
-					for (int i = _scroll; i < notes.Count && i < _scroll + _noteFit; i++) { Ui.Left(graphics, notes[i], panel.X + 50, y, 18, 8, UiTheme.Ink); y += NoteStep; }
+					for (int i = _scroll; i < notes.Count && i < _scroll + _noteFit; i++) { UiTheme.Left(graphics, notes[i], panel.X + 50, y, 18, 8, UiTheme.Ink); y += NoteStep; }
 				}
 				else if (stage == Updates.Stage.Failed)
 				{
-					foreach (string line in Wrap(graphics, new List<string> { Updates.Error ?? "", "", "The game is as it was; the update is offered again at the next start." }, 8, panel.Width - 100, 7)) { Ui.Left(graphics, line, panel.X + 50, y, 18, 8, UiTheme.Ink); y += 17; }
+					foreach (string line in Wrap(graphics, new List<string> { Updates.Error ?? "", "", "The game is as it was; the update is offered again at the next start." }, 8, panel.Width - 100, 7)) { UiTheme.Left(graphics, line, panel.X + 50, y, 18, 8, UiTheme.Ink); y += 17; }
 				}
 				else
 				{
 					string what = stage == Updates.Stage.Downloading ? "Downloading..." : stage == Updates.Stage.Verifying ? "Checking the download..." : stage == Updates.Stage.Unpacking ? "Unpacking..." : "The game restarts in a moment...";
-					Ui.Left(graphics, what, panel.X + 50, panel.Y + 110, 26, 10, UiTheme.Ink);
+					UiTheme.Left(graphics, what, panel.X + 50, panel.Y + 110, 26, 10, UiTheme.Ink);
 					if (stage == Updates.Stage.Downloading)
 					{
 						string percent = (int)Math.Round(fraction * 100) + "%";
-						Ui.Left(graphics, percent, bar.Right - Ui.Width(graphics, percent, 12), panel.Y + 108, 30, 12, UiTheme.GoldBright);
+						UiTheme.Left(graphics, percent, bar.Right - Ui.Width(graphics, percent, 12), panel.Y + 108, 30, 12, UiTheme.GoldBright);
 						string detail = Mb(Updates.Got) + " / " + Mb(Updates.Total) + " MB";
 						if (Updates.Rate > 0) detail += "     " + Mb((long)Updates.Rate) + " MB/s     " + Left() + " left";
-						Ui.Left(graphics, detail, bar.X, bar.Bottom + 8, 20, 8, UiTheme.Sub);
+						UiTheme.Left(graphics, detail, bar.X, bar.Bottom + 8, 20, 8, UiTheme.Sub);
 					}
 				}
 			}
@@ -272,7 +271,7 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = true;
 			try
 			{
-				for (int i = 0; i < rows.Length; i++) Ui.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);
+				for (int i = 0; i < rows.Length; i++) UiTheme.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();

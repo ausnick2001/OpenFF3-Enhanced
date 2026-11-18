@@ -145,10 +145,9 @@ namespace OpenFF.Client
 
 			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
 			UiTheme.Panel(_batch, panel, view);
-			UiTheme.IconAt(_batch, differ || stage == GameFileCheck.Stage.Failed ? UiTheme.Icon.Exit : UiTheme.Icon.Resume, panel.X + 48, panel.Y + 31, 36, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 78, panel.Width - 60, view);
 			if (stage == GameFileCheck.Stage.Checking) UiTheme.Progress(_batch, bar, fraction, view);
-			for (int i = 0; i < rows.Length; i++) UiTheme.Row(_batch, RowRect(i, rows.Length), i == _selected, view, diamonds: i == _selected);
+			for (int i = 0; i < rows.Length; i++) { Rectangle rr = RowRect(i, rows.Length); UiTheme.Row(_batch, rr, i == _selected, view); if (i == _selected) UiTheme.Hand(_batch, rr, rr.X + 44, view); }
 			_batch.End();
 
 			graphics.SetImageOrigin(0f, 0f);
@@ -158,15 +157,15 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = true;
 			try
 			{
-				Ui.Left(graphics, title, panel.X + 74, panel.Y + 14, 34, 15, UiTheme.Ink);
-				Ui.Left(graphics, sub, panel.X + 76, panel.Y + 46, 20, 8, UiTheme.Sub);
+				UiTheme.Left(graphics, title, panel.X + 30, panel.Y + 14, 34, 15, UiTheme.Ink);
+				UiTheme.Left(graphics, sub, panel.X + 32, panel.Y + 46, 20, 8, UiTheme.Sub);
 				float y = panel.Y + 92;
 				List<string> lines = new List<string>();
 				if (stage == GameFileCheck.Stage.Checking)
 				{
 					string percent = (int)Math.Round(fraction * 100) + "%";
-					Ui.Left(graphics, "Reading the files...", panel.X + 50, panel.Y + 110, 26, 10, UiTheme.Ink);
-					Ui.Left(graphics, percent, bar.Right - Ui.Width(graphics, percent, 12), panel.Y + 108, 30, 12, UiTheme.GoldBright);
+					UiTheme.Left(graphics, "Reading the files...", panel.X + 50, panel.Y + 110, 26, 10, UiTheme.Ink);
+					UiTheme.Left(graphics, percent, bar.Right - Ui.Width(graphics, percent, 12), panel.Y + 108, 30, 12, UiTheme.GoldBright);
 				}
 				else if (differ)
 				{
@@ -184,8 +183,8 @@ namespace OpenFF.Client
 				else if (stage == GameFileCheck.Stage.Done) lines.Add("Every file OpenFF reads is the one the Steam release has.");
 				else if (stage == GameFileCheck.Stage.NoList) lines.Add("The game is played from a folder OpenFF has no list of files for (not a Steam install).");
 				else lines.Add(GameFileCheck.Error ?? "");
-				foreach (string line in Wrap(graphics, lines, 8, panel.Width - 100, 11)) { Ui.Left(graphics, line, panel.X + 50, y, 18, 8, line.StartsWith("changed:") || line.StartsWith("missing:") ? UiTheme.Sub : UiTheme.Ink); y += 17; }
-				for (int i = 0; i < rows.Length; i++) Ui.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);
+				foreach (string line in Wrap(graphics, lines, 8, panel.Width - 100, 11)) { UiTheme.Left(graphics, line, panel.X + 50, y, 18, 8, line.StartsWith("changed:") || line.StartsWith("missing:") ? UiTheme.Sub : UiTheme.Ink); y += 17; }
+				for (int i = 0; i < rows.Length; i++) UiTheme.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();

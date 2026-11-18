@@ -17,8 +17,8 @@ namespace OpenFF.Client
 
 	internal static class UiTheme
 	{
-		public static readonly Color Gold = new Color(232, 190, 92, 255);
-		public static readonly Color GoldBright = new Color(255, 224, 138, 255);
+		public static readonly Color Gold = new Color(204, 206, 214, 255);   // silver, the party menu's border
+		public static readonly Color GoldBright = new Color(255, 255, 255, 255);
 		public static readonly Color Ink = new Color(238, 242, 252, 255);
 		public static readonly Color Sub = new Color(150, 178, 232, 255);
 		public static readonly Color Hint = new Color(140, 170, 226, 255);
@@ -39,11 +39,24 @@ namespace OpenFF.Client
 		private static GraphicsDevice _device;
 		private static Texture2D _frame, _panel, _divider, _crest, _icons, _grad, _glow, _diamond, _hand, _noise;
 
-		/// <summary>The party menu's look (the pause menu draws in it): blue textured panels with a silver border, a hand for the cursor. Off for the other screens.</summary>
-		public static bool PartyStyle;
+		/// <summary>The party menu's look, for every OpenFF screen: blue textured panels with a silver border, the game's hand for the cursor.</summary>
+		public static bool PartyStyle = true;
 
 		/// <summary>What a lit row's text and values are written in.</summary>
 		public static Color LitInk => PartyStyle ? Color.White : GoldBright;
+
+		/// <summary>Text with the soft black shadow the party menu's has.</summary>
+		public static void Left(GlobalScope.Graphics g, string text, float x, float top, float height, int size, Color colour)
+		{
+			if (PartyStyle) Ui.Left(g, text, x + 1, top + 1, height, size, new Color(0, 0, 0, 210));
+			Ui.Left(g, text, x, top, height, size, colour);
+		}
+
+		public static void Centred(GlobalScope.Graphics g, string text, Rectangle r, int size, Color colour)
+		{
+			if (PartyStyle) Ui.Centred(g, text, new Rectangle(r.X + 1, r.Y + 1, r.Width, r.Height), size, new Color(0, 0, 0, 210));
+			Ui.Centred(g, text, r, size, colour);
+		}
 
 		public static void Ensure(GraphicsDevice device)
 		{
@@ -59,15 +72,23 @@ namespace OpenFF.Client
 			_glow = MakeGlow(device, 64, 20);
 			_diamond = MakeDiamond(device, 32);
 			_noise = MakeNoise(device);
+			// The game's own hand: icon_yubi's picture (the sprite's NCBR is a 96 x 48 PNG, two 48 x 48 frames - the white hand
+			// and the grey one, each with its shadow), read from the game's files like any other.
 			_hand = null;
 			try
 			{
-				using (System.IO.MemoryStream png = new System.IO.MemoryStream(Convert.FromBase64String(UiHand.Png)))
+				uint size = GlobalScope.ds.g_File.getSize("icon_yubi.NCBR");
+				if (size > 0)
 				{
-					Texture2D loaded = Texture2D.FromStream(device, png);
-					Texture2D mipped = WithMipmaps(loaded);
-					if (!ReferenceEquals(mipped, loaded)) loaded.Dispose();
-					_hand = mipped;
+					byte[] bytes = new byte[size];
+					if (GlobalScope.ds.g_File.load(bytes, "icon_yubi.NCBR"))
+						using (System.IO.MemoryStream png = new System.IO.MemoryStream(bytes))
+						{
+							Texture2D loaded = Texture2D.FromStream(device, png);
+							Texture2D mipped = WithMipmaps(loaded);
+							if (!ReferenceEquals(mipped, loaded)) loaded.Dispose();
+							_hand = mipped;
+						}
 				}
 			}
 			catch (Exception ex) { Log.Write(LogChannel.General, "ui: the hand: " + ex.Message); }
@@ -256,7 +277,7 @@ namespace OpenFF.Client
 			Frame(b, r, v);
 		}
 
-		private static readonly Color PartyBlue = new Color(43, 60, 120, 255);
+		private static readonly Color PartyBlue = new Color(24, 38, 78, 255)   // with the grain over it: the party menu's (42, 54, 87), measured;
 		private static readonly Color Silver = new Color(204, 206, 214, 255);
 
 		/// <summary>The party menu's window: blue with a fine grain, a silver border (a darker line inside it), rounded.</summary>
@@ -345,12 +366,13 @@ namespace OpenFF.Client
 			}
 		}
 
-		/// <summary>The hand beside a lit row: its fingertip a little before where the row's text starts, level with the row's middle.</summary>
+		/// <summary>The game's hand beside a lit row: the white frame of icon_yubi (48 x 48, its fingertip about 45 across and 12.5 down),
+		/// the fingertip at <paramref name="tipX"/>, level with the row's middle.</summary>
 		public static void Hand(SpriteBatch b, Rectangle r, float tipX, Viewport v)
 		{
 			if (_hand == null) return;
-			float w = 44f, h = w * UiHand.Height / UiHand.Width;
-			b.Draw(_hand, Px(tipX - w, r.Y + r.Height / 2f - h * UiHand.TipY / UiHand.Height, w, h, v), Color.White);
+			const float size = 38f;
+			b.Draw(_hand, Px(tipX - size * 45f / 48f, r.Y + r.Height / 2f - size * 12.5f / 48f, size, size, v), new Rectangle(0, 0, 48, 48), Color.White);
 		}
 
 		/// <summary>A soft glow of a colour round a text-space box, spread by the given text-space distance.</summary>
@@ -378,7 +400,7 @@ namespace OpenFF.Client
 			if (PartyStyle)
 			{
 				Ui.RoundPlate(b, p, lit ? Silver : new Color(150, 156, 180, 255), v, 5f);
-				Ui.RoundPlate(b, Inset(p, 1), new Color(20, 30, 74, 255), v, 5f);
+				Ui.RoundPlate(b, Inset(p, 1), new Color(16, 24, 56, 255), v, 5f);
 				float pc = r.Height * 1.25f;
 				Color pl = new Color(110, 120, 168, 255);
 				Ui.Fill(b, Px(r.X + pc, r.Y + 1, 1, r.Height - 2, v), pl);
@@ -412,7 +434,7 @@ namespace OpenFF.Client
 			if (PartyStyle)
 			{
 				Ui.RoundPlate(b, p, lit ? Silver : new Color(150, 156, 180, 255), v);
-				Ui.RoundPlate(b, Inset(p, 1), on ? new Color(52, 94, 190, 255) : new Color(20, 30, 74, 255), v);
+				Ui.RoundPlate(b, Inset(p, 1), on ? new Color(52, 84, 160, 255) : new Color(16, 24, 56, 255), v);
 				float pd = r.Height * 0.62f, pcx = r.X + r.Height * 0.62f, pcy = r.Y + r.Height / 2f;
 				Ui.GlyphDisc(b, pcx, pcy, pd, on ? Color.White : new Color(150, 156, 176, 255), v);
 				return;
@@ -434,7 +456,7 @@ namespace OpenFF.Client
 			if (PartyStyle)
 			{
 				Ui.RoundPlate(b, p, Silver, v, 7f);
-				Ui.RoundPlate(b, Inset(p, Math.Max(1, (int)Math.Round(Sx(v) * 1.6f))), new Color(30, 44, 96, 255), v, 6f);
+				Ui.RoundPlate(b, Inset(p, Math.Max(1, (int)Math.Round(Sx(v) * 1.6f))), new Color(26, 38, 76, 255), v, 6f);
 				return;
 			}
 			Ui.RoundPlate(b, p, new Color(196, 156, 74, 230), v);
@@ -453,6 +475,20 @@ namespace OpenFF.Client
 		public static void Progress(SpriteBatch b, Rectangle r, float fraction, Viewport v)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
+			if (PartyStyle)
+			{
+				Ui.RoundPlate(b, p, Silver, v, 5f);
+				Rectangle well = Inset(p, Math.Max(2, (int)Math.Round(1.6f * Sx(v))));
+				Ui.RoundPlate(b, well, new Color(16, 24, 56, 255), v, 4f);
+				int fw = (int)Math.Round(well.Width * Math.Clamp(fraction, 0f, 1f));
+				if (fw > 0)
+				{
+					Rectangle bar = new Rectangle(well.X, well.Y, fw, well.Height);
+					Ui.RoundPlate(b, bar, new Color(66, 104, 190, 255), v, 4f);
+					Ui.Fill(b, new Rectangle(bar.X + 2, bar.Y + 1, Math.Max(0, bar.Width - 4), Math.Max(1, bar.Height / 3)), new Color(255, 255, 255, 46));
+				}
+				return;
+			}
 			Ui.RoundPlate(b, p, new Color(196, 156, 74, 240), v, 4f);
 			Rectangle inner = Inset(p, Math.Max(2, (int)Math.Round(2 * Sx(v))));
 			Ui.RoundPlate(b, inner, InsetFill, v, 3f);
@@ -465,7 +501,7 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>A gold diamond centred on a text-space point.</summary>
-		public static void Diamond(SpriteBatch b, float cx, float cy, float size, Color colour, Viewport v) => b.Draw(_diamond, Px(cx - size / 2, cy - size / 2, size, size, v), colour);
+		public static void Diamond(SpriteBatch b, float cx, float cy, float size, Color colour, Viewport v) { if (!PartyStyle) b.Draw(_diamond, Px(cx - size / 2, cy - size / 2, size, size, v), colour); }
 
 		/// <summary>One of icons.png's, centred on a text-space point at a text-space size.</summary>
 		public static void IconAt(SpriteBatch b, Icon icon, float cx, float cy, float size, Viewport v, float alpha = 1f)
