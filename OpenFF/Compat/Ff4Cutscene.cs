@@ -125,6 +125,13 @@ namespace OpenFF.Client
 			{ "ce_setConteNextPart", SetConteNextPart },     // (map, x, y, z): where the scene chain ends up
 			{ "ce_SetupBGM", ReadDword },                    // (bgm): loads are on demand here
 			{ "ce_PlayBGM", PlayBgm },                       // (bgm)
+			{ "ce_setSound", Ff4Music.SetSound },            // (keep out, keep in, ?, ?)
+			{ "ce_StopBGM_Streaming", Ff4Music.StopStreaming }, // (frames)
+			{ "ce_CleanupBGM", Ff4Music.Operands(0) },       // dssndUnloadBGM: sounds load as played here
+			{ "ce_SetupSE", Ff4Music.Operands(1) },          // (bank): dssndLoadSE, likewise
+			{ "ce_CleanupSE", Ff4Music.Operands(1) },        // (bank): dssndUnloadSE
+			{ "ce_VoiceSkipOn", Ff4Music.Operands(0) },      // libff4's is empty
+			{ "ce_CleanupMap", Ff4Music.Operands(0) },       // delStage: libff4's scene part ends here and the world sets its stage up anew; the scene runs on the world part here, its stage put away by the next map jump (taken now, the jump found none to leave - Fabul's ship stood still)
 			{ "ce_SlotBGMPlay", SlotBgmPlay },               // (slot, bgm)
 			{ "ce_SlotBGMStop", SlotBgmStop },               // (slot, fade frames)
 			{ "ce_StopBGM", StopBgm },                       // (fade frames): every slot
@@ -176,10 +183,6 @@ namespace OpenFF.Client
 		/// </summary>
 		public static readonly HashSet<string> Quiet = new HashSet<string>(StringComparer.Ordinal)
 		{
-			"ce_VoiceSkipOn",                                                    // a voice's own skip (nothing to skip here)
-			"ce_setSound", "ce_CleanupBGM", "ce_StopBGM_Streaming",             // BGM resource bookkeeping
-			"ce_SetupSE", "ce_CleanupSE",                                        // SE bank bookkeeping
-			"ce_CleanupMap",                                                     // the scene's stage unloads with the map here
 		};
 
 		private static GlobalScope.CCharacterMng Characters => GlobalScope.characterMng;
@@ -203,6 +206,7 @@ namespace OpenFF.Client
 				MapLeft();
 			}
 			_active = true;
+			Ff4Music.SceneStarts();   // ContEventPart::initialize: the music unloaded unless the field said to keep it
 			SceneStage = stage;
 			SceneFrame = 0;
 			_asyncLoadedBy = 0;
@@ -228,6 +232,7 @@ namespace OpenFF.Client
 		private static void EndEvent(GlobalScope.ScriptEngine engine)
 		{
 			_active = false;
+			Ff4Music.SceneEnds();   // ContEventPart::unInitialize: likewise
 			_autoRot.Clear();
 			Ff4ScenePrograms.Clear();
 			// EventConteManager's cleanup: the skip state goes with the scene. A skipped scene's own fade-in was passed
@@ -1442,7 +1447,8 @@ namespace OpenFF.Client
 		/// <summary>
 		/// FF4's voice player (FUN_00459eec in libff4): voice/&lt;name&gt;.akb, else the language's own - en_ for English,
 		/// ja_ for Japanese; a line the language has no recording of stays silent (861 ja_ files to 698 en_: the English
-		/// game skips the rest, it does not play the Japanese). At 0.9, unless the script gives a volume of its own.
+		/// game skips the rest, it does not play the Japanese). At 0.9, unless the script gives a volume of its own, times
+		/// the Settings' Voices.
 		/// </summary>
 		private static void PlayVoice(string file, float? volume)
 		{
@@ -1462,7 +1468,7 @@ namespace OpenFF.Client
 					_voice.Dispose();
 				}
 				_voice = sound.CreateInstance();
-				_voice.Volume = Math.Max(0f, Math.Min(1f, volume ?? 0.9f));
+				_voice.Volume = Math.Max(0f, Math.Min(1f, (volume ?? 0.9f) * OpenFF.Client.Ff4Settings.Current.Voices / 10f));   // Settings' Voices, 0..10 as Music's
 				_voice.Play();
 				Log.Write(LogChannel.File, "script: FF4 voice " + name + " (" + sound.Duration.TotalSeconds.ToString("0.0") + "s)");
 			});
@@ -1594,17 +1600,14 @@ namespace OpenFF.Client
 			Guard("shadow", () =>
 			{
 				Characters.setShadowJntName(ctrl, joint);
-				// FF4 lifts the disc 0x29 over the base and lets the DS's polygon ids settle the rest; here a
-				// disc flush with the deck loses the depth test, so it gets FF3's own half unit (CPlayerHuman.into).
+				// babilCommand_CE_ShadowSetting's height is 0x40 over the ground, the DS's polygon ids keeping the disc over the
+				// deck; here a disc that close to the deck (the Red Wings' planks at exactly 0) loses the depth test to it, so it
+				// gets FF3's own half unit (CPlayerHuman.into).
 				Characters.setShadowHeight(ctrl, 2048);
-				if (scale > 0 && scale != 4096)
-				{
-					GlobalScope.VecFx32 s = new GlobalScope.VecFx32();
-					Characters.getShadowScale(ctrl, s);
-					s.x = (int)((long)s.x * scale / 4096);
-					s.z = (int)((long)s.z * scale / 4096);
-					Characters.setShadowScale(ctrl, s);
-				}
+				// libff4 sets the scale outright - (scale, 0, scale): 4096 the model's own width, and flattened to nothing in
+				// height (shadow02 is a rounded dome FF3 squashes; left its height it stood off the deck, wider and further
+				// back than Steam's disc) - not the character's default (FF3's 2) times it.
+				if (scale > 0) Characters.setShadowScale(ctrl, new GlobalScope.VecFx32(scale, 0, scale));
 				if (x != 0 || y != 0 || z != 0)
 				{
 					Log.Write(LogChannel.File, "script: FF4 shadow offset " + x + ", " + y + ", " + z + " on " + joint + " for slot " + slot + " not applied");

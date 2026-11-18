@@ -46,7 +46,7 @@ if exist dist\OpenFF-%VERSION%-win-x64.zip del dist\OpenFF-%VERSION%-win-x64.zip
 powershell -NoProfile -Command "Compress-Archive -Path dist\OpenFF -DestinationPath dist\OpenFF-%VERSION%-win-x64.zip -CompressionLevel Optimal" || goto fail
 if not exist dist\OpenFF-%VERSION%-win-x64.zip goto fail
 rem The zip's SHA-256, which the client checks a downloaded update against before it installs it.
-powershell -NoProfile -Command "$h = (Get-FileHash -Algorithm SHA256 'dist\OpenFF-%VERSION%-win-x64.zip').Hash.ToLower(); Set-Content -NoNewline -Encoding ascii 'dist\OpenFF-%VERSION%-win-x64.zip.sha256' ($h + '  OpenFF-%VERSION%-win-x64.zip')" || goto fail
+powershell -NoProfile -Command "$f = [IO.File]::OpenRead((Resolve-Path 'dist\OpenFF-%VERSION%-win-x64.zip')); $h = -join ([Security.Cryptography.SHA256]::Create().ComputeHash($f) | ForEach-Object { $_.ToString('x2') }); $f.Close(); Set-Content -NoNewline -Encoding ascii 'dist\OpenFF-%VERSION%-win-x64.zip.sha256' ($h + '  OpenFF-%VERSION%-win-x64.zip')" || goto fail
 echo.
 echo dist\OpenFF: OpenFF.exe plays, crystal.exe edits, mods\ is where mods go (empty).
 echo dist\OpenFF-%VERSION%-win-x64.zip: the release, and its .sha256 beside it.

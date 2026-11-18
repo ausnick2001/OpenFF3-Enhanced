@@ -13,6 +13,8 @@ choice in `%LocalAppData%\OpenFF\launch.json`. These switches change that for on
 | `--party=4:10 --gil=500 --load=<slot>` | FF4 test starts: members by type and level, gil, a saved slot |
 | `--drive=<file>` | Play a scripted key drive from inside the game (see [Drives](Drives/)) |
 | `--nomods` | Load no mod code |
+| `--no-achievements` | Leave Steam alone for this run: no achievements, and Steam doesn't show you in the game (`"achievements": false` in settings.json turns them off for good) |
+| `--achievements-dry` | Read Steam's achievements and log what would be earned, sending nothing; for testing a mod or a change without touching your Steam account |
 
 ## Display
 
@@ -40,7 +42,8 @@ Every run writes `logs/ff3.log` beside the executable (the previous run is kept 
 | `--log-stalls` | Log every frame that took over 50 ms, to find where a hitch comes from |
 | `--probe` | A per-frame heartbeat in the log (vertices, bounds, camera, world state) |
 | `--ff4table` | List every FF4 script command that is only skipped |
-| `--ff4usage=1`, `--ff4ops=<command>,...` , `--ff4ops=@<map>` or `--ff4ops=@*` | Every script command FF4's scripts use (`logs/ff4-commands.txt`), or each use of some commands, or a map's (or every) whole script, with operands (`logs/ff4-ops.txt`) |
+| `--battle-event-trace=1` | Log every FF4 battle event command as it runs (`battle: event 36 #80 AddPlayer 5`), its operands as they stand |
+| `--ff4usage=1`, `--ff4ops=<command>,...` , `--ff4ops=@<map>` or `--ff4ops=@*` | Every script command FF4's scripts use (`logs/ff4-commands.txt`), or each use of some commands, or a map's (or every) whole script, with operands, and with `@` the cast table - each cast's entry offsets (`logs/ff4-ops.txt`) |
 | `FF3_DUMP=<dir>`, `FF3_DUMP_FONTS=<dir>` | Dump decoded data and font atlases as they load |
 | `FF3_SPEED=<n>` | While fast-forwarding, each game step runs n times |
 
@@ -53,3 +56,31 @@ map ends with one log line listing the script commands it skipped.
 `crystal.exe` alone opens Crystal in the browser. With a command (`extract`, `script`,
 `tables`, `msd`, `pak`, `xbn`, `mdl`, `tex`, `cells`, `hich`, `mcl`, `lz` ...) it converts the
 games' files on the command line instead; `crystal help` prints the list. See [Editor.md](Editor.md).
+
+## Steam achievements
+
+When the game's files are a Steam install (`steam_api.dll` beside `FF4.exe` or `FF3_Win32.exe`; a GOG copy
+has none) and Steam is running, OpenFF connects to your Steam client as that game. Steam then shows you
+playing it, counts the playtime, and takes its achievements as the game earns them. OpenFF uses the Steam
+client already on your machine (`steamclient64.dll` in Steam's folder) and ships nothing of Valve's.
+
+FF4's achievements follow the game's own rules from `achievement_param.bbd` beside `FF4.exe`: the same
+checks (flags, items, augments, summons, levels, gil, the Bestiary, bosses, places) at the same moments
+(a scene starting or ending, New Game, entering a map, boarding a vehicle, winning a fight, learning an
+augment, a shop). FF4's clear count is kept in the save, as the game keeps it: the ending's save counts the
+clear, and New Game+ carries the count. FF3's 18 are awarded where FF3's own code awards them (the bosses,
+gil, treasure, the Bestiary, the Ultima Weapon, the Iron Giant, the jobs). They also include any OpenFF
+earned before it talked to Steam: those are kept in `%LocalAppData%\FF3\achievements.txt` and sent on
+when it connects.
+
+A run with `--drive` (a test drive, which sets flags, gil and parties outright) never sends anything and
+doesn't add to that file.
+
+Mods don't turn achievements off. The log says what happened, for example
+`achievements: on - Steam counts this as app 312750, 74 rule(s)`,
+`achievements: Steam's record in - 12 of 58 earned` and
+`achievements: com.square_enix.ff4_achievement042 earned`, or why they are off
+(`not a Steam install`, `Steam is not running`, `--no-achievements`).
+
+Earning achievements from a client other than the game's own is between you and Steam: Valve and
+Square Enix haven't approved OpenFF. Turn them off with `"achievements": false` if you'd rather not.

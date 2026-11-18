@@ -30,7 +30,7 @@ namespace OpenFF.Client
 	internal sealed partial class Ff4Menu : GameService
 	{
 		private enum Screen { Root, Status, Inventory, Equipment, Magic, Abilities, Gambits, Party, Settings, Save, Load, Quicksave, Difficulty, Sight, Shop }
-		private enum Mode { Browse, PickMember, EquipSlot, EquipItem, ItemTarget, SwapMember }
+		private enum Mode { Browse, PickMember, EquipSlot, EquipItem, ItemTarget, SwapMember, SpellTarget }
 
 		private sealed class Command
 		{
@@ -58,6 +58,9 @@ namespace OpenFF.Client
 
 		public bool IsOpen => _open;
 
+		/// <summary>When the menu last ran open: an Esc that closes it is its own, not the pause menu's (PauseMenu).</summary>
+		internal static long OpenSeen = long.MinValue / 2;
+
 		// ---- the Steam arrangement, in the port's 800 x 480 ----
 		private const float PlaneX = 14f, PlaneW = 464f, PlaneRow = 94f, PlaneRowH = 90f;
 		private const float ColX = 488f, ColW = 272f, ColRow = 68f, ColRowH = 64f, ColVisible = 6;
@@ -79,9 +82,11 @@ namespace OpenFF.Client
 			_command = _commandScroll = 0;
 			_member = 0;
 			_swapFrom = -1;
+			_help = HelpView.None;
 			Game.Input.Capture = true;
 			BuildCommands();
 			_question = false;
+			_lookAtOpen = Ff4PartyCommands.LeaderLook();
 			// Balloon::blnCreate picks the thought as the menu opens (and may set or clear its flags then).
 			try { _thought = Ff4Speculation.Thought(); } catch (Exception) { _thought = null; }
 			Log.Write(LogChannel.File, "menu: open - " + Ff4Party.Party.Describe().Replace("\n", " | "));
@@ -99,10 +104,21 @@ namespace OpenFF.Client
 			catch (Exception) { return false; }
 		}
 
+		private string _lookAtOpen;
+
+		/// <summary>The field the party walks with nothing else going on: no scene, event, message, battle, shop, map, chest,
+		/// warp, extra, vehicle change or encounter - when the menu may open (and the drives' story step waits for).</summary>
+		internal static bool FieldFree => EngineApi.InWorld && !Ff4Cutscene.Active && !Game.Dialogue.IsOpen && !EventBusy() && !Game.Battle.InBattle && !Ff4Battle.Active
+			&& !(Ff4Shop.Instance?.IsOpen ?? false) && !(Ff4NaviMap.Instance?.IsOpen ?? false) && !Ff4Chests.Busy && !Ff4Warp.Busy && !Ff4Extras.Busy && !Ff4Ride.Busy
+			&& !EncounterZoom.Playing && !BlurRotate.Playing && !(Instance?.IsOpen ?? false);
+
 		private void Close()
 		{
 			_open = false;
+			_eventPick = false;
 			Game.Input.Capture = false;
+			// WSMenu's exit waits on the party loader: a leader turned Toad, Pig or Mini (or back), or a new leader, walks as such.
+			if (!_fromTitle && !_fromEnding && _lookAtOpen != null && Ff4PartyCommands.LeaderLook() != _lookAtOpen) Ff4PartyCommands.LeaderChanged();
 			Log.Write(LogChannel.File, "menu: close");
 		}
 
@@ -164,17 +180,16 @@ namespace OpenFF.Client
 			InputState input = Game.Input;
 			ApplySettingsOnce();
 			// Steam's menu closes the field camera in on the lead, from the root and its question; the full screens cover it.
-			Ff4MenuCamera.Step(_open && !_fromTitle && !_fromEnding && _screen != Screen.Shop);
+			Ff4MenuCamera.Step(_open && !_fromTitle && !_fromEnding && !_eventPick && _screen != Screen.Shop);
 			if (!_open)
 			{
-				if (EngineApi.InWorld && !Ff4Cutscene.Active && !Game.Dialogue.IsOpen && !EventBusy() && !Game.Battle.InBattle && !Ff4Battle.Active
-					&& !(Ff4Shop.Instance?.IsOpen ?? false) && !(Ff4NaviMap.Instance?.IsOpen ?? false) && !Ff4Chests.Busy && !Ff4Extras.Busy && !Ff4Ride.Busy && !EncounterZoom.Playing && !BlurRotate.Playing
-					&& (input.KeyPressed("Tab") || input.Pressed(Pad.X)))
+				if (FieldFree && (input.KeyPressed("Tab") || input.Pressed(Pad.X)))
 				{
 					Open();
 				}
 				return;
 			}
+			OpenSeen = Environment.TickCount64;
 			if (Ff4Saves.NoticeFrames > 0) Ff4Saves.NoticeFrames--;
 			if ((_screen == Screen.Load || _screen == Screen.Difficulty) && Ff4MenuHud.Available)
 			{
@@ -186,6 +201,7 @@ namespace OpenFF.Client
 			// The menu key closes it from the main menu; in a screen C and M are the screen's (Key Items, the next member).
 			bool atRoot = _screen == Screen.Root && _mode == Mode.Browse && !_question;
 			if (_fromEnding && input.KeyPressed("Escape")) { EndingDone(); return; }
+			if (_eventPick && input.KeyPressed("Escape")) { EndEventPick(-1); return; }
 			if (input.KeyPressed("Escape") || (atRoot && (input.KeyPressed("Tab") || input.Pressed(Pad.X)))) { Close(); return; }
 			if (Ff4Party.Party.Members.Count == 0) { Close(); return; }
 			_member = Math.Clamp(_member, 0, Ff4Party.Party.Members.Count - 1);
@@ -261,10 +277,11 @@ namespace OpenFF.Client
 			if (AnswerSaveQuestion()) return;
 			if (_questionQuit)
 			{
-				// Settings' Quit: "Do you wish to quit the game ?" - the title, nothing saved.
+				// Settings' Quit: "Do you wish to quit the game ?" - Steam's FF4.exe closes there and then (nothing saved).
 				Ff4Settings.Current.Save();
 				Close();
-				try { GlobalScope.wld.CBaseSystem.setTitle(true); } catch (Exception ex) { Log.Write(LogChannel.General, "menu: quit, to the title: " + ex.Message); }
+				Log.Write(LogChannel.General, "menu: quit the game");
+				PauseMenu.Instance?.Game.Exit();
 				return;
 			}
 			if (!Ff4Saves.Suspend()) { Notice("Could not quicksave here."); return; }
@@ -299,6 +316,7 @@ namespace OpenFF.Client
 
 		private void UpdateMemberScreen(InputState input, int? listCount)
 		{
+			if (_screen == Screen.Magic && _mode == Mode.SpellTarget) { UpdateSpellTarget(input); return; }
 			if (input.Pressed(Pad.B)) { Back(); return; }
 			if (_screen == Screen.Magic)
 			{
@@ -360,6 +378,7 @@ namespace OpenFF.Client
 
 		private List<OpenFF.Data.ItemStack> Bag()
 		{
+			if (_eventPick) return EventPickList();
 			List<OpenFF.Data.ItemStack> bag = new List<OpenFF.Data.ItemStack>();
 			foreach (OpenFF.Data.ItemStack s in Ff4Party.Party.Inventory)
 			{
@@ -411,8 +430,10 @@ namespace OpenFF.Client
 		{
 			IReadOnlyList<OpenFF.Data.ItemStack> items = Bag();
 			if (input.Pressed(Pad.Up) || input.Pressed(Pad.Down) || input.Pressed(Pad.Left) || input.Pressed(Pad.Right) || input.Pressed(Pad.A) || input.Pressed(Pad.X)) _sortNote = null;
-			if (_mode == Mode.Browse && input.Pressed(Pad.X)) { _keyItems = !_keyItems; _cursor = _scroll = 0; return; }   // C: Key Items
-			if (_mode == Mode.Browse && !_keyItems && input.KeyPressed("Tab"))
+			if (_eventPick && input.Pressed(Pad.B)) { EndEventPick(-1); return; }
+			if (_eventPick && input.Pressed(Pad.A)) { EndEventPick(items.Count > 0 ? items[Math.Min(_cursor, items.Count - 1)].ItemId : -1); return; }
+			if (_mode == Mode.Browse && !_eventPick && input.Pressed(Pad.X)) { _keyItems = !_keyItems; _cursor = _scroll = 0; return; }   // C: Key Items
+			if (_mode == Mode.Browse && !_keyItems && !_eventPick && input.KeyPressed("Tab"))
 			{
 				// Tab: MSSItem's Sort - the line for the order (50110 consumables, 50111 weapons, 50112 armour at the top), the
 				// bag sorted so, and the next press the next order.
@@ -633,6 +654,7 @@ namespace OpenFF.Client
 			ItemDefinition item = Ff4Party.Tables?.Item(itemId);
 			if (item?.Raw == null || item.Raw.Length < 0x14) return false;
 			int flags = BitConverter.ToUInt16(item.Raw, 0x12);
+			if (Ff4Warp.Restricted(itemId)) return false;   // restrictionItemUse
 			return ((flags & 8) != 0 && SaveAllowed) || (flags & 4) != 0;
 		}
 
@@ -847,8 +869,10 @@ namespace OpenFF.Client
 			GameTables tables = Ff4Party.Tables;
 			h.Root = h.Picking = h.Bubble = h.Question = false;
 			h.Full = true;
-			h.Inventory = _screen == Screen.Inventory;
-			h.Magic = _screen == Screen.Magic;
+			// A spell's places are the Inventory's using screen (Steam's MgctoChr clears Magic down to the list's window).
+			bool spellTarget = _screen == Screen.Magic && _mode == Mode.SpellTarget;
+			h.Inventory = _screen == Screen.Inventory || spellTarget;
+			h.Magic = _screen == Screen.Magic && !spellTarget;
 			h.Status = _screen == Screen.Status;
 			h.Equipment = _screen == Screen.Equipment;
 			h.Abilities = _screen == Screen.Abilities;
@@ -861,8 +885,11 @@ namespace OpenFF.Client
 			if (h.Sight) FillSight(h);
 			if (h.Shop) FillShop(h);
 			if (h.Save) FillSave(h);
-			h.Settings = _screen == Screen.Settings;
+			h.Settings = _screen == Screen.Settings && _help == HelpView.None;
+			h.HelpList = _screen == Screen.Settings && _help == HelpView.List;
+			h.HelpPage = _screen == Screen.Settings && _help == HelpView.Page;
 			if (h.Settings) FillSettings(h);
+			if (h.HelpList || h.HelpPage) FillHelp(h);
 			if (h.Party)
 			{
 				bool places = _mode == Mode.SwapMember;
@@ -890,6 +917,7 @@ namespace OpenFF.Client
 				h.Title = _keyItems ? h.KeyItemsLabel : T(50002, "Inventory");
 				List<OpenFF.Data.ItemStack> items = Bag();
 				h.Using = _mode == Mode.ItemTarget;
+				h.EventPick = _eventPick;
 				for (int k = 0; k < h.Item.Count; k++)
 				{
 					int i = _scroll + k;
@@ -913,6 +941,7 @@ namespace OpenFF.Client
 				if (h.Using) h.ItemScroll.Shown = false;   // the party's places take the list's window, with no bar
 				h.UseCount = h.Using ? Ff4Party.Party.CountItem(_usingItem).ToString() : "";
 				FillMembers(h.Target, _mode == Mode.ItemTarget ? _pick : -1, false);
+				if (spellTarget) FillSpellTarget(h);
 			}
 			if (h.Magic)
 			{
@@ -931,7 +960,7 @@ namespace OpenFF.Client
 					row.Count = "";
 					row.Icon = tables?.AbilityIcon(spells[i]) ?? -1;
 					row.Lit = i == _cursor;
-					row.Dim = spell != null && (spell.MpCost > c.Mp || !spell.UsableInMenu);   // Steam greys what the menu cannot cast (Hold, Libra) and what costs too much
+					row.Dim = spell != null && (MenuMpCost(c, spell) > c.Mp || !MenuOffers(spell));   // Steam greys what the menu cannot cast (Hold, Libra; Teleport in a town) and what costs too much
 				}
 				Ff4MenuHud.Scroll(h.SpellScroll, (spells.Count + 2) / 3, 5, _scroll / 3, 526.5f, true);
 				SpellDefinition at = _cursor < spells.Count ? tables?.Spell(spells[_cursor]) : null;
@@ -960,7 +989,9 @@ namespace OpenFF.Client
 				Character c = Member;
 				h.Title = T(50004, "Equipment");
 				FillHead(h.Head, c);
-				FillFigures(h, c);
+				// A piece lit in the bag: the figures it would change, as Steam shows them (old -> new, green up, red down).
+				List<int> lit = _mode == Mode.EquipItem ? Candidates(c, _slot) : null;
+				FillFigures(h, c, lit != null && _pick < lit.Count ? lit[_pick] : -1, _slot);
 				FillSlots(h.Slot, c, _mode == Mode.EquipSlot ? _slot : -1);
 				// The bag's pieces for the lit slot, five in view; the line is the lit piece's own (babil_item.msd: "Attack: 10
 				// Element: Dark").
@@ -1010,23 +1041,47 @@ namespace OpenFF.Client
 			if (h.Sight) Ff4NaviMap.Instance?.DrawSight(_scroll);
 		}
 
+		private static readonly uint[] FigureTexts = { 50420, 50421, 50422, 50423, 50424, 50425, 50426, 50427, 50428, 50429, 50430 };
+
 		/// <summary>The member's eleven figures in MenuLayout_Status's order: the five attributes, then attack, accuracy, defence,
-		/// evasion and the magic pair.</summary>
-		private static void FillFigures(Ff4MenuHud.Data h, Character c)
+		/// evasion and the magic pair. Empty-handed, Steam's menu shows Attack 0 and Accuracy 100 (Dark Knight Cecil with his
+		/// sword taken off).</summary>
+		private static int[] Figures(Character c)
 		{
 			GameTables tables = Ff4Party.Tables;
 			OpenFF.Data.Stats st = c.StatsWith(tables);
 			int weapon = Ff4Battle.Weapon(c, tables);
-			(uint text, int value)[] figures =
+			return new[]
 			{
-				(50420, st.Strength), (50421, st.Agility), (50422, st.Vitality), (50423, st.Intellect), (50424, st.Spirit),
-				(50425, Math.Max(1, weapon > 0 ? weapon : st.Strength / 2)), (50426, weapon > 0 ? Ff4Battle.WeaponHit(c, tables) : 90),
-				(50427, Ff4Battle.Armour(c, tables)), (50428, Ff4Battle.Evasion(c, tables)), (50429, Ff4Battle.MagicArmour(c, tables)), (50430, 0),
+				st.Strength, st.Agility, st.Vitality, st.Intellect, st.Spirit,
+				weapon, weapon > 0 ? Ff4Battle.WeaponHit(c, tables) : 100,
+				Ff4Battle.Armour(c, tables), Ff4Battle.Evasion(c, tables), Ff4Battle.MagicArmour(c, tables), 0,
 			};
+		}
+
+		/// <summary>The figures into the rows; with <paramref name="trying"/> (a piece of the bag, lit for <paramref name="slot"/>),
+		/// each figure it would change also as its after - the piece put on the slot for the count and taken off again.</summary>
+		private static void FillFigures(Ff4MenuHud.Data h, Character c, int trying = -1, int slot = -1)
+		{
+			int[] now = Figures(c);
+			int[] after = null;
+			if (trying >= 0 && slot >= 0 && slot < c.Equipment.Length && c.Equipment[slot] != trying)
+			{
+				int worn = c.Equipment[slot];
+				c.Equipment[slot] = trying;
+				try { after = Figures(c); }
+				finally { c.Equipment[slot] = worn; }
+			}
 			for (int k = 0; k < h.Stat.Count; k++)
 			{
-				h.Stat[k].Label = T(figures[k].text);
-				h.Stat[k].Value = figures[k].value.ToString();
+				Ff4MenuHud.StatRow row = h.Stat[k];
+				row.Label = T(FigureTexts[k]);
+				row.Value = now[k].ToString();
+				bool changes = after != null && after[k] != now[k];
+				row.Arrow = changes ? "→" : "";
+				row.After = changes ? after[k].ToString() : "";
+				row.Up = changes && after[k] > now[k];
+				row.Down = changes && after[k] < now[k];
 			}
 		}
 
@@ -1071,6 +1126,13 @@ namespace OpenFF.Client
 				rows[i].Label = SlotName(i);
 				rows[i].Name = id != 0 ? item?.Name ?? ("item " + id) : "";
 				rows[i].Icon = item?.Icon ?? -1;
+				// An empty hand reads as Steam's: babil_item.msd 6000, "Empty" with the fist; an empty armour slot stays blank.
+				GameTables tables = Ff4Party.Tables;
+				if (id == 0 && i < 2 && tables != null && tables.ItemTexts.TryGetValue(6000, out string empty))
+				{
+					rows[i].Name = empty;
+					rows[i].Icon = tables.ItemTextIcons.TryGetValue(6000, out int fist) ? fist : -1;
+				}
 				rows[i].Lit = i == lit;
 			}
 		}
@@ -1141,6 +1203,9 @@ namespace OpenFF.Client
 		internal static string PlaceName()
 		{
 			string map = Game.Field.Map ?? "";
+			// wsmGetSavePointIndex: a cleared game (flag 0x3db) reads the "clear" record wherever it is.
+			if (Ff4Saves.Cleared && SavePointMessage("clear") is uint cleared) return T(cleared);
+			if (map.StartsWith("f", StringComparison.OrdinalIgnoreCase) && FieldAreaMessage() is uint area) return T(area);
 			if (!map.StartsWith("f", StringComparison.OrdinalIgnoreCase) && SavePointMessage(map) is uint message) return T(message);
 			try
 			{
@@ -1153,6 +1218,30 @@ namespace OpenFF.Client
 			}
 			catch (Exception) { }
 			return Game.Field.Map ?? "";
+		}
+
+		/// <summary>world::mss_FA00, compiled into libff4: the overworld's 256 chips (f00_00 .. f00_ff, the chip's number in hex) to
+		/// their area, babil_menu.msd 57000 + it - 0 Overworld, 1 Baron, 2 The Damcyan Desert, 3 Damcyan, 4 Fabul, 5 Mysidia,
+		/// 6 Troia, 7 Eblan, 8 Mist, 9 Agart. The Underworld's (mss_FA01) and the Moon's (mss_FA02) chips are all area 0.</summary>
+		private const string OverworldAreas =
+			"0000000000007700000066660007777700006666000777770000666600007777000066601110000000000008111100000033322811119900003332221110990000000222000050000000022200005500000000000005550000000000000555000444400000000000044444000000000004444000000000000000000000000000";
+
+		/// <summary>MSSGetFieldAreaMessageNo: the area the chip under the party is in, by world - 57000 + the overworld's area,
+		/// 58000 the Underworld, 59000 the Lunar Surface; null when the stage names no chip.</summary>
+		private static uint? FieldAreaMessage()
+		{
+			string chip = null;
+			try { chip = GlobalScope.stageMng?.getChipName(); } catch (Exception) { }
+			if (chip == null || chip.Length < 6) return null;
+			switch (chip[2])
+			{
+				case '0':
+					int n = int.TryParse(chip.Substring(4, 2), System.Globalization.NumberStyles.HexNumber, null, out int at) && at >= 0 && at < 256 ? at : 0;
+					return 57000u + (uint)(OverworldAreas[n] - '0');
+				case '1': return 58000u;
+				case '2': return 59000u;
+				default: return null;
+			}
 		}
 
 		private static List<(string Map, uint Message)> _savePoints;
@@ -1179,6 +1268,7 @@ namespace OpenFF.Client
 				foreach ((string m, uint id) in _savePoints) if (m == name) return id == 0xFFFFFFFF ? null : id;
 				return null;
 			}
+			if (map == "clear") return Find("clear");
 			string prefix = map.Length >= 3 ? map.Substring(0, 3) : map;
 			uint? found = map.StartsWith("d", StringComparison.Ordinal) ? Find(map) ?? Find(prefix) : map.StartsWith("t", StringComparison.Ordinal) ? Find(prefix) : null;
 			return found ?? _savePoints[0].Message;

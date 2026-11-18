@@ -76,6 +76,22 @@ namespace OpenFF.Client
 		private XElement _laid;     // the layout as last laid out, and what it was laid out from
 		private string _laidKey;
 		private string _computedKey;
+		private string _matchKey, _computedKeyLaidFrom;
+		private readonly MenuStyles.LookCache _lookCache = new MenuStyles.LookCache();
+
+		/// <summary>What a layout reads of the cascade: each frame's place and size properties and its display.</summary>
+		private static string LayoutKey(List<(XElement Frame, Dictionary<string, string> Computed)> computed)
+		{
+			System.Text.StringBuilder key = new System.Text.StringBuilder();
+			foreach ((XElement frame, Dictionary<string, string> c) in computed)
+			{
+				key.Append('|');
+				foreach (string name in MenuLayout.Properties) if (c.TryGetValue(name, out string v)) key.Append(name).Append(':').Append(v).Append(';');
+				if (c.TryGetValue("display", out string display)) key.Append("display:").Append(display);
+			}
+			return key.ToString();
+		}
+		private readonly MenuStyles.MatchCache _matches = new MenuStyles.MatchCache();
 		private List<(XElement Frame, Dictionary<string, string> Computed)> _computed;
 		private readonly Dictionary<string, Texture> _pictures = new Dictionary<string, Texture>(StringComparer.OrdinalIgnoreCase);
 
@@ -139,25 +155,38 @@ namespace OpenFF.Client
 			{
 				Bind(root);
 				// Cascaded and laid out again only when a frame's classes, styles, state or text changed (the same otherwise) - a
-				// screen as big as the menu's is too much to cascade every frame.
+				// screen as big as the menu's is too much to cascade every frame. Which rules match a frame holds while its
+				// classes, states and the frames themselves do (its attributes but its style): what bindings move each frame - a
+				// gauge's style, a number's text - only re-merges inline styles and inheritance over the kept matches.
 				string key = string.Join("|", _menu.Descendants("frame").Select(f => string.Join("~", f.Attributes().Select(a => a.Value)) + "~" + (string)f.Element("data")));
-				if (key != _computedKey || _computed == null) { _computed = MenuStyles.Computed(_menu, _sheet); _computedKey = key; }
+				if (key != _computedKey || _computed == null)
+				{
+					string matchKey = string.Join("|", _menu.Descendants("frame").Select(f => string.Join("~", f.Attributes().Where(a => a.Name.LocalName != "style").Select(a => a.Value))));
+					if (matchKey != _matchKey) { _matches.Clear(); _matchKey = matchKey; }
+					_computed = MenuStyles.Computed(_menu, _sheet, _matches);
+					_computedKey = key;
+				}
 				List<(XElement Frame, Dictionary<string, string> Computed)> computed = _computed;
 				Dictionary<XElement, Dictionary<string, string>> shown = _animator.Step(computed, _sheet, _clock.Elapsed.TotalSeconds);
-				Dictionary<XElement, MenuStyles.Look> looks = MenuStyles.Looks(_menu, computed, shown);
+				Dictionary<XElement, MenuStyles.Look> looks = MenuStyles.Looks(_menu, computed, shown, _lookCache);
 				Dictionary<XElement, Dictionary<string, string>> values = new Dictionary<XElement, Dictionary<string, string>>();
 				foreach ((XElement frame, Dictionary<string, string> c) in computed) values[frame] = shown != null && shown.TryGetValue(frame, out Dictionary<string, string> s) ? s : c;
-				if (key != _laidKey || _laid == null)
+				// Laid out again only when what the layout reads moved - a frame's place and size properties, display, the frames
+				// themselves - not for a colour, a crop or a text (the drawing takes those from the cascade, not the copy).
+				string laidKey = key == _computedKeyLaidFrom && _laid != null ? _laidKey : LayoutKey(computed);
+				_computedKeyLaidFrom = key;
+				if (laidKey != _laidKey || _laid == null)
 				{
 					XElement laid = new XElement(_menu);
-					MenuStyles.Apply(laid, _sheet);
+					MenuStyles.ApplyComputed(laid, _menu, computed);
 					MenuLayout.Bake(laid);
 					_laid = laid;
-					_laidKey = key;
+					_laidKey = laidKey;
 				}
 				float sx = DrawList.ScreenWidth / _width, sy = DrawList.ScreenHeight / _height;
 				// A point of the layout (x, y) is drawn at (ax + x kx, ay + y ky); a frame's scale (CSS scale: about its centre)
 				// changes that for it and its frames - their boxes, texts, borders and slices with them.
+				List<(float X, float Y, float W, float H)> clipStack = new List<(float, float, float, float)>();
 				void Walk(XElement frame, XElement copy, float px, float py, float ax, float ay, float kx, float ky)
 				{
 					float x = px + Number(copy, "x"), y = py + Number(copy, "y");
@@ -174,7 +203,28 @@ namespace OpenFF.Client
 					bool visible = !(v.TryGetValue("visibility", out string vis) && vis.Trim().Equals("hidden", StringComparison.OrdinalIgnoreCase));
 					if (visible && kx > 0 && ky > 0) DrawFrame(d, frame, look, v, ax + x * kx, ay + y * ky, w * kx, h * ky, kx, ky);
 					List<XElement> frames = frame.Elements("frame").ToList(), copies = copy.Elements("frame").ToList();
+					// overflow: hidden - its frames show only inside its box (a scrolled text cut at its window's edges); a clip
+					// inside another is cut to both, and the outer one stands again after.
+					bool clips = v.TryGetValue("overflow", out string overflow) && overflow.Trim().Equals("hidden", StringComparison.OrdinalIgnoreCase);
+					if (clips)
+					{
+						(float X, float Y, float W, float H) box = (ax + x * kx, ay + y * ky, w * kx, h * ky);
+						if (clipStack.Count > 0)
+						{
+							var o = clipStack[clipStack.Count - 1];
+							float l = Math.Max(box.X, o.X), t = Math.Max(box.Y, o.Y), r = Math.Min(box.X + box.W, o.X + o.W), btm = Math.Min(box.Y + box.H, o.Y + o.H);
+							box = (l, t, Math.Max(0f, r - l), Math.Max(0f, btm - t));
+						}
+						clipStack.Add(box);
+						d.Clip(box.X, box.Y, box.W, box.H);
+					}
 					for (int i = 0; i < frames.Count && i < copies.Count; i++) Walk(frames[i], copies[i], x, y, ax, ay, kx, ky);
+					if (clips)
+					{
+						clipStack.RemoveAt(clipStack.Count - 1);
+						if (clipStack.Count > 0) { var o = clipStack[clipStack.Count - 1]; d.Clip(o.X, o.Y, o.W, o.H); }
+						else d.Unclip();
+					}
 				}
 				List<XElement> top = _menu.Elements("frame").ToList(), topCopies = _laid.Elements("frame").ToList();
 				for (int i = 0; i < top.Count && i < topCopies.Count; i++) Walk(top[i], topCopies[i], 0, 0, 0, 0, sx, sy);
@@ -190,8 +240,12 @@ namespace OpenFF.Client
 		{
 			MenuBindingScope top = new MenuBindingScope { Root = root };
 			Dictionary<XElement, MenuBindingScope> scopes = new Dictionary<XElement, MenuBindingScope>();
-			foreach (XElement frame in _menu.Descendants("frame"))
+			// What a bind-display has taken away is not bound: nothing in it is drawn, and it is bound again the frame it shows
+			// (a screen of the menu's many, the field's key bar - the rest of the menu's layout is not worked out under it).
+			Stack<XElement> todo = new Stack<XElement>(_menu.Elements("frame").Reverse());
+			while (todo.Count > 0)
 			{
+				XElement frame = todo.Pop();
 				MenuBindingScope scope = ScopeOf(frame, top, scopes);
 				foreach (KeyValuePair<string, string> c in MenuStyles.Declarations((string)frame.Attribute("bind-class")))
 					SetClass(frame, c.Key, MenuBindings.Test(c.Value, scope));
@@ -203,6 +257,7 @@ namespace OpenFF.Client
 				if (style != ((string)frame.Attribute("style") ?? "")) frame.SetAttributeValue("style", style.Length == 0 ? null : style);
 				if (frame.Attribute("bind-text") is XAttribute bt) _texts[frame] = MenuBindings.Format(bt.Value, scope);
 				else if (frame.Element("data") is XElement data && !string.IsNullOrWhiteSpace(data.Value)) _texts[frame] = data.Value.Trim();
+				if (display == null) foreach (XElement child in frame.Elements("frame").Reverse()) todo.Push(child);
 			}
 		}
 
@@ -392,19 +447,22 @@ namespace OpenFF.Client
 			float ky = wanted / drawn, kx = ky * sx / sy;
 			uint colour = (v.TryGetValue("color", out string cs) ? MenuBackground.ParseColour(MenuStyles.Hex(cs) ?? cs) : null) ?? 0xFFFFFFFF;
 			// Lines (a message's): each placed as a text of its own, line-height apart (px in the layout's units; 1.25 em
-			// when not given), the first where a single line would be.
+			// when not given), the first where a single line would be - or, centred (middle, central), the block's middle
+			// where a single line's would be (FF4's scene bar: Steam's two lines stand half a line over its one).
 			if (text.IndexOf('\n') >= 0)
 			{
 				float step = v.TryGetValue("line-height", out string lh) && float.TryParse(lh.Trim().Replace("px", ""), NumberStyles.Float, CultureInfo.InvariantCulture, out float l) ? l : size * 1.25f;
 				string[] lines = text.Split('\n');
+				string va0 = v.TryGetValue("vertical-align", out string vv) ? vv.Trim().ToLowerInvariant() : "top";
+				float top = va0 == "middle" || va0 == "central" ? y - (lines.Length - 1) * step * sy / 2 : y;
 				for (int i = 0; i < lines.Length; i++)
-					if (lines[i].Length > 0) DrawText(d, lines[i], look, v, x, y + i * step * sy, w, h, sx, sy, opacity);
+					if (lines[i].Length > 0) DrawText(d, lines[i], look, v, x, top + i * step * sy, w, h, sx, sy, opacity);
 				return;
 			}
 			string align = v.TryGetValue("text-align", out string ta) ? ta.Trim().ToLowerInvariant() : "left";
 			string valign = v.TryGetValue("vertical-align", out string va) ? va.Trim().ToLowerInvariant() : "top";
 			bool middle = valign == "middle", central = valign == "central";
-			if (HasSymbol(text) && Cells.TryGetValue("symbol", out CellDrawer symbol))
+			if (HasSymbol(text) && Cells.TryGetValue("symbol", out CellDrawer symbol) | Cells.ContainsKey("key"))
 			{
 				// FF4's names open with an icon (U+E040 + its cell of BABIL_SYMBOL - an item's in "Obtained %item%."): each drawn as
 				// the symbol cell at Steam's lists' proportion (a 21px line's icon at 0.79: 1.13 em) with the text's shadow, in the
@@ -414,17 +472,26 @@ namespace OpenFF.Client
 				float iconWidth = 54f * DrawList.ScreenHeight / 1080f * iconScale;
 				List<(string Text, int Icon)> parts = SymbolParts(text);
 				float total = 0f;
-				foreach ((string part, int icon) in parts) total += icon >= 0 ? iconWidth : d.MeasureText(part, drawn) * kx;
+				// A key's cap (U+E100 + its icon_keyboard_64 cell, a help page's %key_assignNN%): 65 layout units across at Steam's
+				// key-bar size (the cap 0.5625 of its 64 pixels), centred on the line as the icons are.
+				float keyWidth = KeyAdvance * sx;
+				foreach ((string part, int icon) in parts) total += icon >= KeyIcon ? keyWidth : icon >= 0 ? iconWidth : d.MeasureText(part, drawn) * kx;
 				float px = align == "center" ? x + (w - total) / 2 : align == "right" ? x + w - total : x;
 				float py = middle ? y + (h - wanted * 1.3f) / 2 : central ? y + h / 2 - wanted * 0.879f : y;
 				uint tint = 0xFFFFFF00 | (uint)Math.Round(255 * opacity);
 				foreach ((string part, int icon) in parts)
 				{
+					if (icon >= KeyIcon)
+					{
+						if (Cells.TryGetValue("key", out CellDrawer key)) key(d, icon - KeyIcon, px + keyWidth / 2, py + wanted * 0.7f, KeyScale, 1f, new Color(255, 255, 255, (byte)Math.Round(255 * opacity)));
+						px += keyWidth;
+						continue;
+					}
 					if (icon >= 0)
 					{
 						float iy = py + wanted * 0.7f;
-						if (shadow is MenuText.Shadow sh) symbol(d, icon, px + sh.X * sx, iy + sh.Y * sy, iconScale, 1f, new Color((byte)(sh.Colour >> 24), (byte)(sh.Colour >> 16), (byte)(sh.Colour >> 8), (byte)Math.Round((sh.Colour & 0xFF) * opacity)));
-						symbol(d, icon, px, iy, iconScale, 1f, new Color((byte)(tint >> 24), (byte)(tint >> 16), (byte)(tint >> 8), (byte)(tint & 0xFF)));
+						if (shadow is MenuText.Shadow sh) symbol?.Invoke(d, icon, px + sh.X * sx, iy + sh.Y * sy, iconScale, 1f, new Color((byte)(sh.Colour >> 24), (byte)(sh.Colour >> 16), (byte)(sh.Colour >> 8), (byte)Math.Round((sh.Colour & 0xFF) * opacity)));
+						symbol?.Invoke(d, icon, px, iy, iconScale, 1f, new Color((byte)(tint >> 24), (byte)(tint >> 16), (byte)(tint >> 8), (byte)(tint & 0xFF)));
 						px += iconWidth;
 						continue;
 					}
@@ -464,10 +531,15 @@ namespace OpenFF.Client
 			return new Color((byte)Math.Round((rgba >> 24) * a), (byte)Math.Round(((rgba >> 16) & 0xFF) * a), (byte)Math.Round(((rgba >> 8) & 0xFF) * a), (byte)Math.Round(255 * a));
 		}
 
+		/// <summary>A key's cap in a text: U+E100 + its cell of icon_keyboard_64 (Ff4Ui's "key" cells).</summary>
+		public const char KeyChar = '';
+		private const int KeyIcon = 100000;
+		private const float KeyAdvance = 65f, KeyScale = 0.5625f;
+
 		/// <summary>Whether a text holds one of FF4's name icons (U+E040..U+E05F, BABIL_SYMBOL's cells).</summary>
 		private static bool HasSymbol(string text)
 		{
-			foreach (char c in text) if (c >= '' && c <= '') return true;
+			foreach (char c in text) if ((c >= '' && c <= '') || (c >= KeyChar && c < KeyChar + 256)) return true;
 			return false;
 		}
 
@@ -478,9 +550,10 @@ namespace OpenFF.Client
 			int start = 0;
 			for (int i = 0; i < text.Length; i++)
 			{
-				if (text[i] < '' || text[i] > '') continue;
+				bool key = text[i] >= KeyChar && text[i] < KeyChar + 256;
+				if (!key && (text[i] < '' || text[i] > '')) continue;
 				if (i > start) parts.Add((text.Substring(start, i - start), -1));
-				parts.Add(("", text[i] - 0xE040));
+				parts.Add(("", key ? KeyIcon + text[i] - KeyChar : text[i] - 0xE040));
 				start = i + 1;
 			}
 			if (start < text.Length) parts.Add((text.Substring(start), -1));

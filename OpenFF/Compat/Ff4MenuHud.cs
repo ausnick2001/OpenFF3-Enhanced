@@ -39,10 +39,12 @@ namespace OpenFF.Client
 			public string Number = "", State = "", Condition = "", Action = "";
 		}
 
-		/// <summary>A line of figures: its word and its value (Strength 13).</summary>
+		/// <summary>A line of figures: its word and its value (Strength 13); on Equipment with a piece lit in the bag, the
+		/// figure it would become (Arrow "→", After, Up or Down) when it changes.</summary>
 		public sealed class StatRow
 		{
-			public string Label = "", Value = "";
+			public string Label = "", Value = "", Arrow = "", After = "";
+			public bool Up, Down;
 		}
 
 		/// <summary>An equipment slot: its word (Right, Head...), what is worn there and its symbol.</summary>
@@ -91,7 +93,7 @@ namespace OpenFF.Client
 			public bool Root, Picking, Bubble, Question, Yes, No;
 			// The full screens: which is up, its title, its help line; Inventory's list and its use on a member; Magic's member
 			// and spells.
-			public bool Full, Inventory, Magic, Using;
+			public bool Full, Inventory, Magic, Using, EventPick;
 			public string Title = "", Help = "", UseName = "", UseCount = "";
 			public string KeyItemsLabel = "Key Items", SortLabel = "Sort", UseLabel = "Use", ChangeLabel = "Change Characters", SchoolLabel = "";
 			public int UseIcon = -1;
@@ -156,6 +158,12 @@ namespace OpenFF.Client
 			public string ShopCount = "1", ShopGil = "", ShopHave = "", ShopWorn = "", InventoryLabel = "Inventory", EquippedLabel = "Equipped", ShopToggleLabel = "Sell";
 			public List<CommandRow> SightRow = Rows<CommandRow>(7);
 			public ScrollData SightScroll = new ScrollData();
+			// Settings' Help (Ff4MenuHelp): the ten topics in a strip moved helpListTop, or a topic's page moved helpTextTop.
+			public bool HelpList, HelpPage;
+			public List<CommandRow> HelpRow = Rows<CommandRow>(10);
+			public ScrollData HelpScroll = new ScrollData(), HelpPageScroll = new ScrollData();
+			public float HelpListTop, HelpTextTop;
+			public string HelpText = "";
 			public string MapLabel = "Map", MenuLabel = "Menu";
 			// The Fat Chocobo's extras (Ff4Extras): its window over the field (menu.extra[0..2]: Bestiary, Event Theatre, Music
 			// Box); the Music Box's and the Event Theatre's list (menu.listRow[0..7], listScroll) and their key hints.

@@ -1,8 +1,8 @@
 // FF4's Settings screen as Steam's (measured off its draws): nine lines, five in view - Music, Sound Effects and Voices
 // (sliders 0..10), Battle Mode (Active / Wait), Battle Speed (Fast 1..6 Slow), Subtitles (On / Off), Window Design (1..6),
 // Help and Quit. Up and down move the hand (round from the last to the first), left and right change the line's value at
-// once; Quit asks "Do you wish to quit the game ?" and goes to the title. Backspace leaves, and the settings are written
-// (Ff4Settings). Help has no screen of its own yet.
+// once (a pair - Battle Mode, Subtitles - turned over by either); Quit asks "Do you wish to quit the game ?" and closes the game. Backspace leaves, and the settings are written
+// (Ff4Settings). Help opens its own screens (Ff4MenuHelp).
 
 using System;
 using System.Collections.Generic;
@@ -27,6 +27,7 @@ namespace OpenFF.Client
 
 		private void UpdateSettings(InputState input)
 		{
+			if (_help != HelpView.None) { UpdateHelp(input); return; }
 			if (_question) { UpdateQuestion(input); return; }
 			Ff4Settings s = Ff4Settings.Current;
 			if (input.Pressed(Pad.B)) { s.Save(); Back(); return; }
@@ -43,13 +44,14 @@ namespace OpenFF.Client
 					case SettingLine.Music: s.Music = Math.Clamp(s.Music + step, 0, 10); s.Apply(); break;
 					case SettingLine.SoundEffects: s.SoundEffects = Math.Clamp(s.SoundEffects + step, 0, 10); s.Apply(); break;
 					case SettingLine.Voices: s.Voices = Math.Clamp(s.Voices + step, 0, 10); break;
-					case SettingLine.BattleMode: s.BattleMode = Math.Clamp(s.BattleMode + step, 0, 1); break;
+					case SettingLine.BattleMode: s.BattleMode = 1 - s.BattleMode; break;   // Steam's pairs: Left or Right turns them over
 					case SettingLine.BattleSpeed: s.BattleSpeed = Math.Clamp(s.BattleSpeed + step, 1, 6); break;
-					case SettingLine.Subtitles: s.Subtitles = step < 0; break;
+					case SettingLine.Subtitles: s.Subtitles = !s.Subtitles; break;
 					case SettingLine.WindowDesign: s.WindowDesign = Math.Clamp(s.WindowDesign + step, 1, 6); break;
 				}
 				return;
 			}
+			if (input.Pressed(Pad.A) && line == SettingLine.Help) { OpenHelp(); return; }
 			if (input.Pressed(Pad.A) && line == SettingLine.Quit) { _question = true; _questionQuit = true; _questionSlot = 0; _questionTitle = false; _questionYes = false; }
 		}
 
@@ -62,7 +64,7 @@ namespace OpenFF.Client
 				(50759, "Adjust music volume."), (50760, "Adjust sound effects volume."), (50761, "Adjust volume of character dialogue."),
 				(50750, "Toggle battle mode."), (50751, "Select a smaller number to increase speed of battles."),
 				(50755, "Toggle the display of subtitles during events."), (50754, "Change the design used for windows."),
-				(0, ""), (60272, "Quit Game"),
+				(50733, "Help"), (60272, "Quit Game"),
 			};
 			h.Help = helps[_cursor].Help != 0 ? T(helps[_cursor].Help, helps[_cursor].Fallback) : "";
 			(uint Text, string Fallback)[] labels =

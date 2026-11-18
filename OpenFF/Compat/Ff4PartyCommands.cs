@@ -120,6 +120,32 @@ namespace OpenFF.Client
 			else if (Member(type) is Character c) On(c, id);
 		}
 
+		/// <summary>checkItem_Num(item, test, count, label): jumps when the bag (or the key items) holds the item and its count
+		/// against <c>count</c> holds (0 more, 1 at least, 2 fewer, 3 at most, 4 exactly); an item not held never jumps (libff4's
+		/// searchNormalItem / searchImportantItem finding nothing) - the Sealed Cave's crystals, Kokkol's Adamantite.</summary>
+		public static void CheckItemNum(GlobalScope.ScriptEngine engine)
+		{
+			int item = (int)engine.getWord();
+			uint test = engine.getDword();
+			int count = engine.getByte();
+			uint label = engine.getDword();
+			int held = P?.CountItem(item) ?? 0;
+			if (held == 0) return;
+			bool jump = test switch { 0 => held > count, 1 => held >= count, 2 => held < count, 3 => held <= count, 4 => held == count, _ => false };
+			if (jump) engine.jump(label);
+		}
+
+		/// <summary>checkCharacterStatusJump(type, condition number, label): jumps when the member is in the party with that
+		/// status (a number past 7 asks for any - Condition::is(-1)).</summary>
+		public static void CheckCharacterStatusJump(GlobalScope.ScriptEngine engine)
+		{
+			Character c = Member(engine.getDword());
+			uint number = engine.getDword();
+			uint label = engine.getDword();
+			if (c == null) return;
+			if (number < 8 ? Has(c, ConditionOf(number)) : c.Conditions != 0) engine.jump(label);
+		}
+
 		/// <summary>ConditionRecoveryByCharacter(type, five condition numbers): those statuses off the member.</summary>
 		public static void ConditionRecoveryByCharacter(GlobalScope.ScriptEngine engine)
 		{
@@ -146,7 +172,8 @@ namespace OpenFF.Client
 		/// 4 equal), <paramref name="engine"/>'s third character grows to the fourth's level (Player::growParameter).</summary>
 		public static void SyncCharacterLv(GlobalScope.ScriptEngine engine)
 		{
-			Character a = P.Get((int)engine.getDword()), b = P.Get((int)engine.getDword());
+			int aType = (int)engine.getDword(), bType = (int)engine.getDword();
+			Character a = P.Ensure(aType, Ff4Party.JoinLevel(aType)), b = P.Ensure(bType, Ff4Party.JoinLevel(bType));
 			int grownType = (int)engine.getDword(), toType = (int)engine.getDword();
 			uint test = engine.getDword();
 			engine.getDword();
@@ -160,7 +187,7 @@ namespace OpenFF.Client
 				4 => a.Level == b.Level,
 				_ => false,
 			};
-			Character to = P.Get(toType);
+			Character to = P.Ensure(toType, Ff4Party.JoinLevel(toType));
 			if (!holds || to == null) return;
 			OpenFF.Game.Party.SetLevel(grownType, to.Level);
 			Log.Write(LogChannel.File, "party: type " + grownType + " grows to level " + to.Level + " (type " + toType + "'s)");
@@ -247,6 +274,20 @@ namespace OpenFF.Client
 		}
 
 		private static string ModelOf(int type) => type == 14 || type == 16 ? "p40_00" : "p" + Math.Clamp(type, 0, 99).ToString("00") + "_00";
+
+		/// <summary>What the field's leader looks like now: its model and whether it walks small (Mini) - the menu remakes the
+		/// hero when this changed while it was open (WSMenu's party loader, wsmOnExitWaitOfPartyLoader: a Toad, a Pig, a new leader).</summary>
+		public static string LeaderLook()
+		{
+			Party p = Ff4Party.Party;
+			if (p == null || p.Members.Count == 0) return "";
+			int type = Ff4Speculation.FieldSymbol >= 0 ? Ff4Speculation.FieldSymbol : p.Members[0].Id;
+			Character c = p.Get(type) ?? p.Members[0];
+			return FieldModel() + (Has(c, 6) ? " small" : "");
+		}
+
+		/// <summary>The hero made again for the leader's look now.</summary>
+		public static void LeaderChanged() => RemakeHero();
 
 		/// <summary>The hero made again as FieldModel says, where it stands (CPlayerHuman::changeJob's remake - FF3's job change).</summary>
 		private static void RemakeHero()

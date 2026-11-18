@@ -88,7 +88,7 @@ namespace OpenFF.Client
 			public int Attack, Defence, Agility;
 			public int Level, Intellect, Spirit, Vitality, MagicDefence;
 			public int Strength, HitChance, Evade;
-			public int Mp => Member?.Mp ?? 0;
+			public int Mp => Member?.Mp ?? Monster?.Mp ?? 0;   // a monster's is its record's (presentMP), never spent
 			public float Gauge;               // 0..1 (FF4's ATP over its 100)
 			public float AtbRate = 1f;        // a monster's, rolled at the start (BattleMonster::atbRate); 1 for the party
 			public bool Queued;               // its action is decided and waits its turn (ATG state 2 or 3, the gauge held full)
@@ -116,6 +116,7 @@ namespace OpenFF.Client
 			public int DecidedAbility, DecidedTarget = 1;   // its turnAction as decided: the ability (1 Attack, a spell's or item's id...) and a monster's target type
 			public bool SwordDrawn;           // Odin's sword raised (MABDrawSword): motion 102 its idle until it next acts
 			public bool NotDeath;             // an event's NotDeathFlagOn: it cannot fall
+			public bool Unseen;               // a record with no model: its stand-in never shown
 			public int AtwLeft, AtwMax;       // a decided action's wait before it joins the turns (ATG state 2), 1/4096ths of a frame
 			public Action Pending;            // the action waiting it out
 			public bool Alive => Hp > 0;
@@ -195,6 +196,7 @@ namespace OpenFF.Client
 		/// <summary>An encounter group from the tables (FF4's monster_party_table.bbd), with its placements.</summary>
 		public bool StartParty(int partyId, bool inScene = false, int battleMap = -1)
 		{
+			Ff4Achievements.LastParty = partyId;
 			MonsterParty party = Ff4Party.Tables?.MonsterParty(partyId);
 			if (party == null || party.Slots.Count == 0)
 			{
@@ -219,7 +221,8 @@ namespace OpenFF.Client
 			_cameraType = party.CameraType;
 			_startingParty = party;   // its events start with the fight (on a stage, once the stage has come)
 			bool started = Start(ids, inScene, battleMap);
-			if (started) Log.Write(LogChannel.General, "battle: encounter group " + partyId);
+			if (started) Ff4Music.BattleStarts(party.Bgm);
+			if (started) Log.Write(LogChannel.General, "battle: encounter group " + partyId + ", party root " + _rootId + " (" + string.Join(" ", System.Linq.Enumerable.Select(System.Linq.Enumerable.Range(0, 5), k => Ff4BattleStage.PartySpot(_rootId, k).ToString())) + ")");
 			else _startingParty = null;
 			return started;
 		}
@@ -244,7 +247,11 @@ namespace OpenFF.Client
 			bool octomammoth = m.Id == Octomammoth;
 			string model = octomammoth ? "m" + m.Family.ToString("000") + "a" : info?.Model ?? ("m" + m.Family.ToString("000") + "_00");
 			Npc npc = Game.Npcs.SpawnModel(model, at, 0f);
-			if (npc == null) { Say("no model for " + m.Name); return null; }
+			// A record with no model (family -1: Mopingway in t12_70's fight) - libff4 loads m-01_00, finds nothing and draws
+			// nothing; the foe is in the fight all the same. A stand-in model kept hidden holds its place here.
+			bool unseen = false;
+			if (npc == null && m.Family < 0 && (npc = Game.Npcs.SpawnModel("m000_00", at, 0f)) != null) { unseen = true; npc.Hidden = true; Say(m.Name + " has no model: in the fight unseen"); }
+			if (npc == null) { Say("no model for " + m.Name + " (" + model + ", family " + m.Family + ", model id " + m.ModelId + ")"); return null; }
 			if (m.Scale > 0.01f && Math.Abs(m.Scale - 1f) > 0.001f) { try { npc.Scale = m.Scale; } catch (Exception) { } }
 			try
 			{
@@ -267,6 +274,7 @@ namespace OpenFF.Client
 				Gauge = StartGauge(true),
 				AtbRate = m.AtbRateMin + (float)_random.NextDouble() * Math.Max(0f, m.AtbRateMax - m.AtbRateMin),
 				Facing = facing ?? 0f,
+				Unseen = unseen,
 			};
 			if (octomammoth) SpawnLegs(foe);
 			if (join) _foes.Add(foe);
@@ -751,6 +759,7 @@ namespace OpenFF.Client
 						{
 							// The key closes the window and the battle fades to black over 16 frames (Steam's frames: the
 							// window gone at once, black 16 frames on), the battle's music stopping over 15 (getPhaseEnd).
+							Ff4Music.BattleEnds(false);
 							GlobalScope.dgs.CFade.Main().fadeOut(WinEndFade, GlobalScope.dgs.CFade.FADE_TYPE.FADE_TYPE_BLACK);
 							GlobalScope.dgs.CFade.Sub().fadeOut(WinEndFade, GlobalScope.dgs.CFade.FADE_TYPE.FADE_TYPE_BLACK);
 						}
@@ -771,7 +780,12 @@ namespace OpenFF.Client
 							if (f.Member != null) { f.Member.Hp = f.MaxHp; f.Member.Mp = f.Member.MaxMp; f.Member.Conditions = 0; }
 						}
 						_help = null;
-						_gameOver = AfterBattle == null && !BattleParameterFlag(0xB);
+						// setRestartAfterBattle (OutsideToBattle flag 2): the script means this fight to be lost and goes on after it -
+						// back to the field it came from (Kain at Fabul, the Dark Elf before Edward's harp), as setNextPart does.
+						bool restart = false;
+						try { restart = GlobalScope.btl.OutsideToBattle.getInstance().restart(); } catch (Exception) { }
+						_gameOver = AfterBattle == null && !BattleParameterFlag(0xB) && !restart;
+						if (restart) Log.Write(LogChannel.General, "battle: lost, and the story goes on (setRestartAfterBattle)");
 						if (_gameOver)
 						{
 							GlobalScope.dgs.CFade.Main().fadeOut(15, GlobalScope.dgs.CFade.FADE_TYPE.FADE_TYPE_BLACK);
@@ -812,6 +826,7 @@ namespace OpenFF.Client
 
 		private void Fight()
 		{
+			foreach (Fighter f in _foes) if (f.Unseen && f.Npc != null) f.Npc.Hidden = true;
 			Idle();
 			ShowConditions();
 			if (_closing) return;
@@ -849,6 +864,14 @@ namespace OpenFF.Client
 			bool busy = _executing != null || _cues.Count > 0 || _eventKind != EventKind.None;
 			if (!busy && _eventParty != null && _eventParty.NormalEvent >= 0 && !StartEvent(EventKind.Normal, _eventParty.NormalEvent)) busy = true;
 			if (_closing) return;
+			// dieState runs every frame of the behaviour manager, not only as a turn ends: one who fell with nothing under
+			// way (Doom's count out, a status put on from outside) goes now, and the last foe down ends the fight -
+			// after the normal event's poll, which may yet bring foes in.
+			if (!busy && (_dying.Count > 0 || _foes.TrueForAll(OutOfFight) || _party.TrueForAll(OutOfFight)))
+			{
+				FinishTurn(turnOver: false);
+				if (_closing || _phase != Phase.Fight) return;
+			}
 			if (!busy && _queue.Count > 0 && !_eventMode)
 			{
 				if (_eventParty != null && _eventParty.BeforeEvent >= 0)
@@ -946,6 +969,9 @@ namespace OpenFF.Client
 			{
 				List<int> commands = Commands;
 				int count = commands.Count;
+				if (count == 0) return;
+				// The list may have changed under the cursor (another member's, or the fight ending as the press came).
+				_cursor = Math.Min(Math.Max(0, _cursor), count - 1);
 				if (input.Pressed(Pad.Up)) _cursor = (_cursor + count - 1) % count;
 				if (input.Pressed(Pad.Down)) _cursor = (_cursor + 1) % count;
 				if (_cursor < _commandScroll) _commandScroll = _cursor;
@@ -1359,8 +1385,9 @@ namespace OpenFF.Client
 			if (foe.PlayerType >= 0) Play(foe, 2003, false, 3);   // BattlePlayer::setConditionMotion: a member's KO, then the fade
 			if (foe.Npc != null && Ff4BattleStage.Active) _dying.Add(foe);   // it goes once the turn is over (TurnEnd)
 			else if (foe.Npc != null) { foe.Npc.Alpha = 8; foe.Npc.Hidden = true; }
-			_expWon += foe.Monster.Experience;
-			_gilWon += foe.Monster.Gil;
+			// BattleMonsterParty's sums: a record's EXP or gil under 1 counts 0 (the story's foes hold -1), each total kept to 9,999,999.
+			_expWon = (int)Math.Min(9999999L, (long)_expWon + Math.Max(0, foe.Monster.Experience));
+			_gilWon = (int)Math.Min(9999999L, (long)_gilWon + Math.Max(0, foe.Monster.Gil));
 			Ff4Bestiary.Killed(foe.Monster.Id);   // MonsterManiaManager::kill
 		}
 
@@ -1503,11 +1530,10 @@ namespace OpenFF.Client
 		/// </summary>
 		private static Affinity AffinityOf(Fighter f)
 		{
-			if (f.IsMonster && f.Monster?.Raw != null && f.Monster.Raw.Length >= 0x66)
+			if (f.IsMonster && f.Monster != null)
 			{
-				byte[] r = f.Monster.Raw;
-				int U(int at) => BitConverter.ToUInt16(r, at);
-				return new Affinity(U(0x26), U(0x48), U(0x54), f.ResistOverride >= 0 ? f.ResistOverride : U(0x56), U(0x60), f.WeakOverride >= 0 ? f.WeakOverride : U(0x64), U(0x48));
+				MonsterDefinition m = f.Monster;
+				return new Affinity(m.AttackElements, m.Races, m.Absorbs, f.ResistOverride >= 0 ? f.ResistOverride : m.Resists, m.RaceResists, f.WeakOverride >= 0 ? f.WeakOverride : m.Weak, m.Races);
 			}
 			if (f.Member == null) return default;
 			GameTables tables = Ff4Party.Tables;
@@ -2032,8 +2058,10 @@ namespace OpenFF.Client
 			FinishTurn();
 		}
 
-		/// <summary>The rest of a turn's end, after its event: the fallen go, then the battle may be over.</summary>
-		private void FinishTurn()
+		/// <summary>The rest of a turn's end, after its event: the fallen go, then the battle may be over. Without
+		/// <paramref name="turnOver"/> (a fighter fell between turns: Doom run out, a status put on from outside) no counter or
+		/// reaction follows.</summary>
+		private void FinishTurn(bool turnOver = true)
 		{
 			if (_closing) return;
 			int dying = 0;
@@ -2056,7 +2084,7 @@ namespace OpenFF.Client
 				_queue.Clear();
 				Lose();
 			}
-			else
+			else if (turnOver)
 			{
 				CheckCounters();
 				CheckMemberReactions(_attacker, _lastAbility);
@@ -2164,6 +2192,7 @@ namespace OpenFF.Client
 
 		private void Win()
 		{
+			Ff4Music.BattleWon();
 			_phase = Phase.Victory;
 			_timer = 0;
 			Party party = Ff4Party.Party;
@@ -2226,6 +2255,7 @@ namespace OpenFF.Client
 			}
 			if (!Ff4BattleStage.Active) foreach (Fighter f in _party) { if (f.Alive) Play(f, 2007); }   // on the stage VictoryPose has posed them
 			LastResult = 0;
+			Ff4Achievements.Request(Ff4Achievements.BattleWon);   // BattleEnding::execute
 			Log.Write(LogChannel.General, "battle: won - " + _expWon + " exp, " + _gilWon + " gil. " + string.Join(" ", lines));
 		}
 
@@ -2345,7 +2375,10 @@ namespace OpenFF.Client
 
 		private void End()
 		{
+			Ff4Music.BattleEnds(false);   // BSCEndBattle, when nothing before ended the battle's music
 			Log.Write(LogChannel.File, "battle: over (step " + LegacyStep.Count + ")");
+			// BattlePart::doUninitialize: OutsideToBattle::initialize clears the restart for the fights after this one.
+			try { GlobalScope.btl.OutsideToBattle.getInstance().offRestart(); } catch (Exception) { }
 			ClearEventModels();
 			EndOpening();
 			_sinceBattle = 0;
@@ -2760,11 +2793,13 @@ namespace OpenFF.Client
 			}
 			List<int> commands = choosing ? Commands : null;
 			int count = commands?.Count ?? 0;
+			// The list may have changed under the scroll (a member's turn ended as the fight did): kept within it.
+			_commandScroll = Math.Max(0, Math.Min(_commandScroll, Math.Max(0, count - 1)));
 			for (int row = 0; row < h.Command.Count; row++)
 			{
 				int i = _commandScroll + row;
 				CommandRow c = h.Command[row];
-				c.Present = i < count;
+				c.Present = i >= 0 && i < count;
 				c.Name = c.Present ? CommandName(commands[i]) : "";
 				c.Lit = c.Present && _pick == Pick.Command && i == _cursor;
 				c.Disabled = c.Present && !CommandUsable(_acting, commands[i]);

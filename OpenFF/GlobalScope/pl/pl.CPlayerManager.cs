@@ -253,15 +253,18 @@ internal static partial class GlobalScope
 				}
 				case 'o':
 				case 'w':
+				default:   // PORT: FF4 boots any model as a structure (moSetupStructure) - a monster's (m090_00) stands on Babil's floor
 					if (num2 == 0)
 					{
 						strcpy(out arg, "o001");
 					}
 					num = setUpMapObject(arg);
+					if (num < 0) return -1;
 					num += (int)(FIELD_CHARACTER_NUM - MAP_OBJECT_NUM);
 					m_Player[num].PlayerMoveType_set(PLAYER_MOVE_TYPE.PLAYER_MOVE_TYPE_HERO_FIELD);
 					break;
 				}
+				if (num < 0) return -1;
 				m_Player[num].setModelName(arg);
 				m_Player[num].setPosition(_Position);
 				m_Player[num].setRotation(_Rotation);
@@ -479,6 +482,10 @@ internal static partial class GlobalScope
 				array[1] = (sbyte)_ChrName[2];
 				array[2] = (sbyte)_ChrName[3];
 				num3 = atoi(StringUtil.createString(array));
+				// PORT: FF3 reads its object's type from the model's number (o001 a treasure box, o000 an item spot) and opens it
+				// its own way on A. FF4's models are only models - its chests are Ff4Chests', its objects' talk the script's
+				// (Cecil's room's bed, an o001, crashed in FF3's chest message).
+				if (OpenFF.Client.GameProfile.IsFf4) num3 = (int)map.MAP_OBJECT_TYPE.MAP_OBJECT_TYPE_ERR;
 				m_MapObject[num2].setMapObjType(static_cast<map.MAP_OBJECT_TYPE>(num3));
 				m_MapObject[num2].setLight(g_Light);
 				VecFx32 scale = new VecFx32(4096, 4096, 4096);

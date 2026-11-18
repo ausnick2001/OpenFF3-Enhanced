@@ -28,9 +28,13 @@ namespace OpenFF.Client
 			{ "changeCamera_Mode", ChangeCameraMode },                 // () - FF3's takes the mode; FF4's means "back to following"
 			{ "setEffect_Scale", SetEffectScale },                     // (index, x, y, z) - FF3's has a second word
 			{ "setInsideMapJump", SetInsideMapJump },                 // (trigger, map, ax, ay, az, facing, x1, y1, z1, x2, y2, z2)
+			{ "setRelationOfMapjumpobjAndFlag", SetRelationOfMapjumpobjAndFlag },   // (trigger, group, index, ?)
+			{ "setDoor", engine => { string door = engine.getString(), trigger = engine.getString(); int bank = (int)engine.getDword(), number = (int)engine.getDword(); engine.getDword(); Ff4Exits.SetDoor(door, trigger, bank, number); } },   // (door, trigger, bank, number, ?)
+			{ "setRelationMapjumpToDoorAttr", engine => { string door = engine.getString(), trigger = engine.getString(); engine.getDword(); Ff4Exits.SetFarDoor(door, trigger); } },   // (door, trigger, ?)
 			{ "setOutsideMapJump", SetOutsideMapJump },               // the same, for leaving by the map's edge
 			{ "confirm", Ff4FieldCommands.Confirm },                          // (a, b): the Yes/No box
-			{ "confirmWait", Ff4FieldCommands.ConfirmWait },                  // (yesText, noText, jumpIfYes, jumpIfNo)
+			{ "confirmWait", Ff4FieldCommands.ConfirmWait },                  // (yes label, no label, ?, ?)
+			{ "endMessage", Ff4FieldCommands.EndMessage },                    // (?, ?): while the message is written out
 			{ "waitByLocale", Ff4FieldCommands.WaitByLocale },                // (japanese frames, other frames)
 			{ "jumpByLocale", Ff4FieldCommands.JumpByLocale },                // (locale, ?, label)
 			{ "setRewardMessage", Ff4FieldCommands.SetRewardMessage },        // (textId, 0, icon, 0, 0, 0)
@@ -99,6 +103,27 @@ namespace OpenFF.Client
 			{ "resurrectionDeadMember", Ff4PartyCommands.ResurrectionDeadMember }, // (?, ?, ?)
 			{ "setCondition", Ff4PartyCommands.SetCondition },                // (type or 15, condition number)
 			{ "conditionRecoveryByCharacter", Ff4PartyCommands.ConditionRecoveryByCharacter }, // (type, five condition numbers)
+			{ "checkCharacterStatusJump", Ff4PartyCommands.CheckCharacterStatusJump }, // (type, condition number, label)
+			{ "setItemUseMenuManager", Ff4ItemPickCommands.SetItemUseMenuManager },   // () - the event's item window
+			{ "checkUseItem_Id", Ff4ItemPickCommands.CheckUseItemId },             // (item, label)
+			{ "checkItem_Num", Ff4PartyCommands.CheckItemNum },                 // (item, test, count, label)
+			{ "alterPlayer_State", Ff4Ride.AlterPlayerState },                  // (state, ?) - aboard a vehicle
+			{ "checkPlayer_State", Ff4Ride.CheckPlayerState },                  // (state, label)
+			{ "setVehicleFieldNo", Ff4Ride.SetVehicleFieldNo },                 // (vehicle, world)
+			{ "setCanBoardVehicle", Ff4Ride.SetCanBoardVehicle },               // (vehicle, on) - operands only
+			{ "checkMapName", CheckMapName },                                     // (name, equal, label)
+			{ "gravityCharacter", engine => { engine.getWord(); engine.getDword(); engine.getWord(); } },   // (cast, on, ?) - libff4 reads its operands only
+			{ "setHalfWayBGM_Start", Ff4Music.HalfWayStart },                   // (bgm, volume, frames, slot)
+			{ "setHalfWayBGM_Play", Ff4Music.HalfWayPlay },                     // (volume, frames, slot, ?, ?)
+			{ "setMapjumpBGMOperation", SetMapjumpBgmOperation },                // (trigger, on, slot, ?)
+			{ "setBattleBGM", Ff4Music.SetBattleBgm },                          // (fanfare, stop at the end)
+			{ "bgmContinueForConteEvent", Ff4Music.ContinueForScene },          // (out, ?, ?)
+			{ "soundReset", Ff4Music.SoundReset },                              // (heaps, ?, which, ?)
+			{ "bgmDivideLoadDataTypeSpecific", Ff4Music.Operands(3) },           // (bgm, kind, ?) - an async load; sounds load as played here
+			{ "setShadowScale", SetShadowScale },                                // (cast, x, y, z, ?, ?)
+			{ "createEffectTaskWait", Ff4FootEffects.Command(0) },              // (cast, ground kind, x, y, z, effect, member, frames)
+			{ "createEffectTaskWalk", Ff4FootEffects.Command(2) },
+			{ "createEffectTaskRun", Ff4FootEffects.Command(3) },
 			{ "hpSetting", Ff4PartyCommands.HpSetting },                      // (type, hp, ?)
 			{ "syncCharacterLv", Ff4PartyCommands.SyncCharacterLv },          // (a, b, grown, to, test, ?)
 			{ "evaluateMagneticEquipment", Ff4PartyCommands.EvaluateMagneticEquipment }, // (on)
@@ -111,6 +136,8 @@ namespace OpenFF.Client
 			{ "stonePartySetting", Ff4PartyCommands.StonePartySetting },      // (what): 100 / 99 allow / forbid, 1 / 0 stone / colours
 			{ "setUpPochka", Ff4PartyCommands.SetUpPochka },                  // (cast): a check only
 			{ "setTelepo", Ff4PartyCommands.SetTelepo },                      // (map, x, y, z, facing)
+			{ "addDesionList", Ff4Warp.AddDesionList },                       // (map, x, y, z, facing): a floor for Warp to go back to
+			{ "clearDesionList", Ff4Warp.ClearDesionList },                   // (?, ?, ?): Warp's floors forgotten
 			{ "setTresureBattleMapID", Ff4PartyCommands.SetTresureBattleMapID }, // (stage, ?, ?)
 			{ "newTBoxIcon", Ff4NaviMap.NewTBoxIcon },                        // (x, y, z, flag group, flag index, ?)
 			{ "setChacterOffset", SetCharacterOffset },                       // (cast, x, y, z): a draw offset for a cast's model
@@ -203,31 +230,21 @@ namespace OpenFF.Client
 			}
 		}
 
-		/// <summary>Commands that only dress the game - door swings, footstep dust, BGM ducking, the jump history - skipped without a word in the log.</summary>
+		/// <summary>Commands skipped without a word in the log: none now - every command FF4's scripts use has its handler.</summary>
 		public static readonly HashSet<string> Cosmetic = new HashSet<string>(StringComparer.Ordinal)
 		{
-			"addDesionList", "clearDesionList",                          // the map-jump history
-			"setMapjumpBGMOperation",
-			"setRelationMapjumpToDoorAttr", "setDoor", "setRelationOfMapjumpobjAndFlag",   // door swings on exits
-			"createEffectTaskWalk", "createEffectTaskRun", "createEffectTaskWait",        // footstep dust
-			"setShadowScale",
-			// Sound bookkeeping FF3's player has no slot for: the battle theme choice, the
-			// division of BGM data, a reset.
-			"setBattleBGM", "bgmContinueForConteEvent", "soundReset", "bgmDivideLoadDataTypeSpecific",
-			// checkCharacterStatusJump jumps when a member carries a status condition (none does here).
-			"checkCharacterStatusJump",
 		};
 
 		/// <summary>
 		/// setInsideMapJump: this map has an exit - a trigger box here, a destination and an
 		/// arrival there. Declared when executed, so a branch declares it only when taken.
 		/// </summary>
-		/// <summary>clearCountJump(count, label): FF4 counts finished playthroughs; this is a first one.</summary>
+		/// <summary>clearCountJump(count, label): jumps when the game has been cleared exactly `count` times (gameClearCount).</summary>
 		private static void ClearCountJump(GlobalScope.ScriptEngine engine)
 		{
 			int count = engine.getByte();
 			uint label = engine.getDword();
-			if (count == 0)
+			if (count == Ff4Saves.ClearCount)
 			{
 				engine.jump(label);
 			}
@@ -248,6 +265,50 @@ namespace OpenFF.Client
 			mtx.a[10] = y;
 			mtx.a[11] = z;
 			GlobalScope.characterMng.setPoseMtx(characterId, mtx);
+		}
+
+		/// <summary>checkMapName(name, equal, label): jumps when the map's name begins with <c>name</c> (equal 1) or does not (0) -
+		/// the world state's own map name, as the global script's bars on Teleport, Warp and the Exit items per map read it
+		/// (FF3's handler compared FF3's saved map name, never set here).</summary>
+		private static void CheckMapName(GlobalScope.ScriptEngine engine)
+		{
+			string name = engine.getString() ?? "";
+			bool equal = engine.getDword() != 0;
+			uint label = engine.getDword();
+			string map = GlobalScope.stg.CStageMng.CurrentName ?? "";
+			bool same = map.StartsWith(name, StringComparison.Ordinal);
+			if (same == equal) engine.jump(label);
+		}
+
+		/// <summary>setMapjumpBGMOperation(trigger, on, slot, ?): the exit takes that slot's music down as it is taken.</summary>
+		private static void SetMapjumpBgmOperation(GlobalScope.ScriptEngine engine)
+		{
+			string trigger = engine.getString();
+			bool on = engine.getDword() != 0;
+			int slot = engine.getWord();
+			engine.getWord();
+			Ff4Exits.SetBgmStop(trigger, on ? slot : -1);
+		}
+
+		/// <summary>setShadowScale(cast, x, y, z, ?, ?): CCharacterMng::setShadowScale on the cast's model, z negated.</summary>
+		private static void SetShadowScale(GlobalScope.ScriptEngine engine)
+		{
+			uint cast = engine.getWord();
+			int x = (int)engine.getDword(), y = (int)engine.getDword(), z = -(int)engine.getDword();
+			engine.getDword();
+			engine.getDword();
+			int num = GlobalScope.CCastCommandTransit.getInstance().changeHichNumber(cast);
+			if (num == -1) return;
+			int ctrl = GlobalScope.CCastCommandTransit.getInstance().cast_PlayerMng().Player(num).getCharacterId();
+			if (ctrl != -1) GlobalScope.characterMng.setShadowScale(ctrl, new GlobalScope.VecFx32(x, y, z));
+		}
+
+		private static void SetRelationOfMapjumpobjAndFlag(GlobalScope.ScriptEngine engine)
+		{
+			string trigger = engine.getString();
+			uint group = engine.getWord(), index = engine.getWord();
+			engine.getDword();
+			Ff4Exits.AddFlag(trigger, group, index);
 		}
 
 		private static void SetInsideMapJump(GlobalScope.ScriptEngine engine)
@@ -522,7 +583,7 @@ namespace OpenFF.Client
 		private static void BootEventBattle(GlobalScope.ScriptEngine engine)
 		{
 			int party = (int)engine.getWord();
-			engine.getByte();
+			int battleMap = engine.getByte();   // the battle stage (b09): the fight on it, and the field set up again after
 			int type = engine.getByte();   // the opening: 0 Normal, 1 Back attack, 2 Surprise (table at 0x1bbf50; 3 and up Normal)
 			engine.getByte(); engine.getByte();
 			// "world encount2" (WSEncountDirection2): the whirl to white, then the battle - the script held on this command
@@ -539,7 +600,7 @@ namespace OpenFF.Client
 				Ff4Battle.Instance?.SetNextOpening(opening);
 				// bootProgram(1): the battle goes on to its scene, not back to the field.
 				if (scene != null && Ff4Battle.Instance != null) Ff4Battle.Instance.AfterBattle = () => Ff4Cutscene.PlayBootScene(scene);
-				if (Ff4Battle.Instance == null || !Ff4Battle.Instance.StartParty(party))
+				if (Ff4Battle.Instance == null || !Ff4Battle.Instance.StartParty(party, false, battleMap))
 				{
 					Log.Write(LogChannel.General, "script: bootEventBattle " + party + " could not start");
 					Ff4Battle.Instance?.SetNextOpening(Ff4Battle.OpenNormal);

@@ -39,6 +39,79 @@ Final Fantasy III made more playable: battles where each hero chooses when their
 - Messages: a yellow indented line keeps the body font; Fast waits for the window to open before showing a page whole.
 - Progression: previewing a save slot no longer overwrites a hero's live ABP.
 - The minimap: floors of the slot or autosave that is loaded are the ones applied; cliff tops, floor pockets too narrow to stand in and gaps behind walls are no longer filled in (Complete mode can still fill in areas behind walls - its note says so).
+## 0.3.10 - Job charges, FF4 Warp and Help (2026-11-17)
+
+For modders, FF3 jobs can now have their own magic charges: give the Onion Knight 99 uses of every magic level, or any table you like, from Crystal's job inspector. In FF4, Teleport and Warp work from the menu, Settings' Help is in, and a sweep of every map and story battle fixed the few that misbehaved.
+
+**Added**
+- Crystal, FF3 jobs: a job's **magic charges** (FF3's MP, the uses of each magic level 1..8) in place of the game's table, for every hero holding the job, on FF3's own job system as well as the mastery one. `"charges": 99` in `defs/jobs/<id>.json` is 99 at every level; eight numbers set each magic level; a table by hero level changes them as heroes grow. The job inspector has a **Magic charges** card with a *99 at every level* button.
+- FF4: **Teleport** and **Warp** from the Magic menu, as on Steam: the leader is drawn up and vanishes, then Teleport leaves the dungeon and Warp goes back a floor. Where the game forbids them (towns, the world map) they're greyed, and Warp is greyed with no floor behind you. The save keeps where they lead.
+- FF4: Settings' **Help** - the ten topics and their pages as Steam shows them, the pages scrolling while Up or Down is held and showing the keys' icons in the text.
+- FF4: casting Toad, Pig or Mini from the menu (or curing them), or choosing a new leader in Party, changes the leader's field figure as the menu closes.
+- FF4: OpenFF's menu (Esc) has **Skip scene** while a scene can be skipped. A mouse click or the pad's L still asks, as on Steam.
+- FF4 Settings: the Voices slider sets the scenes' voice volume; Battle Mode and Subtitles turn over with Left or Right; Quit closes the game, as Steam's does.
+
+**Fixes**
+- FF4 battle: a fight whose last foe fell between turns (Doom running out, for one) now ends instead of waiting forever.
+- FF4 battle: story foes whose records hold no reward no longer take 1 gil and 1 EXP off the party ("Found -1 gil").
+- FF4 battle: the Mopingway fight no longer aborts.
+- FF4: the Giant of Babil's core room shows its CPU and the two nodes beside it.
+- FF4: pressing Esc to close the menu no longer opens OpenFF's menu straight after.
+
+## 0.3.9 - Shared expressions, FF4 field magic (2026-11-14)
+
+For modders, a character's face packs now share their pictures: replace a face once in Crystal and every pack that shows the same picture uses it, so redrawing j101_001's nine faces covers all eight packs. In FF4, white magic can now be cast from the menu, and battles keep their frame rate on the enemy's turn.
+
+**Added**
+- Crystal, expressions: a model's face packs are smaller picks of the same pictures (j101_002's 2 is j101_001's 3). A picture you replace now fills every pack showing that same picture, in Crystal and in the game. The others read *shared with*, and giving one back to the game gives back all of them. **Export to project** writes each shared picture once, and copies from an older export that you haven't edited follow the first one. Mods made before this pick up the sharing with nothing to change.
+- FF4: spells cast from the Magic menu as on Steam. Enter on a spell picks a member, and Left picks the whole party for a spell that can spread. Cure and its line heal, Esuna cures, Raise and Arise revive, Float, Mini and Toad switch on and off. MP Efficiency halves the cost here too.
+- FF4: level-ups grow each character as the game does, from the growth table, with HP rolled per level and the battle commands' bonuses above level 70.
+- FF4: monsters' full records (MP, elements, resistances, weaknesses, races, status immunities), used by the battle. Crystal's Monsters page lists them.
+- FF4: the field map shows the vehicles you have on each world map, turned the way they face.
+
+**Fixes**
+- FF4 battle: the frame rate no longer halves while the enemy acts. The HUD stopped recomputing its whole layout every frame while gauges charged.
+- FF4 scenes: the cast's shadows are Steam's size, under their feet and as faint as Steam's.
+- FF4 scenes: the caption bar's text is Steam's size, and two-line captions no longer overlap.
+
+## 0.3.8 - Steam achievements (2026-11-14)
+
+OpenFF now earns your Steam achievements in both games, by each game's own rules, when you play from your Steam copy with Steam running, and Steam shows you in the game with the playtime counting. Mods don't turn them off; `"achievements": false` in settings.json does. FF4's Equipment screen also compares a piece before you put it on, as Steam's does.
+
+**Added**
+- Steam achievements. FF4's 58 follow FF4.exe's own rules from `achievement_param.bbd` (story moments, bosses, items, augments, summons, levels, gil, the Bestiary, places), checked at the same moments the game checks them. FF3's 18 are earned where FF3's own code awards them, and any OpenFF earned for you before now are sent on. OpenFF talks to the Steam client already on your machine and ships nothing of Valve's. It only connects when the game files are a Steam install (not GOG) and Steam is running.
+- Settings: `"achievements": true | false` in settings.json, `--no-achievements` for one run, and `--achievements-dry` to see what would be earned without sending anything. Test drives (`--drive`) never send any.
+- FF4 Equipment: lighting a piece in the bag shows each figure it would change, `old → new`, green up and red down, as on Steam. An empty hand reads "Empty" with the fist.
+- FF4 keeps the game's clear count in the save (the ending's save counts it, and New Game+ carries it), so scenes that ask how many times you've cleared the game get the right answer.
+
+**Fixes**
+- FF4: an empty-handed character's Attack and Accuracy read 0 and 100, as Steam shows them.
+- Crystal: a model's parts show as a small cube in the hierarchy, not a triangle that looked like a warning sign.
+
+Earning achievements from a client other than the game's own is between you and Steam: Valve and Square Enix haven't approved OpenFF. Turn them off with `"achievements": false` if you'd rather not.
+
+## 0.3.7 - FF4 to the end; your own characters' faces (2026-11-14)
+
+Final Fantasy IV now runs every script command its story uses. That covers the vehicles (the hovercraft, the Enterprise and its hook, the Falcon, the Lunar Whale and the chocobos), the trip between the worlds, the Underworld and the Moon, Steam's shops, inns, field map, Sight, save points, Bestiary, Event Theatre and Music Box, and the ending with New Game+. For modders, a character you replace with a glTF model of your own now looks as it does in Blender: crisp pixel art, the game's brightness, and its pictures and facial expressions editable in Crystal.
+
+**Added**
+- Crystal, a stand-in character's look: each material's picture can be replaced with a PNG, reset, or saved to paint over, without re-exporting the glTF. **Pictures drawn** picks crisp (pixel art) or smoothed.
+- Crystal, expressions: every face pack of a character, the eye and mouth pictures FF3's scenes switch between for blinks, surprise and smiles. Click a picture to see it on the model, and Play runs a sequence such as a blink. To replace one, drop a PNG on it. **Export to project** writes every picture as a file to edit in any image editor, picked up as you save. **Download .zip** gives the same files to edit elsewhere, and dropping them back puts each in by its name.
+- OpenFF: a stand-in follows the scenes' expressions. It shows your picture for an expression where you added one. Where you didn't, a model made from the game's eye and mouth sheets shows the game's own expressions, while a face drawn differently keeps its own picture. Changed pictures are picked up while the game runs.
+- FF4: the vehicles as Steam has them, boarded with Enter and the "!" balloon: the hovercraft, the Enterprise's hook, the Falcon, the Lunar Whale's inside, the black chocobo's flight home, and the holes between the worlds. The Underworld and the Moon are textured, and the world map is no longer mirrored.
+- FF4: Steam's shop and inn screens, the field map (M) with its explored percentage, Sight, chests with item icons, save points and the first save point's hint, LOAD GAME and Save, and the difficulty choice on New Game.
+- FF4: the Fat Chocobo's Bestiary, Event Theatre and Music Box, the name entry, and the ending's staff roll and New Game+.
+- FF4: the scenes' 2D programs, fog, toon tables, grey fades, bound objects, the circling camera and the script-made exits. All 369 script commands the story uses now run.
+- FF4 battle: the last fights' events (prayers, Twincast, Golbez joining), Odin's and Asura's own actions, Reverse, and the developer room's members.
+- Docs: a shorter README, Docs/Command-Line.md and Docs/Controls.md.
+
+**Fixes**
+- A mod's glTF character no longer comes out blurry or smeared: pixel art is drawn crisp, as the file's own filter asks, and its edge pixels are no longer cleaned up.
+- Crystal shows models as bright as the game draws them; they were about a fifth too dark.
+- FF3: FF4's "!" balloon no longer shows over Luneth.
+- FF4: recoloured characters (Baron's shopkeepers and others) are textured; doors put the party where Steam does; FF4's world map is named for its world in saves.
+- Sounds keep their pan and their own volume.
+- The field no longer slows down while key hints are on screen.
 
 ## 0.3.6 - FF4's battle and menus (2026-10-10)
 

@@ -69,6 +69,20 @@ namespace OpenFF.Client
 
 		private static int _framesLeft;
 		private static Regex _waitFor;
+		private static int _storyLeft, _storyQuiet, _storyBattle, _storyPress;
+
+		/// <summary>The world's mode, state and the state's phase, for a story step's report.</summary>
+		private static string WorldState()
+		{
+			try
+			{
+				var w = GlobalScope.wld.WorldPart.getInstance()?.getWorldSystem();
+				if (w == null) return " (no world)";
+				var st = w.CrtState();
+				return " (" + w.Mode() + ", " + (st?.GetType().Name ?? "-") + " " + st?.phase() + ", jump " + w.IsMapJump() + ")";
+			}
+			catch (Exception ex) { return " (" + ex.GetType().Name + ")"; }
+		}
 		private static bool _matched;
 		private static string _path;
 		private static bool _done;
@@ -137,6 +151,30 @@ namespace OpenFF.Client
 					}
 				}
 				return;
+			}
+			if (_storyLeft > 0)
+			{
+				// story <timeout>: the game driven on until the field is free for 3 seconds - Enter every 2/3 second through
+				// messages, questions and scenes, a fight ended (every foe felled) once it has run 3 seconds.
+				_storyLeft--;
+				// An event's item window (a key item at a spot) is the drive's to answer (useitem): the story stops at it.
+				if (Ff4Menu.Instance?.EventPickOpen == true)
+				{
+					_storyLeft = 0;
+					Log.Write(LogChannel.General, "drive: story stops at the event's item window on " + GlobalScope.stg.CStageMng.CurrentName);
+					return;
+				}
+				bool free = Ff4Menu.FieldFree && GlobalScope.dgs.CFade.Main().isCleared();
+				_storyQuiet = free ? _storyQuiet + 1 : 0;
+				if (Ff4Battle.Active) { if (++_storyBattle == StepsPerSecond * 3) Log.Write(LogChannel.General, "drive: story ends a fight - " + (Ff4Battle.Instance?.FellAllFoes() ?? -1) + " foe(s) felled"); }
+				else _storyBattle = 0;
+				if (_storyQuiet >= StepsPerSecond * 3) { _storyLeft = 0; Log.Write(LogChannel.General, "drive: story idle on " + GlobalScope.stg.CStageMng.CurrentName + WorldState() + (OpenFF.Client.GameProfile.IsFf4 ? " - " + Ff4Party.Party.Describe().Replace("\n", " | ") : "")); }
+				else if (_storyLeft == 0) Log.Write(LogChannel.General, "drive: story timed out on " + GlobalScope.stg.CStageMng.CurrentName + WorldState() + " (scene " + Ff4Cutscene.Active + ", event " + Ff4Menu.EventBusy() + ", message " + OpenFF.Game.Dialogue.IsOpen + ", battle " + Ff4Battle.Active + ")");
+				else
+				{
+					if (!free && ++_storyPress >= StepsPerSecond * 2 / 3) { _storyPress = 0; DesktopInput.Injected.Add(Keys.Enter); _framesLeft = 3; }
+					return;
+				}
 			}
 			if (_waitFor != null)
 			{
@@ -306,6 +344,8 @@ namespace OpenFF.Client
 					string[] p = step.Arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
 					if (p.Length == 0) { Log.Write(LogChannel.General, "drive: jump wants <stage> [x y z]"); break; }
 					GlobalScope.VecFx32 at = new GlobalScope.VecFx32(0, 0, 4096);
+					// No place given on FF4: where another map's exit puts the party on arriving there.
+					if (p.Length < 4 && GameProfile.IsFf4 && Ff4Exits.ArrivalInto(p[0]) is (int X, int Y, int Z, int Facing) arrival) at = new GlobalScope.VecFx32(arrival.X, arrival.Y, arrival.Z);
 					if (p.Length >= 4 && float.TryParse(p[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float x)
 						&& float.TryParse(p[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float y)
 						&& float.TryParse(p[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float z))
@@ -361,14 +401,16 @@ namespace OpenFF.Client
 					// approach <cast>: the hero 14 units south of that cast's place in the map's cast table (a chest), facing it, to press the action key at.
 					try
 					{
-						uint hich = uint.Parse(step.Arg.Trim());
+						string[] ap = step.Arg.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+						uint hich = uint.Parse(ap[0]);
+						float away = ap.Length > 1 && float.TryParse(ap[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float d) ? d : 14f;   // approach <cast> [distance]
 						var table = GlobalScope.evt.CHichParameterManager.getInstance().getHichManParam();
 						OpenFF.Vector3? found = null;
 						for (int i = 0; i < table.m_NumMan && i < table.m_HichInd.Length; i++)
 							if (table.m_HichInd[i].m_Id == hich) found = new OpenFF.Vector3(table.m_HichInd[i].m_Position[0], table.m_HichInd[i].m_Position[1], table.m_HichInd[i].m_Position[2]);
 						if (found == null) { Log.Write(LogChannel.General, "drive: approach - no cast " + hich + " in the map's cast table"); break; }
 						OpenFF.Vector3 at = found.Value;
-						OpenFF.Game.Hero.Teleport(new OpenFF.Vector3(at.X, at.Y, at.Z + 14f));
+						OpenFF.Game.Hero.Teleport(new OpenFF.Vector3(at.X, at.Y, at.Z + away));
 						OpenFF.Game.Hero.Face(180f);
 						Log.Write(LogChannel.File, "drive: approach " + hich + " at " + at);
 					}
@@ -459,6 +501,36 @@ namespace OpenFF.Client
 					if (bits.Length < 2 || !int.TryParse(bits[0], out int member) || job < 0) { Log.Write(LogChannel.General, "drive: job wants <member> <job>"); break; }
 					try { OpenFF.Game.Party.SetJob(member, (OpenFF.Job)job); Log.Write(LogChannel.File, "drive: job " + OpenFF.Data.ModCharacters.Jobs[job].Name + " on member " + member); }
 					catch (Exception ex) { Log.Write(LogChannel.General, "drive: job failed: " + ex.Message); }
+					break;
+				}
+				case "story":
+				{
+					// story [timeout seconds]: see the step loop.
+					_storyLeft = (int)(Seconds(string.IsNullOrWhiteSpace(step.Arg) ? "300" : step.Arg.Trim(), 300) * StepsPerSecond);
+					_storyQuiet = _storyBattle = _storyPress = 0;
+					break;
+				}
+				case "useitem":
+				{
+					// useitem <id>: the event's item window (a key item at a spot) answered with that item.
+					bool done = int.TryParse(step.Arg.Trim(), out int useId) && (Ff4Menu.Instance?.DecideEventPick(useId) ?? false);
+					Log.Write(LogChannel.General, "drive: useitem " + step.Arg + (done ? "" : " - no item window up"));
+					break;
+				}
+				case "ride":
+				{
+					// ride <state>: aboard as alterPlayer_State would put the party (2 the Enterprise, 1 the hovercraft, ...), the vehicle
+					// brought to the lead - a drive's way onto the world's vehicles.
+					bool ok = uint.TryParse(step.Arg.Trim(), out uint rideState);
+					if (ok) Ff4Ride.DriveBoard(rideState);
+					Log.Write(LogChannel.General, "drive: ride " + step.Arg + (ok ? "" : " - wants a state number"));
+					break;
+				}
+				case "endbattle":
+				{
+					// endbattle: every foe of the fight felled, those an event keeps standing too - a sweep's way past a scripted fight.
+					int felled = Ff4Battle.Instance?.FellAllFoes() ?? -1;
+					Log.Write(LogChannel.General, "drive: endbattle - " + (felled < 0 ? "no battle" : felled + " foe(s) felled"));
 					break;
 				}
 				case "status":

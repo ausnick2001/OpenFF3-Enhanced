@@ -125,18 +125,24 @@ namespace OpenFF.Data
 		private static readonly Random _hpRoll = new Random();
 
 		/// <summary>The hit points gained climbing from <paramref name="from"/> to <paramref name="to"/>, rolled as the game rolls them.</summary>
-		public int RollHp(int from, int to)
+		public int RollHp(int from, int to, int bonusOver70 = 0)
 		{
 			int min = 0, max = 0;
 			for (int level = Math.Max(1, from + 1); level <= Math.Min(to, Levels.Length); level++)
 			{
-				min += Levels[level - 1].HpGainMin;
-				max += Levels[level - 1].HpGainMax;
+				// PlayerHp::setMaxHp: each level past 70 adds the commands' HP bonus to both ends of the roll.
+				int bonus = level > 70 ? bonusOver70 : 0;
+				min += Levels[level - 1].HpGainMin + bonus;
+				max += Levels[level - 1].HpGainMax + bonus;
 			}
 			return max - min < 1 ? min : min + _hpRoll.Next(max - min + 1);
 		}
 		/// <summary>Commands and spells with the level each arrives at, in the game's order; empty when the game has no such list.</summary>
 		public List<Learned> Learning = new List<Learned>();
+
+		/// <summary>FF4: what each level past 70 adds (Player::abilityBouns) for a character as it stands - its battle commands'
+		/// bonuses summed: HP, MP, strength, stamina, speed, intellect, spirit. Null where the game has none.</summary>
+		public Func<Character, int[]> BonusOver70;
 
 		public int MaxLevel => Levels.Length;
 
@@ -354,6 +360,19 @@ namespace OpenFF.Data
 		public int MagicDefence;
 		/// <summary>FF4: the magic evasion (record +0x68).</summary>
 		public int MagicEvasion;
+		/// <summary>FF4: its MP (+0x10, BattleMonster::maximumMP / presentMP - never spent: a monster's spells cost it nothing).</summary>
+		public int Mp;
+		/// <summary>FF4: its blow's elements (+0x26, in its physical attack), what it absorbs (+0x54), resists (+0x56) and is weak
+		/// to (+0x64, in its magic defence) - element bits as Steam's battle icons show them (0x20 fire, 0x10 ice, 0x08 lightning,
+		/// 0x40 water, 0x80 earth, 0x200 air, 0x100 holy, 0x400 dark); the resists' 0x1000 makes them quarter and its weaknesses double.</summary>
+		public int AttackElements, Absorbs, Resists, Weak;
+		/// <summary>FF4: its races (+0x48, BattleMonster::family: what a killer weapon is deadly to - 0x100 undead) and the races it
+		/// resists (+0x60).</summary>
+		public int Races, RaceResists;
+		/// <summary>FF4: the statuses it cannot be given (+0x58, a ys::Condition bit each).</summary>
+		public ulong StatusImmune;
+		/// <summary>FF4: the motion it casts with (+0x94), -1 for its plain attack's.</summary>
+		public int CastMotion = -1;
 		/// <summary>FF4: the model's size in battle (monster.chaindata chain 4 +0x44, 1 most often) and the chant effect's (+0x50).</summary>
 		public float Scale = 1f, ChantScale = 1f;
 		public int Experience;
@@ -432,6 +451,8 @@ namespace OpenFF.Data
 		public int NormalEvent = -1, BeforeEvent = -1, AfterEvent = -1;
 		/// <summary>FF4: the record's word at 0x88 - bit 0 the party may escape, bit 2 the run control does nothing (checkEscape).</summary>
 		public int EscapeFlags = 1;
+		/// <summary>FF4: the record's short at 0x8A - the battle's theme (BattleBGM::startBattleBGM), -1 for none (the story's music goes on).</summary>
+		public int Bgm = -1;
 
 		public override string ToString() => "party " + Id + ": " + string.Join(", ", Slots.ConvertAll(s => s.MonsterId + (s.Count > 1 ? " x" + s.Count : "")));
 	}
@@ -602,6 +623,11 @@ namespace OpenFF.Data
 		public int[] ExperienceToLevel = Array.Empty<int>();
 		public List<CharacterDefinition> Characters = new List<CharacterDefinition>();
 		public List<ItemDefinition> Items = new List<ItemDefinition>();
+
+		/// <summary>FF4: babil_item.msd's lines by message id and the symbol each opens with - the names and captions, and the
+		/// lines no item names: 6000 the empty hand ("Empty" with the fist), 8000 an empty armour slot.</summary>
+		public Dictionary<uint, string> ItemTexts = new Dictionary<uint, string>();
+		public Dictionary<uint, int> ItemTextIcons = new Dictionary<uint, int>();
 		public List<SpellDefinition> Spells = new List<SpellDefinition>();
 		public List<Efficacy> Efficacies = new List<Efficacy>();
 		public List<JobDefinition> Jobs = new List<JobDefinition>();

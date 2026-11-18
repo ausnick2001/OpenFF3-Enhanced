@@ -1056,6 +1056,78 @@ at a time. A definition is such a list; the client rebuilds the pack with it as 
   a new summon's outcome without one shows the summon's name.
 - A summon of a glTF of the mod's: `SET_MODEL` names a model of the mod's own (300 and on, below).
 
+### A stand-in's pictures and expressions
+
+A stand-in's pictures can be swapped without re-exporting the glTF. In Crystal, open the
+glTF: each material under **Materials** has **Replace…** (a PNG of yours in its place),
+**Reset** and **Save PNG** (the picture as it is, to paint over), and **Pictures drawn**
+picks crisp (nearest, pixel art) or smoothed (linear) for the whole file. The definition records it:
+
+```json
+{ "model": "j101", "gltf": "assets/werewolf.glb",
+  "textures": { "eye": "assets/eye-green.png" }, "filter": "nearest" }
+```
+
+`textures` maps a material (its name in the file, or `"#2"` by its place) to a picture.
+`filter` is `nearest` or `linear`. Without it, the file's sampler decides. A picture of the
+mod's own that is 256 or less a side is drawn crisp. A changed PNG is taken again within a
+second, so you can paint with the game running.
+
+**Expressions.** FF3's scenes give a character a face pack (`SetUpCharacter_FaceData` with
+`j101_001` loads the game's `j101_001.face`), then flip its eye and mouth through the pack's
+numbered pictures (`ChangeFaceEye 3`, `ChangeFaceMouth 7`) for blinks, surprise and smiles.
+j101 has eight packs. In each, every number holds an eye or a mouth picture; j101_001 has
+eyes at 0-5 and mouths at 6-8.
+
+The packs share their pictures. j101_001 holds all nine of j101's faces, and the other seven
+are smaller picks of the same pictures, in their own order, for particular scenes (j101_002's
+0, 1, 2, 3 are j101_001's 0, 6, 3, 7). A picture you replace is used wherever the game shows
+that same picture, in every pack, so redrawing j101_001's nine covers them all. Crystal also
+writes the twins into the definition when you replace one, marks them *shared with*, and
+giving one back to the game gives back all of them. A stand-in follows along through its materials named after
+the parts (`eye`, `Eyes`, `eye.001`), or the ones `faceParts` names. For each number it
+shows your picture if `faces` has one. For a number you have no picture for, it depends on
+whether the stand-in's face looks like the game's:
+
+- **It looks like the game's.** The model was made from the game's eye and mouth sheets,
+  for example exported from Crystal and reshaped. Then the game's own expressions show,
+  with nothing added, so the stand-in blinks and reacts like the original.
+- **It's drawn differently.** The material keeps its own picture, so the face doesn't
+  change until you add pictures. Any pictures you add are used, and numbers without one
+  fall back to the material's own picture.
+
+The comparison is per part, against every picture in the model's face packs. A copy scores
+0, and a face drawn anew scores 40 or more; a part counts as the game's at 16 or below. Both
+Crystal and the game log the result:
+`models: j101's eye is drawn anew (difference 56): it keeps its own picture where the mod has none`.
+`"gameFaces": true` always shows the game's pictures, and `false` never does:
+
+```json
+{ "model": "j101", "gltf": "assets/werewolf.glb",
+  "faces": { "j101_001": { "eye": { "0": "assets/faces/j101_001/eye-0.png", "3": "assets/faces/j101_001/eye-3.png" },
+                           "mouth": { "7": "assets/faces/j101_001/mouth-7.png" } } },
+  "faceParts": { "eye": "Eyes" } }
+```
+
+You don't have to write this by hand. Crystal's **Expressions** card, under the materials
+of the stand-in (or of the game model it replaces), lists the model's packs with every
+picture. Click one to see it on the model. **Play** flips through a row of numbers at a
+speed you pick, on one part or both: `0 1 2 1 0` is a blink. **Replace…** writes your PNG to
+`assets/faces/<pack>/<part>-<number>.png` and names it in the definition. **Save game PNG**
+gives you the game's picture to paint over.
+
+To work on many pictures at once, use **Export to project** (shift-click exports every
+pack). It writes each picture to `assets/faces/<pack>/` as `eye-0.png`, `mouth-6.png` and so
+on, and has the stand-in use them. Exporting every pack writes each picture once, in the
+first pack that has it, and leaves untouched copies from an older export to that one. Edit them in any image editor: Crystal takes them again
+when you switch back to it, and a running game within a second. **Download .zip** gives the
+same files to edit elsewhere. To bring pictures back, drop PNGs on the card; each goes to
+the number its name says (`eye-3.png`, or `j101_001-mouth-7.png` for another pack). A PNG
+dropped on a single picture replaces that one, whatever the file is called. If the glTF has
+no material named after a part, choose the material that should wear it beside the part's
+name. That writes `faceParts`. In the game, the log shows each picture the
+first time it is worn: `models: j101's eye shows j101_001 eye 3 - eye-3.png`, or `- the game's`.
+
 ### A model of the mod's own: `defs/models/f300.json` with a `base`
 
 A definition that names a model the game does not have, and the game model whose skeleton and
@@ -1475,6 +1547,17 @@ own commands, the third made a free slot; the inspector edits the rest:
   with `"carries": true` is FF5's rule for *Equip* abilities and spell lists: while it is
   set, the hero has its ladder job's positive modifiers where they beat the held job's (a
   Knight with the White Mage's `white-magic` set gets the White Mage's magic).
+- `charges` - the job's magic charges (FF3's MP: how many spells of each magic level 1..8 it
+  casts before a rest) in place of the game's table, **for every hero holding the job, on any
+  progression** - FF3's own job system too; a file with just `id`, `job` and `charges` does
+  only that. `"charges": 99` is 99 of every magic level at every hero level; eight numbers
+  are one a magic level (`[9, 9, 9, 5, 5, 5, 1, 1]`); a table by hero level holds each row
+  from its level until the next (`{ "1": [4, 2, 0, 0, 0, 0, 0, 0], "30": [9, 9, 9, 9, 6, 6, 3,
+  0], "60": 99 }`). 0..99 each; left out, the game's. A job with no magic in the game may be
+  given charges, but what it can cast is still its spell permissions (`grants`). The limits
+  apply as a new game starts, a save loads, a hero levels or changes job; the log says
+  "jobs: Onion Knight's magic charges are the mod's (...)". Crystal's job inspector has a
+  *Magic charges* card (rows by hero level, *99 at every level*).
 
 **Jobs of the mod's own.** FF5 has jobs FF3 has not - Samurai, Berserker, Time Mage, Mime.
 A ladder that says `"base"` instead of `"job"` *is* such a job: a new job standing on one of

@@ -25,6 +25,8 @@ namespace OpenFF.Client
 		public Texture2D Texture;                       // null for a plain colour
 		public bool DoubleSided;
 		public bool Translucent;
+		/// <summary>The texture's filter: Point when the file's sampler asks for nearest (pixel art), else Linear.</summary>
+		public TextureFilter Filter = TextureFilter.Linear;
 	}
 
 	internal sealed class GltfModel
@@ -62,7 +64,12 @@ namespace OpenFF.Client
 					{
 						Texture2D flat;
 						using (MemoryStream stream = new MemoryStream(file.Images[image].Bytes)) flat = Texture2D.FromStream(device, stream);
-						texture = Mipmapped(device, flat, (w, h) => Coverage(file, image, w, h));
+						// Pixel art is drawn as it is: a picture a nearest-filtered material shows (the sampler a game model's
+						// export carries), or one of 256 or less a side. Its islands' rims are real texels - the mouth's line, the
+						// shirt's seams - and the rim cleaning below, meant for big soft generated atlases, smeared them.
+						bool nearest = file.Materials.Exists(m => m.Image == image && m.Nearest);
+						texture = nearest || Math.Max(flat.Width, flat.Height) <= 256 ? flat : Mipmapped(device, flat, (w, h) => Coverage(file, image, w, h));
+						if (texture == flat) Log.Write(LogChannel.File, "meshes: the " + flat.Width + "x" + flat.Height + " picture " + image + " drawn as it is (" + (nearest ? "nearest-filtered" : "small") + ")");
 					}
 				}
 				catch (Exception ex) { model.Problem = "image " + image + ": " + ex.Message; }
@@ -73,7 +80,7 @@ namespace OpenFF.Client
 			foreach (GltfMesh mesh in file.Meshes)
 			{
 				GltfMaterial material = mesh.Material >= 0 && mesh.Material < file.Materials.Count ? file.Materials[mesh.Material] : new GltfMaterial();
-				model.Primitives.Add(new GltfPrimitive { Vertices = Vertices(mesh, material), Texture = TextureOf(material.Image), DoubleSided = material.DoubleSided, Translucent = material.Blend });
+				model.Primitives.Add(new GltfPrimitive { Vertices = Vertices(mesh, material), Texture = TextureOf(material.Image), DoubleSided = material.DoubleSided, Translucent = material.Blend, Filter = material.Nearest ? TextureFilter.Point : TextureFilter.Linear });
 			}
 			if (file.Notes.Count > 0 && model.Problem == null) Log.Write(LogChannel.General, "meshes: " + System.IO.Path.GetFileName(path) + ": " + string.Join("; ", file.Notes));
 			return model;
@@ -343,8 +350,10 @@ namespace OpenFF.Client
 					Vector3 p = new Vector3(mesh.Positions[v * 3], mesh.Positions[v * 3 + 1], mesh.Positions[v * 3 + 2]);
 					// The shade the DS models carry in their vertex colours, from the normal: lit from
 					// above and a little to the front, never darker than a lamp-lit room.
+					// A file with its own vertex colours (a game model exported by Crystal carries the DS's) has its shade in
+					// them already: the light again on top darkened it twice.
 					float shade = 1f;
-					if (mesh.Normals != null)
+					if (mesh.Normals != null && mesh.Colours == null)
 					{
 						Vector3 n = new Vector3(mesh.Normals[v * 3], mesh.Normals[v * 3 + 1], mesh.Normals[v * 3 + 2]);
 						if (n.LengthSquared() > 0) shade = 0.55f + 0.45f * Math.Max(0f, Vector3.Dot(n, light));

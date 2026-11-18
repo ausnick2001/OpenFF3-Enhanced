@@ -42,6 +42,10 @@ namespace OpenFF.Client
 			public string SummonName, AbilityName;
 			/// <summary>The vehicles' places and turns, the magiship's Earth and Moon spots, the black chocobo's home.</summary>
 			public Ff4Vehicles.Saved Vehicles;
+			/// <summary>Teleport's way out and Warp's newest two floors (GameParameter's telepo and desion places).</summary>
+			public Ff4Warp.Saved Warp;
+			/// <summary>The times the game has been cleared (GameParameter +0x21e9): a cleared game's save counts its clear.</summary>
+			public int ClearCount;
 		}
 
 		public string ChunkId => "ff4/field";
@@ -75,6 +79,10 @@ namespace OpenFF.Client
 			d.SummonName = Ff4Names.Summon;
 			d.AbilityName = Ff4Names.Ability;
 			d.Vehicles = Ff4Vehicles.ForSave();
+			d.Warp = Ff4Warp.ForSave();
+			// previousSaveData: the save of a cleared game (flag 987) counts the clear, up to 255. Written as the count plus
+			// this clear rather than counted up here, so OpenFF's own saves of the same moment do not count it twice.
+			d.ClearCount = Math.Min(255, Ff4Saves.ClearCount + (Ff4Saves.Cleared ? 1 : 0));
 			Log.Write(LogChannel.General, "save: field - " + d.Map + " at " + d.X.ToString("0") + "," + d.Y.ToString("0") + "," + d.Z.ToString("0") + " rot " + d.Rotation + ", " + d.Flags.Count + " flag(s)");
 			return d;
 		}
@@ -99,12 +107,14 @@ namespace OpenFF.Client
 			}
 			Ff4Saves.Pending = d;
 			Ff4Saves.PlayFrames = d.PlaySeconds * 60;
+			Ff4Saves.ClearCount = d.ClearCount;
 			Ff4NaviMap.Restore(d.Navi);
 			Ff4Bestiary.Restore(d.Bestiary);
 			Ff4Names.NewGame();
 			if (!string.IsNullOrEmpty(d.SummonName)) Ff4Names.Summon = d.SummonName;
 			Ff4Names.Ability = d.AbilityName;
 			Ff4Vehicles.Restore(d.Vehicles);
+			Ff4Warp.Restore(d.Warp);
 			Log.Write(LogChannel.General, "load: field - " + (d.Map ?? "?") + " at " + d.X.ToString("0") + "," + d.Y.ToString("0") + "," + d.Z.ToString("0") + ", " + d.Flags.Count + " flag(s)");
 		}
 	}
@@ -187,6 +197,10 @@ namespace OpenFF.Client
 		/// <summary>Flag 0:987: the game was cleared - the ending sets it before its save (LoadDisplayPart mode 3).</summary>
 		public static bool Cleared => GlobalScope.flags != null && GlobalScope.flags[0, 987] != 0;
 
+		/// <summary>The times this game has been cleared (GameParameter::gameClearCount): 0 for a new game, a cleared save's
+		/// count for its New Game+ - what clearCountJump and the achievements for beating Zeromus read.</summary>
+		public static int ClearCount;
+
 		/// <summary>A cleared save read back is a new game (LoadDisplayPart's uninitialize sends it to NewGameInitPart): the
 		/// party as the ending left it, the flags of the extras and the records kept (0:500..740, 0:750..755, 0:920..970,
 		/// 0:998 and 1:615 on), the rest down - 987 too - and the play time from nothing; it starts where a new game does.</summary>
@@ -238,6 +252,18 @@ namespace OpenFF.Client
 			Log.Write(LogChannel.General, "load: landed on " + (Game.Field.Map ?? "?") + " at " + at.X.ToString("0") + "," + at.Y.ToString("0") + "," + at.Z.ToString("0")
 				+ " (saved " + Pending.X.ToString("0") + "," + Pending.Y.ToString("0") + "," + Pending.Z.ToString("0") + ")");
 			Pending = null;
+		}
+
+		/// <summary>The engine's flags made anew as it starts: a save read before (--load) puts its flags in them.</summary>
+		public static void FlagsMade()
+		{
+			if (Pending?.Flags == null || GlobalScope.flags == null) return;
+			foreach (string f in Pending.Flags)
+			{
+				int colon = f.IndexOf(':');
+				if (colon > 0 && int.TryParse(f.Substring(0, colon), out int g) && int.TryParse(f.Substring(colon + 1), out int i)
+					&& g >= 0 && g < GlobalScope.flags.GetLength(0) && i >= 0 && i < GlobalScope.flags.GetLength(1)) GlobalScope.flags[g, i] = 1;
+			}
 		}
 
 		/// <summary>--load=&lt;slot&gt;: an FF4 game starts from a slot instead of the new game.</summary>

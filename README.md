@@ -4,7 +4,7 @@ OpenFF plays **Final Fantasy III** and **Final Fantasy IV** (the 3D remakes) fro
 own on Steam or GOG, as a native desktop game, and lets mods change almost anything in them.
 
 - **FF3 is complete**: title to credits, played exactly as the original.
-- **FF4 is in progress** (about 80%): it plays from the title to the ending, matched frame by
+- **FF4 is in progress** (about 85%): it plays from the title to the ending, matched frame by
   frame against the Steam game. See [FF4 status](Docs/FF4-Status.md).
 - **Crystal**, the editor, makes mods: maps, text, models, scenes and C# code, either for OpenFF
   or installed straight into your Steam copy.
@@ -43,6 +43,8 @@ What OpenFF adds on top of the originals:
 - Fast-forward (hold Tab).
 - Game pad support with rebindable buttons.
 - Mods, including OpenFF's own extras such as Gambits.
+- Steam achievements (FF3 and FF4) and Steam showing you in the game, when you play from your Steam copy
+  with Steam running. Mods don't turn them off; `"achievements": false` in settings.json does.
 
 Command-line switches (start on any map, window size, logs): [Command line](Docs/Command-Line.md).
 
@@ -51,6 +53,8 @@ Command-line switches (start on any map, window size, logs): [Command line](Docs
 Put a mod in a folder under `mods\` beside `OpenFF.exe`. A mod can:
 
 - **replace game files**: models, textures, text and sounds;
+- **draw a character as a glTF model** (from Blender or anywhere), with its pictures and its
+  expressions (the eye and mouth pictures scenes switch between) swapped as plain PNGs;
 - **restyle screens**: menus and HUDs are layouts and stylesheets;
 - **add maps, scenes and items**;
 - **run C# code** through the OpenFF API (the hero, the party, battles, the camera, saves and more).
@@ -104,6 +108,7 @@ recreated from the mobile release, with native rendering, text and sound around 
 | Keyboard and mouse | 100% |
 | Game pad | 80% |
 | OpenFF's own menus and settings | 60% |
+| Steam achievements | 95% |
 
 **Final Fantasy IV: in progress.** Written from FF4's own code (the Android build and the Steam
 executable) and checked frame by frame against the Steam game.
@@ -111,15 +116,15 @@ executable) and checked frame by frame against the Steam game.
 | FF4 | Done | Still open |
 | --- | --- | --- |
 | Battle | 100% | |
-| Field: walking, exits, talking, events, vehicles | 85% | Some details per map |
+| Field: walking, exits, doors, key items, talking, events, vehicles, field magic | 85% | A full playthrough still to be checked scene by scene |
 | Maps, models and the world map | 85% | Some lighting and materials |
 | Title and map changes | 85% | The opening movie |
 | The Fat Chocobo's extras, name entry | 85% | |
 | Cutscenes | 80% | Sky and shadow details |
-| Menus | 80% | Some screens |
-| Party data: growth, magic, equipment, items | 60% | |
-| Shops, inns, saves, encounters | 75% | Encounter details |
-| Steam extras (achievements) | 0% | |
+| Menus | 90% | The spell effect over the party's places |
+| Party data: growth, magic, equipment, items, monsters | 90% | |
+| Shops, inns, saves, encounters | 90% | Steam's own save files are not read |
+| Steam achievements | 95% | A real unlock still to be watched on Steam |
 
 Details for every part: [FF4 status](Docs/FF4-Status.md). What has been read out of FF4's
 code: [FF4 internals](Docs/FF4-Internals.md).

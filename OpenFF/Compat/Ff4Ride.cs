@@ -127,8 +127,14 @@ namespace OpenFF.Client
 		{
 			if (!GameProfile.IsFf4) return;
 			_world = WorldOf(GlobalScope.stg.CStageMng.CurrentName);
-			if (_world < 0) { Ff4Vehicles.ArriveOn = -1; return; }
+			if (_world < 0) { Ff4Vehicles.ArriveOn = -1; _pendingBoard = -1; return; }
 			OpenFF.Game.Guard("ride: vehicles", CreateVehicles);
+			if (_pendingBoard >= 0)
+			{
+				uint state = (uint)_pendingBoard;
+				_pendingBoard = -1;
+				OpenFF.Game.Guard("ride: boarding", () => Board(state));
+			}
 		}
 
 		private static void CreateVehicles()
@@ -254,6 +260,14 @@ namespace OpenFF.Client
 			&& !OpenFF.Game.Dialogue.IsOpen && !Ff4Battle.Active && !Ff4Extras.Busy && !Ff4Chests.Busy && !EncounterZoom.Playing
 			&& !BlurRotate.Playing && !(Ff4NaviMap.Instance?.IsOpen ?? false);
 
+		/// <summary>The vehicles the field map marks (world_state_prepare's NMIVehicle per vehicle the party has on this
+		/// world): type, place (fx32), turn about y, and whether it is the one ridden.</summary>
+		public static IEnumerable<(int Type, int X, int Z, int RotY, bool Ridden)> MapVehicles()
+		{
+			foreach (Vehicle v in _vehicles)
+				if (v != null && v.Shown && Ff4Vehicles.Acquired(v.Type)) yield return (v.Type, v.X, v.Z, v.RotY, Riding && v == _ride);
+		}
+
 		/// <summary>VehicleObject::collision: the lead within 10 of a vehicle the party has, walking towards it.</summary>
 		private static void CheckBoard()
 		{
@@ -280,6 +294,7 @@ namespace OpenFF.Client
 
 		private static void Board(Vehicle v)
 		{
+			Ff4Achievements.Request(Ff4Achievements.Vehicle);   // WSVehicleMove::wsInitialize
 			_inReach = null;
 			_arrived = false;
 			_ride = v;
@@ -361,6 +376,99 @@ namespace OpenFF.Client
 			_turnStep = 0x800;
 			StartEngine();
 			Log.Write(LogChannel.General, "ride: aboard type " + _ride.Type);
+		}
+
+		/// <summary>The script's vehicle numbers (alterPlayer_State, checkPlayer_State: DAT_002bbf68) as the types here: 1 the
+		/// hovercraft, 2-4 the Enterprise, 5-6 the Falcon, 7 the Lunar Whale, 8 the chocobo, 9 the black chocobo.</summary>
+		private static int TypeOfState(uint state) => state switch { 1 => 0, 2 or 3 or 4 => 1, 5 or 6 => 2, 7 => 3, 8 => 4, 9 => 5, _ => -1 };
+
+		/// <summary>alterPlayer_State(state, ?): the party aboard that vehicle where the script put it (setVehiclePosition) -
+		/// wscSetIntoTargetVO, the riding flag, "vehicle move" scheduled, the lead unseen: the Enterprise as Cid hands it over,
+		/// the hovercraft, the Falcon on both worlds. Its propellers turn (motion 0x3e9) for the hovercraft and the Enterprise.</summary>
+		public static void AlterPlayerState(GlobalScope.ScriptEngine engine)
+		{
+			uint state = engine.getDword();
+			engine.getWord();
+			Board(state);
+		}
+
+		/// <summary>An alterPlayer_State the world's first script step asked for before the host made the vehicles (libff4's
+		/// are the map's objects, there with it): it boards as they come (the Enterprise leaving Baron after Kain's demand).</summary>
+		private static int _pendingBoard = -1;
+
+		/// <summary>Tools: a drive's ride step boards as the script would.</summary>
+		internal static void DriveBoard(uint state)
+		{
+			// The vehicle brought to where the lead stands first (a drive's jump put the lead there, the vehicle elsewhere).
+			int type = TypeOfState(state);
+			Vehicle v = type >= 0 && _world >= 0 ? _vehicles[type] : null;
+			if (v != null && Hero != null)
+			{
+				GlobalScope.VecFx32 at = Hero.getPosition();
+				v.X = at.x;
+				v.Z = at.z;
+			}
+			Board(state);
+		}
+
+		private static void Board(uint state)
+		{
+			int type = TypeOfState(state);
+			Vehicle v = type >= 0 && _world >= 0 ? _vehicles[type] : null;
+			if (v == null && type >= 0 && _world < 0)
+			{
+				_pendingBoard = (int)state;
+				Log.Write(LogChannel.File, "ride: alterPlayer_State " + state + " waits for the world's vehicles");
+				return;
+			}
+			if (v == null || Hero == null)
+			{
+				Log.Write(LogChannel.General, "ride: alterPlayer_State " + state + " - no vehicle " + type + " on this map");
+				return;
+			}
+			_ride = v;
+			_arrived = false;
+			v.Shown = true;
+			Characters.setHidden(v.Ctrl, false);
+			if (type <= 1 && Characters.isMotion(v.Ctrl, Motion(0x3e9))) Characters.startMotion(v.Ctrl, Motion(0x3e9), true, 2);
+			Characters.setMotionPause(v.Ctrl, false);
+			Hero.setMCLCol(false);
+			HeroAlpha(0);
+			Hero.setHidden(true);
+			FollowHero();
+			OpenFF.Game.Input.Capture = true;
+			_state = State.Riding;
+			_turnStep = 0x800;
+			StartEngine();
+			Log.Write(LogChannel.General, "ride: aboard type " + type + " by the script (alterPlayer_State " + state + ")");
+		}
+
+		/// <summary>setVehicleFieldNo(vehicle, world): wscSetVehicleStayingMap - the world the vehicle stays on from now (the
+		/// Lunar Whale on the Earth once it rises at Mysidia, the Enterprise back on the Earth).</summary>
+		public static void SetVehicleFieldNo(GlobalScope.ScriptEngine engine)
+		{
+			uint vehicle = engine.getDword();
+			int world = engine.getByte();
+			int type = TypeOfState(vehicle);
+			if (type < 0) return;
+			Ff4Vehicles.SetStay(type, world);
+			Log.Write(LogChannel.File, "ride: vehicle " + type + " stays on world " + world);
+		}
+
+		/// <summary>setCanBoardVehicle(vehicle, on): libff4 reads its operands only.</summary>
+		public static void SetCanBoardVehicle(GlobalScope.ScriptEngine engine)
+		{
+			engine.getDword();
+			engine.getByte();
+		}
+
+		/// <summary>checkPlayer_State(state, label): jumps when the party rides that vehicle (0: rides none of them).</summary>
+		public static void CheckPlayerState(GlobalScope.ScriptEngine engine)
+		{
+			uint state = engine.getDword();
+			uint label = engine.getDword();
+			if (!Riding || _ride == null) return;
+			if (state == 0 ? false : TypeOfState(state) == _ride.Type) engine.jump(label);
 		}
 
 		/// <summary>WSPrepare for a vehicle arrived on (a worldMapWarp's): aboard at once, in the air for an airship.</summary>
@@ -460,7 +568,8 @@ namespace OpenFF.Client
 		{
 			bool menu = Ff4Menu.Instance?.IsOpen ?? false;
 			bool map = Ff4NaviMap.Instance?.IsOpen ?? false;
-			if (menu) return;
+			// WSVehicleMove runs once the event that scheduled it (alterPlayer_State) is over.
+			if (menu || Ff4Menu.EventBusy()) return;
 			// The menu gives the keys back when it shuts; aboard they stay the vehicle's.
 			OpenFF.Game.Input.Capture = true;
 			InputState input = OpenFF.Game.Input;
@@ -1412,6 +1521,8 @@ namespace OpenFF.Client
 
 		public override void OnUpdate()
 		{
+			// FF4's alone: FF3 has no "!" over its lead.
+			if (!GameProfile.IsFf4) { BalloonShown = false; return; }
 			if (OpenFF.Game.Input.Pressed(Pad.A)) _latchA = true;
 			if (OpenFF.Game.Input.Pressed(Pad.B)) _latchB = true;
 			if (_waitFrames > 0) _waitFrames--;

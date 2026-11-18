@@ -73,6 +73,7 @@ namespace OpenFF.Client
 			Formation = 1;
 			_party.Join(0, 10);
 			_positions[0] = 1;   // initForNewgame: addMember(0, 1)
+			Ff4Speculation.FieldSymbol = 0;
 			// --party=4:10,3:12 - extra members for a test start (the child Rydia at 10, Rosa at 12).
 			string extra = Options.Get("party");
 			if (!string.IsNullOrEmpty(extra))
@@ -209,12 +210,18 @@ namespace OpenFF.Client
 			public int AutoCommand = 1;
 			public int DecantLevel;
 			public bool HpPlus, MpPlus;
+			/// <summary>The maximums before the +50%s and the attributes as grown (past 70 the commands' bonuses are in
+			/// them); a save without them takes them from the maximums and the table.</summary>
+			public int HpBase, MpBase;
+			public int[] Stats;
 		}
 
 		public sealed class Saved
 		{
 			public int Gil;
 			public int Formation = 1;
+			/// <summary>The field's leading character (GameParameter::fieldSymbolID); -1 in saves from before it was kept.</summary>
+			public int Symbol = -1;
 			public List<SavedCharacter> Roster = new List<SavedCharacter>();
 			/// <summary>(item id, count) pairs, in bag order.</summary>
 			public List<int[]> Items = new List<int[]>();
@@ -223,7 +230,7 @@ namespace OpenFF.Client
 		public static Saved Snapshot()
 		{
 			Party p = Party;
-			Saved s = new Saved { Gil = p.Gil, Formation = Formation };
+			Saved s = new Saved { Gil = p.Gil, Formation = Formation, Symbol = Ff4Speculation.FieldSymbol };
 			foreach (Character c in p.Roster)
 			{
 				s.Roster.Add(new SavedCharacter
@@ -235,6 +242,8 @@ namespace OpenFF.Client
 					Abilities = new List<int>(c.Abilities), Spells = new List<int>(c.Spells),
 					CommandSlots = c.CommandSlots != null ? (int[])c.CommandSlots.Clone() : null, DecantLevel = c.DecantLevel, HpPlus = c.HpPlus, MpPlus = c.MpPlus,
 					AutoCommand = c.AutoCommand,
+					HpBase = c.HpBase, MpBase = c.MpBase,
+					Stats = new[] { c.Base.Strength, c.Base.Agility, c.Base.Vitality, c.Base.Intellect, c.Base.Spirit },
 				});
 			}
 			foreach (OpenFF.Data.ItemStack stack in p.Inventory) s.Items.Add(new[] { stack.ItemId, stack.Count });
@@ -264,6 +273,10 @@ namespace OpenFF.Client
 				c.AutoCommand = sc.AutoCommand > 0 ? sc.AutoCommand : 1;
 				c.HpPlus = sc.HpPlus;
 				c.MpPlus = sc.MpPlus;
+				c.HpBase = sc.HpBase > 0 ? sc.HpBase : Math.Max(1, c.HpPlus ? c.MaxHp * 2 / 3 : c.MaxHp);
+				c.MpBase = sc.MpBase > 0 || sc.Stats != null ? sc.MpBase : (c.MpPlus ? c.MaxMp * 2 / 3 : c.MaxMp);
+				if (sc.Stats != null && sc.Stats.Length == 5)
+					c.Base = new OpenFF.Data.Stats { Strength = sc.Stats[0], Agility = sc.Stats[1], Vitality = sc.Stats[2], Intellect = sc.Stats[3], Spirit = sc.Stats[4] };
 			}
 			List<SavedCharacter> lineUp = s.Roster.FindAll(r => r.Slot >= 0);
 			lineUp.Sort((a, b) => a.Slot.CompareTo(b.Slot));
@@ -276,15 +289,15 @@ namespace OpenFF.Client
 			}
 			foreach (int[] stack in s.Items) if (stack != null && stack.Length >= 2) p.AddItem(stack[0], stack[1]);
 			_party = p;
+			// A save from before the field symbol was kept: Cecil leads when he is in the party, as the story keeps him.
+			Ff4Speculation.FieldSymbol = s.Symbol >= 0 ? s.Symbol : p.Get(1)?.InParty == true ? 1 : p.Get(0)?.InParty == true ? 0 : -1;
 			Log.Write(LogChannel.General, "party: restored - " + p.Describe().Replace("\n", " | "));
 		}
 
-		/// <summary>The level a character joins at: the leader's, as FF4 scales joiners to the party (the exact rule is not read yet).</summary>
-		private static int JoinLevel(int type)
-		{
-			Character leader = Party.Leader;
-			return leader != null ? leader.Level : 1;
-		}
+		/// <summary>The level a character stands at before any script raised it (PlayerParty::initForNewgame): every one grows to 1,
+		/// then Dark Knight Cecil, Kain and Rosa (types 0, 2, 6) to 10. The rest are raised by setPlayerLevel / syncCharacterLv as
+		/// they join (Tellah to 20 on Mt Hobs, the twins to 10); Paladin Cecil is not, and starts at 1.</summary>
+		internal static int JoinLevel(int type) => type == 0 || type == 2 || type == 6 ? 10 : 1;
 
 		// ---- the scripts' commands, by name in Ff4Commands ----
 
@@ -337,8 +350,17 @@ namespace OpenFF.Client
 			int type = (int)engine.getDword();
 			engine.getByte();
 			Character c = Party.Get(type);
+			int symbol = Ff4Speculation.FieldSymbol >= 0 ? Ff4Speculation.FieldSymbol : Party.Leader?.Id ?? -1;
+			string look = Ff4PartyCommands.LeaderLook();
 			bool left = Party.Leave(type);
 			if (left) _positions.Remove(type);
+			// babilCommand_SubPartyPC: the field's leader gone, each place in turn hands it on - the last one filled has it - and
+			// the field walks as that one.
+			if (left && Party.Get(symbol)?.InParty != true)
+			{
+				for (int place = 0; place < 5; place++) if (TypeAt(place) is int there && there >= 0) Ff4Speculation.FieldSymbol = there;
+				if (Ff4PartyCommands.LeaderLook() != look) Ff4PartyCommands.LeaderChanged();
+			}
 			Log.Write(LogChannel.General, "party: " + (c?.Name ?? ("type " + type)) + (left ? " leaves - " : " was not in the party - ") + Party.Members.Count + " in the party");
 		}
 
@@ -440,13 +462,18 @@ namespace OpenFF.Client
 			return m;
 		}
 
-		public bool AddMember(int id) => P.Join(id, P.Leader?.Level ?? 1);
+		public bool AddMember(int id) => Ff4Party.Join(id);
 		public bool RemoveMember(int id) => P.Leave(id);
 
 		public void SetLevel(int id, int level)
 		{
 			Character c = P.Ensure(id, level);
 			c?.SetLevel(level, false);
+			if (c != null)
+			{
+				Ff4Augments.AfterLevelUp(c);
+				Log.Write(LogChannel.File, "party: " + c.Name + " to level " + c.Level + " - HP " + c.MaxHp + " (base " + c.HpBase + "), MP " + c.MaxMp + " (base " + c.MpBase + "), str " + c.Base.Strength + " spd " + c.Base.Agility + " sta " + c.Base.Vitality + " int " + c.Base.Intellect + " spi " + c.Base.Spirit + (c.CommandSlots != null ? ", commands " + string.Join(",", c.CommandSlots) : ""));
+			}
 			if (c != null && P.Tables.ExperienceToLevel.Length >= level) c.Experience = P.Tables.ExperienceToLevel[Math.Clamp(level, 1, P.Tables.ExperienceToLevel.Length) - 1];
 		}
 
@@ -500,7 +527,7 @@ namespace OpenFF.Client
 			int before = c.Level;
 			c.Experience += Math.Max(0, amount);
 			int level = P.Tables.LevelForExperience(c.Experience);
-			if (level > before) c.SetLevel(level, false);
+			if (level > before) { c.SetLevel(level, false); Ff4Augments.AfterLevelUp(c); }
 			return level > before;
 		}
 
@@ -543,15 +570,18 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>A spell to the member's books (the menu's and the battle's lists read Spells), anything else to the abilities.</summary>
 		public bool LearnSpell(int id, int spellId)
 		{
 			Character c = P.Get(id);
-			if (c == null || c.Abilities.Contains(spellId)) return false;
-			c.Abilities.Add(spellId);
+			if (c == null) return false;
+			List<int> to = P.Tables?.Spell(spellId) != null ? c.Spells : c.Abilities;
+			if (to.Contains(spellId)) return false;
+			to.Add(spellId);
 			return true;
 		}
 
-		public bool ForgetSpell(int id, int spellId) => P.Get(id)?.Abilities.Remove(spellId) ?? false;
+		public bool ForgetSpell(int id, int spellId) => P.Get(id) is Character c && (c.Spells.Remove(spellId) | c.Abilities.Remove(spellId));
 
 		public void Inflict(int id, Condition conditions)
 		{
