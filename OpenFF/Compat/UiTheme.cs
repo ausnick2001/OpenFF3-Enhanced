@@ -277,7 +277,7 @@ namespace OpenFF.Client
 			Frame(b, r, v);
 		}
 
-		private static readonly Color PartyBlue = new Color(24, 38, 78, 255)   // with the grain over it: the party menu's (42, 54, 87), measured;
+		private static readonly Color PartyBlue = new Color(24, 38, 78, 255);   // with the grain over it: the party menu's (42, 54, 87), measured
 		private static readonly Color Silver = new Color(204, 206, 214, 255);
 
 		/// <summary>The party menu's window: blue with a fine grain, a silver border (a darker line inside it), rounded.</summary>
