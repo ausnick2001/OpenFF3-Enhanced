@@ -570,7 +570,8 @@ namespace OpenFF.Client
 			List<string> on = new List<string>();
 			if (Qol.Speed != 1) on.Add("speed " + Qol.Times(Qol.Speed));
 			if (!q.Encounters) on.Add("no encounters");
-			else if (Math.Abs(Qol.EncounterRate - 1) > 1e-9) on.Add("encounters " + Qol.Times(Qol.EncounterRate));
+			
+			if (Math.Abs(Qol.EncounterRate - 1) > 1e-9) on.Add("encounter rate " + Qol.Times(Qol.EncounterRate));
 			if (Math.Abs(q.Exp - 1) > 1e-9) on.Add("EXP " + Qol.Times(q.Exp));
 			if (Math.Abs(q.JobExp - 1) > 1e-9) on.Add("job EXP " + Qol.Times(q.JobExp));
 			if (q.SaveAnywhere) on.Add("save anywhere");
