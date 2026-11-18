@@ -40,7 +40,7 @@ namespace OpenFF.Client
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
 		private const int FloorRange = 10240;       // 2.5 units (a slope of about 50 degrees over a cell): ground higher or lower than this from the neighbour's is a cliff or another floor, not a way on
 
-		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5, Bumped = 6;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Bumped: the party was stopped here (the walls the probe missed); Secret: a wall of one of the classes that can be switched (WALL_02..05)
+		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
 		private struct Cell { public byte State; public int GroundY; public int Stamp; public sbyte DirX, DirZ; }   // DirX/DirZ: the way it was probed from, kept for probing it again
 
@@ -114,7 +114,6 @@ namespace OpenFF.Client
 				if (_myGen != _forgetGen) { _myGen = _forgetGen; _memory = Recall(_stage); _realloc = true; _dirty = true; }
 				_frame++;
 				Explore(px, py, pz);
-				Bump(px, pz);
 				Rebuild();
 				Paint(px, pz);
 			}
@@ -125,44 +124,12 @@ namespace OpenFF.Client
 			}
 		}
 
-		// The fail-safe: when a direction is held and the party does not move, the party has met something the probe missed,
-		// and a short wall is drawn there, a little ahead, the way the party faces.
-		private int _lastPx, _lastPz, _still;
-		private bool _bumped, _haveLast;
-
-		private void Bump(int px, int pz)
-		{
-			bool pressing = (GlobalScope.dv.CDeviceManager.getInstance().Pad().pad_trs(0) & 0xF) != 0;
-			long dx = px - _lastPx, dz = pz - _lastPz;
-			bool still = _haveLast && dx * dx + dz * dz < 40L * 40L;
-			_lastPx = px; _lastPz = pz; _haveLast = true;
-			if (!pressing || !still) { _still = 0; _bumped = false; return; }
-			if (++_still < 8 || _bumped) return;
-			float len = (float)Math.Sqrt(_faceX * _faceX + _faceZ * _faceZ);
-			if (len < 1e-3f) return;
-			float fx = _faceX / len, fz = _faceZ / len;
-			_bumped = true;
-			// A point just past the party's reach (a bit more than the party's radius), and a cell either side of it.
-			float ahead = 3.6f * 4096f;
-			for (int side = -1; side <= 1; side++)
-			{
-				int wx = px + (int)(fx * ahead + -fz * side * CellFx), wz = pz + (int)(fz * ahead + fx * side * CellFx);
-				int cx = CellOf(wx), cz = CellOf(wz);
-				if (cx == CellOf(px) && cz == CellOf(pz)) continue;
-				long key = Key(cx, cz);
-				if (_cells.TryGetValue(key, out Cell old) && old.State != Floor) continue;   // already a wall (or a way out)
-				_memory[key] = Bumped;
-				Put(cx, cz, new Cell { State = Floor, GroundY = old.GroundY, Stamp = _frame });   // Put turns it into Bumped, through the memory
-			}
-			Log.Write(LogChannel.General, "minimap: stopped at a wall the probe missed, marked");
-		}
-
 		private void NewStage(string stage, int px, int pz)
 		{
 			_stage = stage;
 			_memory = Recall(stage);
 			_cells.Clear(); _frontier.Clear(); _seenX = int.MinValue;
-			_haveFixed = false; _recheckAt = 0; _haveLast = false;
+			_haveFixed = false; _recheckAt = 0;
 			_startX = CellOf(px); _startZ = CellOf(pz);
 			_minX = _maxX = _startX; _minZ = _maxZ = _startZ;
 			_tex?.Dispose(); _tex = null; _pix = null; _grid = null;
@@ -331,7 +298,6 @@ namespace OpenFF.Client
 			MarkSeen(pcx, pcz);
 			if (!_cells.TryGetValue(Key(pcx, pcz), out Cell here) || (here.State != Floor && here.State != Exit))
 			{
-				if (_memory.TryGetValue(Key(pcx, pcz), out byte pm) && pm == Bumped) _memory[Key(pcx, pcz)] = Floor;   // the party stands here: not a wall
 				Put(pcx, pcz, new Cell { State = Floor, GroundY = py, Stamp = _frame });
 				_frontier.Enqueue((pcx, pcz));
 			}
@@ -492,34 +458,57 @@ namespace OpenFF.Client
 			if (Qol.MinimapFog && !remembered)
 			{
 				// Not seen yet: but a wall (or edge) touching floor that has been seen is the floor's border, so it is shown.
-				if (state != Wall && state != Edge && state != Secret && state != Bumped) return ShowNone;
+				if (state != Wall && state != Edge && state != Secret) return ShowNone;
 				bool border = false;
 				for (int dz = -1; dz <= 1 && !border; dz++)
 					for (int dx = -1; dx <= 1 && !border; dx++)
 						border = (dx != 0 || dz != 0) && _memory.TryGetValue(Key(cx + dx, cz + dz), out byte nb) && (nb == Floor || nb == Exit);
 				if (!border) return ShowNone;
 			}
+			if (state == Floor && !Roomy(cx, cz)) return ShowWall;   // a pocket too narrow to walk into is wall, not floor
 			switch (state)
 			{
 				case Floor: return ShowFloor;
 				case Exit: return ShowExit;
-				case Wall: case Edge: case Bumped: return ShowWall;
+				case Wall: case Edge: return ShowWall;
 				case Secret: return Qol.MinimapPassages ? ShowSecret : ShowWall;
 				default: return ShowNone;
 			}
+		}
+
+		private byte StateOf(int cx, int cz)
+		{
+			long key = Key(cx, cz);
+			if (_cells.TryGetValue(key, out Cell c)) return c.State;
+			return _memory.TryGetValue(key, out byte m) ? m : Void;
+		}
+
+		/// <summary>Floor with enough floor about it for the party to stand in: the party is wider than a cell, so a cell with one or two floor cells beside it is not a place it can go.</summary>
+		private bool Roomy(int cx, int cz)
+		{
+			int n = 0;
+			for (int dz = -1; dz <= 1; dz++)
+				for (int dx = -1; dx <= 1; dx++)
+				{
+					if (dx == 0 && dz == 0) continue;
+					byte st = StateOf(cx + dx, cz + dz);
+					if (st == Floor || st == Exit) n++;
+				}
+			return n >= 3;
 		}
 
 		/// <summary>A cell found or changed: kept, and put in the picture (or the picture is made again, larger, when the cell is near its edge).</summary>
 		private void Put(int cx, int cz, Cell c)
 		{
 			long key = Key(cx, cz);
-			if (c.State == Floor && _memory.TryGetValue(key, out byte kept0) && kept0 == Bumped) { c.State = Bumped; c.Stamp = int.MaxValue; }   // a place the party was stopped stays a wall
 			_cells[key] = c;
 			if (_memory.ContainsKey(key) && _memory[key] != c.State) _memory[key] = c.State;
 			if (cx < _minX) _minX = cx; if (cx > _maxX) _maxX = cx;
 			if (cz < _minZ) _minZ = cz; if (cz > _maxZ) _maxZ = cz;
 			if (_grid == null || cx - _ox < 4 || cz - _oz < 4 || cx - _ox >= _cw - 4 || cz - _oz >= _ch - 4) { _realloc = true; return; }
-			SetShown(cx, cz);
+			for (int dz = -1; dz <= 1; dz++)
+				for (int dx = -1; dx <= 1; dx++)
+					SetShown(cx + dx, cz + dz);   // its neighbours too: whether they are floor to stand in depends on it
 		}
 
 		/// <summary>A cell's grid byte made again, and the texels it reaches shaded again.</summary>
