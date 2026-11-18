@@ -535,8 +535,11 @@ namespace OpenFF.Client
 					Qol.Changed("turn-based battles " + (q.TurnBased ? "on" : "off"));
 					break;
 				case 8:
-					q.Indicator = !q.Indicator;
-					Qol.Changed("indicator " + (q.Indicator ? "on" : "off"));
+					// Off, then speed and encounters only, then everything that is changed.
+					int level = !q.Indicator ? 0 : q.IndicatorSimple ? 1 : 2;
+					level = ((level + by) % 3 + 3) % 3;
+					q.Indicator = level != 0; q.IndicatorSimple = level == 1;
+					Qol.Changed("indicator " + (level == 0 ? "off" : level == 1 ? "speed and encounters" : "all"));
 					break;
 				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
@@ -558,7 +561,7 @@ namespace OpenFF.Client
 				case 5: return "Save in the menu on any map, towns and dungeons too";
 				case 6: return "off: no lowered stats for a few battles after a job change";
 				case 7: return "on: similar to FFX - heroes act as soon as a command is input";
-				case 8: return "a note in the corner of what is on";
+				case 8: return "Corner note of what is changed. Speed and encounters: only those two, when not x1";
 				default: return "";
 			}
 		}
@@ -645,7 +648,7 @@ namespace OpenFF.Client
 						case 5: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; if (on) hint = "as the game plays"; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
-						case 8: icon = UiTheme.Icon.Indicator; on = q.Indicator; return Kind.Switch;
+						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -929,7 +932,7 @@ namespace OpenFF.Client
 						case 5: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
 						case 6: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
 						case 7: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
-						case 8: label = "Indicator"; value = q.Indicator ? "On" : "Off"; return;
+						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
 						default: label = "Back"; return;
 					}
 				}

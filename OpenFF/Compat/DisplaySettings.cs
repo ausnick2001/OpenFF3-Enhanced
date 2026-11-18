@@ -112,6 +112,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("minimapPassages")] public bool MinimapPassages { get; set; }
 			/// <summary>The corner's note of what is on.</summary>
 			[JsonPropertyName("indicator")] public bool Indicator { get; set; } = true;
+			/// <summary>With the indicator on: show only the speed and the encounter rate (when they are not x1), not every setting.</summary>
+			[JsonPropertyName("indicatorSimple")] public bool IndicatorSimple { get; set; }
 		}
 
 		/// <summary>Whether a pad button, by its name in the map, is held in a pad state. Unknown names and "none" are never held.</summary>

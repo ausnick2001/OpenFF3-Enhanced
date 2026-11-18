@@ -172,13 +172,17 @@ namespace OpenFF.Client
 			if (s.Indicator)
 			{
 				if (Speed != 1) lines.Add("Speed " + Times(Speed));
-				if (!s.Encounters) lines.Add("No encounters");
-				if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounter rate " + Times(EncounterRate));
-				if (Math.Abs(s.Exp - 1) > 1e-9) lines.Add("EXP " + Times(s.Exp));
-				if (Math.Abs(s.JobExp - 1) > 1e-9) lines.Add("Job EXP " + Times(s.JobExp));
-				if (s.SaveAnywhere) lines.Add("Save anywhere");
-				if (!s.JobAdjustment) lines.Add("No job adjustment");
-				if (!s.TurnBased) lines.Add("Classic battles");
+				// Random battles off is a rate of x0.
+				if (!s.Encounters) lines.Add("Encounter rate " + Times(0));
+				else if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounter rate " + Times(EncounterRate));
+				if (!s.IndicatorSimple)
+				{
+					if (Math.Abs(s.Exp - 1) > 1e-9) lines.Add("EXP " + Times(s.Exp));
+					if (Math.Abs(s.JobExp - 1) > 1e-9) lines.Add("Job EXP " + Times(s.JobExp));
+					if (s.SaveAnywhere) lines.Add("Save anywhere");
+					if (!s.JobAdjustment) lines.Add("No job adjustment");
+					if (s.TurnBased) lines.Add("Turn-based battles");
+				}
 			}
 			if (Toasting) { lines.Remove(_toast); lines.Insert(0, _toast); }
 			return lines;
