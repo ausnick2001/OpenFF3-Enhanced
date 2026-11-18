@@ -849,8 +849,8 @@ namespace OpenFF.Client
 					// The description: its first letter capital, on one line, the size shrunk until it fits the box.
 					string text = char.ToUpperInvariant(_note[0]) + _note.Substring(1);
 					int size = noteSize;
-					float room = note.Width - 28;
-					while (size > 6 && Ui.Width(graphics, text, size) > room) size--;
+					float noteRoom = note.Width - 28;
+					while (size > 6 && Ui.Width(graphics, text, size) > noteRoom) size--;
 					L(graphics, text, note.X + 14, note.Y, note.Height, size, UiTheme.Ink);
 				}
 				for (int i = 0; i < hints.Length; i++) Ui.HintText(graphics, hints[i].Item1, hints[i].Item2, hintX[i], hintY, 22, hintSize);
