@@ -38,7 +38,7 @@ namespace OpenFF.Client
 		private const int ReachCells = 160;         // how far the fill goes from where the map was entered
 		private const int RecheckEvery = 150;       // frames before a wall is probed again (a passage may have opened)
 		private const int WallRadiusFx = 12288;     // the party's radius, as the character's wall test
-		private const int FloorRange = 24576;       // 6 units: ground further from the neighbour's than this is another floor
+		private const int FloorRange = 10240;       // 2.5 units (a slope of about 50 degrees over a cell): ground higher or lower than this from the neighbour's is a cliff or another floor, not a way on
 
 		private const byte Void = 0, Floor = 1, Wall = 2, Exit = 3, Secret = 4, Edge = 5, Bumped = 6;   // Void: not looked at; Edge: looked at, no ground (the floor ends)   // Bumped: the party was stopped here (the walls the probe missed); Secret: a wall of one of the classes that can be switched (WALL_02..05)
 
