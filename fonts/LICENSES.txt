@@ -13,5 +13,9 @@ names\Ferrum.otf             Ferrum, version 0.200
     By Sora Sagano (dot colon). CC0 1.0 - public domain, no rights reserved.
     http://creativecommons.org/publicdomain/zero/1.0/
 
-fonts\dialogue is left empty. The game's own font is used for what characters say. Any font put
-there is used instead (fonts\dialogue\scale.txt sets its size; see README.txt).
+dialogue\DialogueFont.otf   a generic video-game dialogue face
+    Author and licence: <TO FILL IN BEFORE RELEASE: the font's real name, its author, and the licence it was published under>
+    dialogue\scale.txt (0.75) sets its size; see README.txt.
+
+fonts\title is left empty. The title screen keeps the game's own face (Windows' Times New Roman); any font put there is used
+instead.
