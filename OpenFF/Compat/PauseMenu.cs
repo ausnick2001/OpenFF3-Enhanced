@@ -268,6 +268,12 @@ namespace OpenFF.Client
 					}
 					break;
 				case Page.Quit:
+					if (_leave == "forget")
+					{
+						if (cancel || (confirm && _selected != 0)) { _page = Page.Map; _selected = 8; _note = MapNote(8); return; }
+						if (confirm) { Minimap.Forget(); _page = Page.Map; _selected = 8; _note = "every explored floor is forgotten"; }
+						return;
+					}
 					if (cancel) { _page = Page.Main; _selected = MainRow(_leave); return; }
 					if (confirm)
 					{
@@ -452,7 +458,7 @@ namespace OpenFF.Client
 				case 6: q.MinimapChests = !q.MinimapChests; Qol.Changed("minimap chests " + (q.MinimapChests ? "on" : "off")); break;
 				case 7: q.MinimapPassages = !q.MinimapPassages; Qol.Changed("minimap hidden passages " + (q.MinimapPassages ? "shown" : "hidden")); break;
 				case 8:
-					if (confirm) { Minimap.Forget(); _note = "every explored floor is forgotten"; }
+					if (confirm) { _leave = "forget"; _page = Page.Quit; _selected = 1; }   // asks first: the maps cannot be got back
 					return;
 				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); }
@@ -756,13 +762,14 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Pad buttons" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				Ui.Left(graphics, title, titleX, titleY, 30, titleSize, UiTheme.Ink);
 				string sub = _page == Page.Main ? "The game goes on behind this."
 					: _page == Page.Settings ? "Kept in settings.json."
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
 					: _page == Page.Map ? "A corner map for dungeons."
+					: _leave == "forget" ? "Deletes all map data on this save. This cannot be reversed."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
 				float subX = titleX + Ui.Width(graphics, title, titleSize) + 18, room = panel.Right - 30 - subX;
@@ -955,7 +962,7 @@ namespace OpenFF.Client
 					label = row == DsButtons.Length ? "Reset to the defaults" : "Back";
 					return;
 				default:
-					label = row == 0 ? (_leave == "exit" ? "Yes, exit" : "Yes, to the title") : "No, keep playing";
+					label = row == 0 ? (_leave == "forget" ? "Yes, delete the maps" : _leave == "exit" ? "Yes, exit" : "Yes, to the title") : (_leave == "forget" ? "No, keep them" : "No, keep playing");
 					return;
 			}
 		}
