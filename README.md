@@ -1,167 +1,124 @@
-# OpenFF
+# OpenFF3 Enhanced
 
-OpenFF plays **Final Fantasy III** and **Final Fantasy IV** (the 3D remakes) from the copies you
-own on Steam or GOG, as a native desktop game, and lets mods change almost anything in them.
+A more playable **Final Fantasy III** (the 3D remake) on PC. It runs from your own Steam or GOG copy as a native desktop game, and adds the things I always wanted while playing it: turn-based battles, a dungeon minimap, the Pixel Remaster's quality-of-life boosters, a menu that looks like the game's own, and sharper textures.
 
-- **FF3 is complete**: title to credits, played exactly as the original.
-- **FF4 is in progress** (about 85%): it plays from the title to the ending, matched frame by
-  frame against the Steam game. See [FF4 status](Docs/FF4-Status.md).
-- **Crystal**, the editor, makes mods: maps, text, models, scenes and C# code, either for OpenFF
-  or installed straight into your Steam copy.
+This is built on [zerratar's OpenFF](https://github.com/zerratar/openff), which did the hard work of getting FF3 running natively. If you like what's here, go and give that project some love too.
 
-No game files are included. You need your own copy of the games.
+No game files are included. You need your own copy of Final Fantasy III.
 
-| | |
-| --- | --- |
-| ![Final Fantasy III's title](Docs/Images/ff3-title.png) | ![Ur, in Final Fantasy III](Docs/Images/ff3-ur.png) |
-| *FF3's title, with crisp text at any window size* | *Ur: FF3 plays as shipped* |
-| ![The Red Wings deck in FF4's opening](Docs/Images/ff4-deck.png) | ![Cecil's title card in FF4's opening](Docs/Images/ff4-scene.png) |
-| *FF4's opening scene* | *Scenes framed and timed as the Steam game's* |
-| ![An FF4 battle](Docs/Images/ff4-battle.png) | ![Picking a foe in an FF4 battle](Docs/Images/ff4-target.png) |
-| *FF4's battles, by FF4's own rules* | *The battle screen is a layout a mod can restyle* |
-| ![FF4's menu](Docs/Images/ff4-menu.png) | ![Crystal with an FF3 map open in 3D](Docs/Images/crystal-map.png) |
-| *FF4's menu* | *Crystal, the editor* |
+<!-- TODO: screenshots. Suggested: the OpenFF3 Enhanced menu, a turn-based battle, the minimap, the HD textures. Put them in Docs/Images and link them here. -->
 
-## Get started
+## What's new
 
-1. Download `OpenFF-<version>-win-x64.zip` from [Releases](https://github.com/zerratar/openff/releases)
-   and unzip it anywhere. Nothing to install.
-2. Have **Final Fantasy III** and/or **Final Fantasy IV (3D Remake)** installed from Steam or GOG.
-3. Run `OpenFF.exe`. It finds the games by itself and starts FF3. For FF4, start it once with
-   `OpenFF.exe --game=ff4`; it remembers the choice.
+**Battles**
+- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more entering the whole party's commands at once. Switch it on or off at any time (Quality of life menu).
+- **Faster battles.** The spoils appear sooner, and the end-of-battle messages can be skipped quickly with Cross / B / A.
+- **Encounter rate.** 0.5x, 1x, 2x or 4x. Too many random battles? Halve them and double the EXP and job points.
 
-You need Windows 10 or 11 (64-bit). [What's in each release](Docs/Releases.md).
+**The menus**
+- **The OpenFF3 Enhanced menu.** Press **Esc** (or **Start** on a controller). It pauses the game, and has Settings, Quality of life, Minimap, Reset (back to the title screen) and Exit.
+- **Looks like the game.** The menu and battle windows are restyled to match FF3's own party menu, hand cursor and all.
+- **Quality of life.** Game speed, random encounters on or off, battle EXP and job EXP multipliers, save anywhere, no job change penalty, and an indicator in the top-left corner showing which of these are on.
+- **Party and status screens** now show each hero's job level, and how many job points are left until the next one.
+- **Controller icons** for PlayStation, Xbox, Switch or keyboard (Settings > Button icons).
 
-## Playing
+**Dungeons**
+- **A customisable minimap** (Esc > Minimap). Show or hide it, change its size and zoom, and choose whether chests and hidden walls are marked. Pick a completed map or an FF4-style "fog of war" map that fills in as you walk, and how much of it you uncover at a time. Be warned: it can spoil hidden passages.
 
-Arrow keys move, **Enter** confirms, **Backspace** cancels, **Esc** opens OpenFF's own menu
-(settings, exit). Game pads work too. All keys: [Controls](Docs/Controls.md).
+**Looks and sound**
+- **Sharper textures.** OpenFF3 Enhanced can use higher-quality textures and portraits. See *Texture packs* below.
+- **Fonts.** The menus, dialogue, names and title screen each have their own font, and you can swap in your own. See *Fonts* below.
+- **Story text is easier to read.** A pale glow sits behind the prologue and cutscene text so it reads over the pictures.
+- **Smoother.** Frame pacing is smoothed, and there's a fix for the stutter that appeared with VSync on.
 
-What OpenFF adds on top of the originals:
+**Other**
+- On the world map a full push of the stick no longer runs, which stopped the character moving faster than intended and clipping through walls.
+- Shops: L / R switch between Buy and Sell on a controller.
+- The Equipment menu on a controller can now reach "Remove" and "Remove all".
+- Steam achievements, when you play from your Steam copy with Steam running.
+- Company logos are skipped. Everything the game writes lives in one folder, `userdata`.
 
-- Native rendering at any window size, smoothed to 60 fps or more.
-- Fast-forward (hold Tab).
-- Game pad support with rebindable buttons.
-- Mods, including OpenFF's own extras such as Gambits.
-- Steam achievements (FF3 and FF4) and Steam showing you in the game, when you play from your Steam copy
-  with Steam running. Mods don't turn them off; `"achievements": false` in settings.json does.
+The full list, with the details, is in [Releases](Docs/Releases.md).
 
-Command-line switches (start on any map, window size, logs): [Command line](Docs/Command-Line.md).
+## Install
+
+1. Install **Final Fantasy III** from Steam or GOG.
+2. Download `OpenFF-<version>-win-x64.zip` from [Releases](../../releases) and unzip it anywhere. Nothing needs installing.
+3. Run `OpenFF.exe`. It finds the game by itself.
+
+You need Windows 10 or 11 (64-bit).
+
+### Your saves and settings
+
+Saves, settings and achievements are kept in a `userdata` folder next to `OpenFF.exe`. Delete the game's folder and it all goes with it, and you can move the whole thing to another machine. The first time you start the game it copies any older saves and settings across from your AppData folder (`%APPDATA%\FF3` and `%LOCALAPPDATA%\OpenFF`) and leaves the originals where they were.
+
+To keep it somewhere else, start the game with `--data-dir=<folder>`.
+
+## Texture packs
+
+These are optional mods, so you only need them if you want the sharper look:
+
+- **FF3 HD Textures**: higher-quality textures for the world, the title and menu hand, and the name entry screen. It's a few GB.
+- **Retextured Portraits**: higher-quality character portraits.
+
+<!-- TODO: where to download them. -->
+
+To install one, put its folder in the `mods` folder next to `OpenFF.exe`. You can switch mods on and off, and change their order, from the title screen's MODS entry.
+
+## Fonts
+
+The `fonts` folder next to `OpenFF.exe` has a folder for each kind of text: `menus`, `dialogue`, `names` (the speaker's name and the cutscene text) and `title`. To use a font of your own, put a `.ttf`, `.otf` or `.ttc` file in the right folder and restart the game. If a folder holds several fonts, the first one by file name is used. To make your own font come first, start its name with an `a`, or take ours out.
+
+If the dialogue looks too big or too small, put a text file called `scale.txt` in `fonts\dialogue` containing a number from 0.5 to 1.5. Without one the size is 0.88; the font that comes with the game is set to 0.75.
+
+The fonts that come with this release, and their licences, are listed in `fonts\LICENSES.txt`.
+
+## Controls
+
+Arrow keys move, **Enter** confirms, **Backspace** cancels, **Esc** opens the OpenFF3 Enhanced menu. Game pads work too, with rebindable buttons. The full list is in [Controls](Docs/Controls.md).
+
+Holding **Tab** fast-forwards. The Quality of life menu also has a game speed option, and **F8** / **Shift+F8** change it while you play.
+
+## Command line
+
+You don't need any of this to play. `OpenFF.exe --help` lists every switch, and [Command line](Docs/Command-Line.md) explains them. A few worth knowing:
+
+- `--data-dir=<folder>`: where saves and settings are kept.
+- `--show-logos`: show the company logos at the start.
+- `--show-field-buttons`: show the on-screen Map and Menu buttons, which are hidden by default.
+- `--no-achievements`: don't send Steam achievements.
+- `--log-stalls`: write a note to the logs whenever a frame takes over 50 ms, for tracking down stutter.
 
 ## Making mods
 
-Put a mod in a folder under `mods\` beside `OpenFF.exe`. A mod can:
+OpenFF3 Enhanced keeps everything zerratar's OpenFF can do: mods can change models, textures, text, sounds, maps, menus and even run C# code. **Crystal** (`crystal.exe`, in the same folder) is the editor for making them.
 
-- **replace game files**: models, textures, text and sounds;
-- **draw a character as a glTF model** (from Blender or anywhere), with its pictures and its
-  expressions (the eye and mouth pictures scenes switch between) swapped as plain PNGs;
-- **restyle screens**: menus and HUDs are layouts and stylesheets;
-- **add maps, scenes and items**;
-- **run C# code** through the OpenFF API (the hero, the party, battles, the camera, saves and more).
-
-Mods can be turned on and off from the title screen.
-
-**Crystal** (`crystal.exe`) is the editor. It opens in your browser and can:
-
-- edit the games' own files and install the changes into your Steam copy (with a backup, and
-  *Remove* to undo);
-- export an OpenFF mod, set up and build its C# project, and run it in OpenFF.
-
-Where to read:
-
-- [The modding guide](https://zerratar.github.io/openff/): short tutorials with pictures (also
-  *Help ▸ Guide* in Crystal)
-- [Modding manual](Docs/Modding.md): everything about making a mod
-- [API reference](Docs/API.md): every type and member a mod can use
-- [Crystal](Docs/Editor.md): every editor and what installing into Steam does
-- [Samples](Samples/): working mods to learn from
-
-The samples include a sample mod with code, a survivors-style game on the field, FF3 with FF5's
-job system, a roguelike run of FF3's battles, a LAN mod where players walk one world together,
-and a menu restyle.
+- [The modding guide](https://zerratar.github.io/openff/)
+- [Modding manual](Docs/Modding.md)
+- [Crystal, the editor](Docs/Editor.md)
+- [Samples](Samples/)
 
 ## Building from source
 
 You need the [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (x64).
 
 ```
-dotnet build
-OpenFF\bin\Debug\net8.0\OpenFF.exe
-Crystal.Editor\bin\Debug\net8.0\crystal.exe
+dotnet build OpenFF\OpenFF.csproj -c Release
 ```
 
-`publish.cmd` builds a self-contained `dist\OpenFF\` folder (the release zip's contents).
-Writing C# for a mod also needs the .NET 8 SDK; mods without code don't.
+`publish.cmd` builds the release zip. How the code is laid out is in [Architecture](Docs/Architecture.md).
 
-How the code is laid out: [Architecture](Docs/Architecture.md). How changes are tested:
-[Testing](Docs/Testing.md).
+## A note on Final Fantasy IV
 
-## Status
+OpenFF also has an in-progress Final Fantasy IV port, written by zerratar, and its code is still in this repository. This release is made and tested for FF3 only. For FF4, see [zerratar's project](https://github.com/zerratar/openff) and [FF4 status](Docs/FF4-Status.md).
 
-**Final Fantasy III: complete.** The whole game plays as the original: its own logic,
-recreated from the mobile release, with native rendering, text and sound around it.
+## Credits
 
-| FF3 | Done |
-| --- | --- |
-| The game: field, events, battles, jobs, menus, saves, vehicles, the ending | 100% |
-| Rendering, text, music and sound on the desktop | 100% |
-| Keyboard and mouse | 100% |
-| Game pad | 80% |
-| OpenFF's own menus and settings | 60% |
-| Steam achievements | 95% |
-
-**Final Fantasy IV: in progress.** Written from FF4's own code (the Android build and the Steam
-executable) and checked frame by frame against the Steam game.
-
-| FF4 | Done | Still open |
-| --- | --- | --- |
-| Battle | 100% | |
-| Field: walking, exits, doors, key items, talking, events, vehicles, field magic | 85% | A full playthrough still to be checked scene by scene |
-| Maps, models and the world map | 85% | Some lighting and materials |
-| Title and map changes | 85% | The opening movie |
-| The Fat Chocobo's extras, name entry | 85% | |
-| Cutscenes | 80% | Sky and shadow details |
-| Menus | 90% | The spell effect over the party's places |
-| Party data: growth, magic, equipment, items, monsters | 90% | |
-| Shops, inns, saves, encounters | 90% | Steam's own save files are not read |
-| Steam achievements | 95% | A real unlock still to be watched on Steam |
-
-Details for every part: [FF4 status](Docs/FF4-Status.md). What has been read out of FF4's
-code: [FF4 internals](Docs/FF4-Internals.md).
-
-## Contributing
-
-Pull requests are welcome: an FF4 piece finished, a scene fixed, a file format read, an editor
-feature, a mod component. Please keep FF3 working (`Docs/Drives/ff3-boot.drive` plays its
-opening unattended) and add a test case for what you change ([Testing](Docs/Testing.md)).
-The open work is in [FF4 status](Docs/FF4-Status.md) and [FF4 internals](Docs/FF4-Internals.md).
-
-## All documentation
-
-| Document | About |
-| --- | --- |
-| [Modding guide](Docs/Guide/) | Tutorials with pictures |
-| [Modding](Docs/Modding.md), [API](Docs/API.md) | Making mods, and the API reference |
-| [Editor](Docs/Editor.md) | Crystal |
-| [Controls](Docs/Controls.md), [Command line](Docs/Command-Line.md) | Keys, pads, switches, logs |
-| [FF4 status](Docs/FF4-Status.md), [FF4 internals](Docs/FF4-Internals.md) | How far FF4 is, and what is known of its code |
-| [Architecture](Docs/Architecture.md), [Engine design](Docs/OpenFF-Engine.md) | How OpenFF is built |
-| [Client plan](Docs/Client-Plan.md) | The project's running journal |
-| [Testing](Docs/Testing.md), [Drives](Docs/Drives/) | Test cases and scripted test runs |
-| [Menus](Docs/Menus.md), [Text](Docs/Text.md), [Tables](Docs/Tables.md), [Audio](Docs/Audio.md), [Graphics](Docs/Graphics.md), [Events](Docs/Events.md), [Script language](Docs/Script-Language.md), [Content pipeline](Docs/Content-Pipeline.md), [Compression](Docs/Compression.md) | File formats and subsystems |
-| [Porting notes](Docs/Porting-Notes.md), [Modernisation](Docs/Modernisation-Plan.md) | How the port was made |
-| [Releases](Docs/Releases.md) | What each release contains |
+- **zerratar** for [OpenFF](https://github.com/zerratar/openff), which this is built on.
+- The fonts' authors, in `fonts\LICENSES.txt`.
 
 ## Game data and legal
 
-OpenFF reads the games from your own install and never copies or ships their files. Crystal's
-*Install* into a Steam copy keeps a backup, and *Remove* restores it. This repository contains no
-game data: `Content/` holds only the pipeline file and [override notes](Content/Override/README.md),
-and `Reference/libff4/` only what we wrote (see [its index](Reference/libff4/INDEX.md) for how the
-dumps are made from your own copy).
+OpenFF reads the game from your own install and never copies or ships its files. This repository contains no game data.
 
-MIT licence, see [LICENSE](LICENSE). The code is for study, preservation and playing the copies
-you own in new ways, with no warranty. The FF3 logic in `OpenFF/GlobalScope` was recreated by
-reverse engineering the mobile release; the FF4 parts are written from reading its binaries.
-Final Fantasy is a trademark of Square Enix Co., Ltd. This project is not affiliated with or
-endorsed by Square Enix.
+MIT licence, see [LICENSE](LICENSE). The code is for study, preservation and playing the copy you own in new ways, with no warranty. Final Fantasy is a trademark of Square Enix Co., Ltd. This project is not affiliated with or endorsed by Square Enix.
