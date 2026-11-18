@@ -35,9 +35,11 @@ namespace OpenFF.Client
 				}
 				if (original.W > 0 && original.H > 0 && width > original.W && height > original.H)
 				{
-					scaleU = (float)width / original.W;
+					float up = (float)width / original.W;
+					int baseW = original.W, baseH = original.H;
+					scaleU = up;
 					scaleV = (float)height / original.H;
-					Log.First(LogChannel.General, "upscaled-" + stem, 1, () => "ui: " + stem + " is " + width + " x " + height + " over the game's " + original.W + " x " + original.H + "; drawn at x" + scaleU.ToString("0.##"));
+					Log.First(LogChannel.General, "upscaled-" + stem, 1, () => "ui: " + stem + " is " + width + " x " + height + " over the game's " + baseW + " x " + baseH + "; drawn at x" + up.ToString("0.##"));
 				}
 			}
 			catch (Exception) { }
