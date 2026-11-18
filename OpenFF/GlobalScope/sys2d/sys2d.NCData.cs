@@ -60,7 +60,9 @@ internal static partial class GlobalScope
 				m_Size = ds.g_File.getSize(pFile_name);
 				m_pData = ds.CHeap.alloc_app(m_Size);
 				NCDataManager.GetNCDataManager().AddData(m_pData);
-				return ds.g_File.load(m_pData, pFile_name);
+				bool loaded = ds.g_File.load(m_pData, pFile_name);
+				OpenFF.Client.TextureOverrides.NoteSource(m_pData, pFile_name);   // PORT: which file the bytes came from (an upscaled sheet's size is judged against the game's own)
+				return loaded;
 			}
 
 			public virtual bool Load(byte[] pFile_name)
