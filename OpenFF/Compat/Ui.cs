@@ -638,5 +638,74 @@ namespace OpenFF.Client
 			Left(g, word, x + disc + 8, cy - disc / 2, disc, size, Muted);
 			return x + HintWidth(g, word, size, disc) + 26;
 		}
+
+		// ---- a bound pad button, for the Pad buttons screen ----
+		//
+		// The bindings are kept under the PlayStation pad's names (cross, circle, l1, options, share...). Each is drawn as the
+		// button of the icons in force: the PlayStation pictures, the Xbox / Switch discs for the face buttons and shoulders,
+		// and a plain plate with its name (LT, ZR, View...) for the triggers, the sticks and the select button.
+
+		private static bool BoundKnown(string name, out PadButton? logical, out string picture, out string label)
+		{
+			logical = null; picture = null; label = null;
+			if (Family == PadFamily.Keyboard) return false;
+			bool ps = Family == PadFamily.PlayStation, sw = Family == PadFamily.Switch;
+			switch ((name ?? "").Trim().ToLowerInvariant())
+			{
+				case "cross": logical = PadButton.A; return true;
+				case "circle": logical = PadButton.B; return true;
+				case "square": logical = PadButton.X; return true;
+				case "triangle": logical = PadButton.Y; return true;
+				case "l1": logical = PadButton.L; return true;
+				case "r1": logical = PadButton.R; return true;
+				case "options": logical = PadButton.Start; return true;
+				case "l2": picture = "l2"; label = ps ? "L2" : sw ? "ZL" : "LT"; return true;
+				case "r2": picture = "r2"; label = ps ? "R2" : sw ? "ZR" : "RT"; return true;
+				case "l3": picture = "l3"; label = ps ? "L3" : "LS"; return true;
+				case "r3": picture = "r3"; label = ps ? "R3" : "RS"; return true;
+				case "share": picture = "select"; label = ps ? "Share" : sw ? "-" : "View"; return true;
+			}
+			return false;
+		}
+
+		/// <summary>The width of a bound button's picture in text space, or 0 when it is drawn as its name (none, or the keyboard's icons).</summary>
+		public static float BoundWidth(GlobalScope.Graphics g, string name, float disc, int size)
+		{
+			if (!BoundKnown(name, out PadButton? logical, out string picture, out string label)) return 0f;
+			if (logical.HasValue)
+			{
+				Texture2D pic = PadPictureFor(logical.Value);
+				return pic != null ? PadPictureSize(pic, disc).W : disc;
+			}
+			if (PlayStationPad)
+			{
+				Texture2D pic = PadPicture(picture);
+				if (pic != null) return PadPictureSize(pic, disc).W;
+			}
+			return Math.Max(disc, Width(g, label, CapSize(size)) + disc * 0.7f);
+		}
+
+		/// <summary>Shape pass of a bound button: its picture or disc, or a plate for the name, at x (left edge) and cy.</summary>
+		public static void BoundShape(SpriteBatch b, string name, float x, float cy, float disc, float width, Viewport v)
+		{
+			if (!BoundKnown(name, out PadButton? logical, out string picture, out string label)) return;
+			if (logical.HasValue) { HintShape(b, logical.Value, x, cy, disc, v, keys: false); return; }
+			if (PlayStationPad && PadPicture(picture) != null) { PadPictureAt(b, picture, x, cy, disc, v); return; }
+			float h = disc * 0.92f;
+			Rectangle plate = Scale(new Rectangle((int)Math.Round(x), (int)Math.Round(cy - h / 2), (int)Math.Round(width), (int)Math.Round(h)), v);
+			RoundPlate(b, plate, new Color(150, 160, 190, 255), v);
+		}
+
+		/// <summary>Text pass of a bound button: the letter in its disc, or the name on its plate (a picture has none).</summary>
+		public static void BoundText(GlobalScope.Graphics g, string name, float x, float cy, float disc, float width, int size)
+		{
+			if (!BoundKnown(name, out PadButton? logical, out string picture, out string label)) return;
+			if (logical.HasValue) { HintText(g, logical.Value, "", x, cy, disc, size, keys: false); return; }
+			if (PlayStationPad && PadPicture(picture) != null) return;
+			bool was = TrueTypeText.TitleFace;
+			TrueTypeText.TitleFace = false;
+			try { Centred(g, label, new Rectangle((int)x, (int)(cy - disc / 2), (int)Math.Round(width), (int)disc), CapSize(size), Color.White); }
+			finally { TrueTypeText.TitleFace = was; }
+		}
 	}
 }

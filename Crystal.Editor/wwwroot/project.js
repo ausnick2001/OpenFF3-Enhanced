@@ -133,7 +133,7 @@ function drawMenuBar() {
       note: 'Game.Hero, Game.Dialogue, Game.Magic... what a mod\'s C# can call, from the engine\'s own docs' },
     '-',
     { label: 'Run in OpenFF', run: () => runInOpenFF(), disabled: !(open && open.client),
-      note: open && open.client ? 'Export to the mods folder and start the client with this mod alone (a running client hot-reloads)' : 'No OpenFF client found: build OpenFF or start OpenFF.exe once' },
+      note: open && open.client ? 'Export to the mods folder and start the client with this mod alone (a running client hot-reloads)' : 'No OpenFF client found: build OpenFF or start the game once' },
     { label: 'Run with the other mods', run: () => runInOpenFF({ withOthers: true }), disabled: !(open && open.client),
       note: 'The same, with every other enabled mod of the client\'s mods folder playing too - for an add-on to another mod' },
     { label: 'Show project folder', run: () => revealProject(), disabled: !open },
@@ -153,7 +153,7 @@ function drawMenuBar() {
     items.push({ label: 'Export to OpenFF…', run: exportToOpenFF,
       note: `Writes the mod into the client's mods folder: ${oursOpen.map(w => w.game + '/files').join(', ')}, the code and the scenes` });
     items.push({ label: 'Run in OpenFF', run: () => runInOpenFF(), disabled: !open.client,
-      note: open.client ? 'Export and start the client with this mod alone (a running client hot-reloads)' : 'No OpenFF client found: build OpenFF or start OpenFF.exe once' });
+      note: open.client ? 'Export and start the client with this mod alone (a running client hot-reloads)' : 'No OpenFF client found: build OpenFF or start the game once' });
     items.push({ label: 'Run with the other mods', run: () => runInOpenFF({ withOthers: true }), disabled: !open.client,
       note: 'The same, with every other enabled mod playing too - for an add-on to another mod' });
   }

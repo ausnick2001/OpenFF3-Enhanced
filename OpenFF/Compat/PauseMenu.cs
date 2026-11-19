@@ -719,6 +719,9 @@ namespace OpenFF.Client
 			Ui.Centred(g, text, r, size, c);
 		}
 
+		/// <summary>The size of a pad button's icon on a row of the Pad buttons page.</summary>
+		private static float BoundDisc(Rectangle row) => Math.Min(18f, row.Height - 2f);
+
 		private void DrawMenu()
 		{
 			GlobalScope.Graphics graphics = GlobalScope.m_Graphics;
@@ -738,6 +741,7 @@ namespace OpenFF.Client
 
 			// The values' places: a stepper's box and a switch, sized to what they show.
 			Rectangle[] valueBox = new Rectangle[count];
+			float[] boundWidth = new float[count];   // a pad button shown as its icon (the Pad buttons page): the icon's width
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
@@ -746,6 +750,7 @@ namespace OpenFF.Client
 					Rectangle r = layout.RowAt(row);
 					Kind kind = RowKind(row, out _, out _, out _);
 					RowText(row, out _, out string value);
+					if (kind == Kind.Text && _page == Page.Buttons && row < DsButtons.Length && _binding != DsButtons[row].Key) boundWidth[row] = Ui.BoundWidth(graphics, value, BoundDisc(r), rowSize);
 					int h = (int)Math.Round(r.Height - 3f);   // nearly the row's whole height, so the lettering sits inside it
 					int top = r.Y + (r.Height - h) / 2;
 					if (kind == Kind.Stepper)
@@ -784,6 +789,11 @@ namespace OpenFF.Client
 				if (kind == Kind.Stepper) UiTheme.Stepper(_batch, valueBox[row], lit, view);
 				else if (kind == Kind.Switch) UiTheme.Switch(_batch, valueBox[row], on, lit, view);
 				else if (kind == Kind.Page) Ui.IconAt(_batch, Ui.Icon.Right, r.Right - 20, r.Y + r.Height / 2f, r.Height * 0.5f, lit ? UiTheme.LitInk : UiTheme.Ink, view);
+				else if (kind == Kind.Text && boundWidth[row] > 0)
+				{
+					RowText(row, out _, out string bound);
+					Ui.BoundShape(_batch, bound, r.Right - 14 - boundWidth[row], r.Y + r.Height / 2f, BoundDisc(r), boundWidth[row], view);
+				}
 			}
 			if (layout.Note && !string.IsNullOrEmpty(_note)) UiTheme.NoteBox(_batch, note, view);
 			for (int i = 0; i < hints.Length; i++) Ui.HintShape(_batch, hints[i].Item1, hintX[i], hintY, 22, view);
@@ -835,7 +845,8 @@ namespace OpenFF.Client
 							C(graphics, on ? "On" : "Off", UiTheme.SwitchWord(valueBox[row]), rowSize - 1, on ? UiTheme.Ink : UiTheme.Hint);
 							break;
 						case Kind.Text:
-							if (value != null) { float w = Ui.Width(graphics, value, rowSize); L(graphics, value, r.Right - 14 - w, r.Y, r.Height, rowSize, lit ? UiTheme.LitInk : UiTheme.Hint); }
+							if (boundWidth[row] > 0) Ui.BoundText(graphics, value, r.Right - 14 - boundWidth[row], r.Y + r.Height / 2f, BoundDisc(r), boundWidth[row], rowSize);
+							else if (value != null) { float w = Ui.Width(graphics, value, rowSize); L(graphics, value, r.Right - 14 - w, r.Y, r.Height, rowSize, lit ? UiTheme.LitInk : UiTheme.Hint); }
 							break;
 					}
 					if (hint != null && valueBox[row].Width > 0)

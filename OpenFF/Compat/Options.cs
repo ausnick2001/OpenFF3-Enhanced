@@ -62,7 +62,7 @@ namespace OpenFF.Client
 			("steam-cells-off", "FF3_STEAM_CELLS_OFF", "", "Draw a Steam install's cell banks as they are, without the phone layout table"),
 			("text", "FF3_TEXT", "atlas", "Text from the phone build's glyph atlases instead of TrueType"),
 			("font", "FF3_FONT", "<file|dir>", "TrueType/OpenType face to use first (default: the Steam install's, then Content\\Fonts, then Windows)"),
-			("data-dir", "FF3_DATA_DIR", "<dir>", "Where the game keeps its saves, settings and achievements (default: the userdata folder beside OpenFF.exe - delete the game's folder and it is all gone; nothing is brought over from older places when this is given)"),
+			("data-dir", "FF3_DATA_DIR", "<dir>", "Where the game keeps its saves, settings and achievements (default: the userdata folder beside the game - delete the game's folder and it is all gone; nothing is brought over from older places when this is given)"),
 			("save-dir", "FF3_SAVE_DIR", "<dir>", "Keep this run's saves there instead of in the data folder - the game's slots, the mods' save chunks, achievements (a test run on a throwaway folder)"),
 			("title-font", "FF3_TITLE_FONT", "<file>", "The face the title screen's commands are drawn in (default: Windows' Times New Roman; none found, the pictures)"),
 			("size", "FF3_SIZE", "<WxH>", "Window size for this run, e.g. 1600x960 (the lasting one is in userdata\\settings\\settings.json)"),
@@ -192,9 +192,11 @@ namespace OpenFF.Client
 		public static string HelpText()
 		{
 			StringBuilder text = new StringBuilder();
-			text.AppendLine("OpenFF - Final Fantasy III and IV (3D) from their Steam releases");
+			text.AppendLine("OpenFF3 Enhanced - Final Fantasy III (3D) from its Steam or GOG release");
 			text.AppendLine();
-			text.AppendLine("Usage: OpenFF.exe [options]");
+			string exe = Updates.GameExeName;
+			if (exe.IndexOf(' ') >= 0) exe = "\"" + exe + "\"";
+			text.AppendLine("Usage: " + exe + " [options]");
 			text.AppendLine();
 			foreach ((string name, string env, string arg, string help) in Known)
 			{
@@ -205,9 +207,9 @@ namespace OpenFF.Client
 			}
 			text.AppendLine();
 			text.AppendLine("Examples:");
-			text.AppendLine("  OpenFF.exe --log=gl,firstchance");
-			text.AppendLine("  OpenFF.exe --log=all --screenshot-every=5");
-			text.AppendLine("  OpenFF.exe --content=..\\..\\..\\..\\Content");
+			text.AppendLine("  " + exe + " --log=gl,firstchance");
+			text.AppendLine("  " + exe + " --log=all --screenshot-every=5");
+			text.AppendLine("  " + exe + " --content=..\\..\\..\\..\\Content");
 			return text.ToString();
 		}
 	}

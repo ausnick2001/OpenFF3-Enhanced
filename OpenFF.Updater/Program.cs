@@ -5,7 +5,7 @@
 // install folder, nothing in it is in use: this replaces every file - the runtime's, Crystal's, the
 // updater's own - and the new release's updater stands where the old one did.
 //
-//   OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run OpenFF.exe [--arg <a>]... [--log <file>]
+//   OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run "OpenFF3 Enhanced.exe" [--arg <a>]... [--log <file>]
 //
 // What it does:
 //   waits for the game (the --wait process) and for anything else running from the install folder (Crystal) to close;
@@ -55,14 +55,15 @@ namespace OpenFF.Updater
 			Say("OpenFF updater " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 			if (from == null || to == null || !Directory.Exists(from) || !Directory.Exists(to))
 			{
-				Say("usage: OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run OpenFF.exe [--arg <a>]... [--log <file>]");
+				Say("usage: OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run "OpenFF3 Enhanced.exe" [--arg <a>]... [--log <file>]");
 				return 2;
 			}
 			from = Path.GetFullPath(from);
 			to = Path.GetFullPath(to);
-			if (!File.Exists(Path.Combine(from, "OpenFF.exe")))
+			string game = run ?? "OpenFF3 Enhanced.exe";
+			if (!File.Exists(Path.Combine(from, game)))
 			{
-				Say("The release has no OpenFF.exe - nothing was changed.");
+				Say("The release has no " + game + " - nothing was changed.");
 				Pause();
 				return 3;
 			}

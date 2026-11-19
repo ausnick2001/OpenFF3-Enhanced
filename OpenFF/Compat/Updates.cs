@@ -213,8 +213,9 @@ namespace OpenFF.Client
 					string files = Path.Combine(dir, "files");
 					ZipFile.ExtractToDirectory(zip, files);
 					// The zip holds an OpenFF folder (publish.cmd zips dist\OpenFF); the release is what is in it.
-					string from = File.Exists(Path.Combine(files, "OpenFF.exe")) ? files : Directory.GetDirectories(files).FirstOrDefault(d => File.Exists(Path.Combine(d, "OpenFF.exe")));
-					if (from == null) throw new InvalidDataException("the release's zip has no OpenFF.exe");
+					string exeName = GameExeName;
+					string from = File.Exists(Path.Combine(files, exeName)) ? files : Directory.GetDirectories(files).FirstOrDefault(d => File.Exists(Path.Combine(d, exeName)));
+					if (from == null) throw new InvalidDataException("the release's zip has no " + exeName);
 
 					Now = Stage.Installing;
 					// The updater runs from the temp folder - the new release's own, else this one's.
@@ -222,7 +223,7 @@ namespace OpenFF.Client
 					string fresh = Path.Combine(from, "OpenFF.Updater.exe");
 					File.Copy(File.Exists(fresh) ? fresh : UpdaterPath, updater, overwrite: true);
 					string to = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
-					List<string> args = new List<string> { "--from", from, "--to", to, "--wait", Environment.ProcessId.ToString(), "--run", Path.GetFileName(Environment.ProcessPath ?? "OpenFF.exe") };
+					List<string> args = new List<string> { "--from", from, "--to", to, "--wait", Environment.ProcessId.ToString(), "--run", exeName };
 					foreach (string a in Restart.TitleArguments()) { args.Add("--arg"); args.Add(a); }
 					args.Add("--log"); args.Add(Path.Combine(to, "logs", "update.log"));
 					// Through the shell: a window of its own, which says what it does and outlives this process's console.
@@ -245,6 +246,16 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>An argument quoted for a Windows command line: in quotes, its quotes escaped, the backslashes before them doubled.</summary>
+		/// <summary>The game's own exe name (what the release's zip must hold, and what the updater starts again): this process's, unless it runs under dotnet.</summary>
+		public static string GameExeName
+		{
+			get
+			{
+				string name = Path.GetFileName(Environment.ProcessPath ?? "");
+				return name.Length == 0 || name.Equals("dotnet.exe", StringComparison.OrdinalIgnoreCase) || name.Equals("dotnet", StringComparison.OrdinalIgnoreCase) ? "OpenFF3 Enhanced.exe" : name;
+			}
+		}
+
 		private static string Quote(string arg)
 		{
 			if (arg.Length > 0 && arg.IndexOfAny(new[] { ' ', '\t', '"' }) < 0) return arg;

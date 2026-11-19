@@ -297,7 +297,7 @@ namespace Crystal.Editor
 			text.Append("## Installing\n\n");
 			if (openff)
 			{
-				text.Append("An OpenFF mod: put this folder under `mods/` beside `OpenFF.exe` and start the client;\n");
+				text.Append("An OpenFF mod: put this folder under `mods/` beside the game's exe and start the client;\n");
 				text.Append("the title screen's MODS entry enables, disables and orders mods. `ff3/files/` applies\n");
 				text.Append("when FF3 is played, `ff4/files/` when FF4 is; `scenes/` and the assemblies apply to both.\n");
 				return text.ToString();

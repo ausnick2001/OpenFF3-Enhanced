@@ -90,7 +90,7 @@ namespace Crystal.Editor
 		/// <summary>Whether the client is running now (by process name, on this machine).</summary>
 		public static bool IsRunning()
 		{
-			try { return System.Diagnostics.Process.GetProcessesByName("FF3").Length > 0; }
+			try { return System.Diagnostics.Process.GetProcessesByName("OpenFF3 Enhanced").Length > 0 || System.Diagnostics.Process.GetProcessesByName("OpenFF").Length > 0; }
 			catch (Exception) { return false; }
 		}
 
@@ -103,7 +103,7 @@ namespace Crystal.Editor
 			string exe = Executable();
 			if (exe == null)
 			{
-				throw new InvalidOperationException("the OpenFF client was not found - start OpenFF.exe once (it records where it is), or build OpenFF beside this repository");
+				throw new InvalidOperationException("the OpenFF client was not found - start the game once (it records where it is), or build OpenFF beside this repository");
 			}
 			System.Diagnostics.ProcessStartInfo start = new System.Diagnostics.ProcessStartInfo(exe)
 			{
@@ -186,10 +186,13 @@ namespace Crystal.Editor
 				{
 					foreach (string configuration in new[] { "Debug", "Release" })
 					{
-						string candidate = Path.Combine(directory.FullName, "OpenFF", "bin", configuration, "net8.0", "OpenFF.exe");
-						if (File.Exists(candidate))
+						foreach (string exe in new[] { "OpenFF3 Enhanced.exe", "OpenFF.exe" })
 						{
-							return candidate;
+							string candidate = Path.Combine(directory.FullName, "OpenFF", "bin", configuration, "net8.0", exe);
+							if (File.Exists(candidate))
+							{
+								return candidate;
+							}
 						}
 					}
 				}

@@ -1623,7 +1623,7 @@ namespace Crystal.Editor
 								{
 									string name = a?["behaviour"]?.GetValue<string>();
 									if (string.IsNullOrWhiteSpace(name) || behaviours.Any(b => string.Equals(b.Name, name, StringComparison.OrdinalIgnoreCase))) continue;
-									behaviours.Add(new CatalogType { Name = name, FullName = "OpenFF.Client." + name, Kind = "menu", Assembly = "OpenFF.dll", Summary = "The OpenFF client's own: its code is in the client (OpenFF/Compat), nothing to set here." });
+									behaviours.Add(new CatalogType { Name = name, FullName = "OpenFF.Client." + name, Kind = "menu", Assembly = "OpenFF3 Enhanced.dll", Summary = "The OpenFF client's own: its code is in the client (OpenFF/Compat), nothing to set here." });
 								}
 							}
 						}
@@ -3846,7 +3846,7 @@ namespace Crystal.Editor
 			string mods = OpenFFClient.ModsFolder();
 			if (mods == null)
 			{
-				SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start OpenFF.exe once (it records where it is), or build OpenFF beside this repository" });
+				SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start the game once (it records where it is), or build OpenFF beside this repository" });
 				return;
 			}
 			try
@@ -3897,7 +3897,7 @@ namespace Crystal.Editor
 		{
 			if (_project == null) { SendJson(context, new { ok = false, error = "no project is open" }); return; }
 			string mods = OpenFFClient.ModsFolder();
-			if (mods == null) { SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start OpenFF.exe once (it records where it is), or build OpenFF beside this repository" }); return; }
+			if (mods == null) { SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start the game once (it records where it is), or build OpenFF beside this repository" }); return; }
 			if (OpenFFClient.IsRunning()) { SendJson(context, new { ok = false, error = "OpenFF is running - close it, then Test in battle again (a test starts the game afresh with its own steps)" }); return; }
 			try
 			{
@@ -3940,7 +3940,7 @@ namespace Crystal.Editor
 			string mods = OpenFFClient.ModsFolder();
 			if (mods == null)
 			{
-				SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start OpenFF.exe once (it records where it is), or build OpenFF beside this repository" });
+				SendJson(context, new { ok = false, error = "the OpenFF client has not been found - start the game once (it records where it is), or build OpenFF beside this repository" });
 				return;
 			}
 			try
