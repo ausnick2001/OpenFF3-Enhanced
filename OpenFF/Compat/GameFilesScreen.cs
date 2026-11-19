@@ -82,7 +82,7 @@ namespace OpenFF.Client
 			{
 				// The start's check says something only before a game, and not over the update's offer; an asked one at once.
 				bool asked = GameFileCheck.Asked;
-				if (!GameFileCheck.Worth || UpdateScreen.IsOpen || ModListScreen.IsOpen || (!asked && (!BeforeGame || PauseMenu.IsOpen))) return;
+				if (!GameFileCheck.Worth || UpdateScreen.IsOpen || TexturesScreen.IsOpen || ModListScreen.IsOpen || (!asked && (!BeforeGame || PauseMenu.IsOpen))) return;
 				_open = true;
 				_beforeGame = BeforeGame;
 				_selected = 0;

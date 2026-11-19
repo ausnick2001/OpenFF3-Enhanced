@@ -121,6 +121,9 @@ namespace OpenFF.Client
 				UpdateScreen.Attach(game);
 				GameFilesScreen.Attach(game);
 				Updates.CheckAtStart();
+				// The HD textures, offered on the title when no mod carries them (TexturesScreen).
+				TexturesScreen.Attach(game);
+				HdTextures.CheckAtStart();
 
 				// Notices over the game (ABP won, an ability learned, what a mod posts) and the
 				// Abilities menu for heroes on the mastery progression.

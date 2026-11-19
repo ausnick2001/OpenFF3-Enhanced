@@ -49,6 +49,8 @@ namespace OpenFF.Client
 		[JsonPropertyName("updates")] public string Updates { get; set; } = "ask";
 		/// <summary>The version "Skip this version" put away (its tag, v0.2.3); offered again once a newer one is out.</summary>
 		[JsonPropertyName("skipVersion")] public string SkipVersion { get; set; }
+		/// <summary>The HD textures' offer (HdTextures): "ask" offers them on the title while they are not installed, "no" - "Don't ask again" - never does.</summary>
+		[JsonPropertyName("hdTextures")] public string HdTextures { get; set; } = "ask";
 		/// <summary>The pale glow behind the prologue's and cutscenes' story text, so it reads over the picture: 0 off, 1 the default, up to 3 stronger.</summary>
 		[JsonPropertyName("storyGlow")] public double StoryGlow { get; set; } = 1;
 		/// <summary>Steam achievements (Achievements): earned in OpenFF as the game earns them, when it plays from the Steam

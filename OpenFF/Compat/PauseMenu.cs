@@ -178,7 +178,7 @@ namespace OpenFF.Client
 		{
 			if (!Game.IsActive && !Drive.Active) return;   // a drive's keys come whether the window has focus or not
 			// Nothing else may own the keyboard: the text entry, the mod list, a mod's capture.
-			bool othersOwn = (TextEntry.Instance != null && TextEntry.Instance.IsActive) || ModListScreen.IsOpen || AbilitiesMenu.IsOpen || UpdateScreen.IsOpen || GameFilesScreen.IsOpen || EngineInput.Captured;
+			bool othersOwn = (TextEntry.Instance != null && TextEntry.Instance.IsActive) || ModListScreen.IsOpen || AbilitiesMenu.IsOpen || UpdateScreen.IsOpen || GameFilesScreen.IsOpen || TexturesScreen.IsOpen || EngineInput.Captured;
 			if (_page == Page.Closed)
 			{
 				if (othersOwn || RenderTest.Active) { _openEdge = OpenKeyDown(hold: true); return; }

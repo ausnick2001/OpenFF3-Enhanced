@@ -51,7 +51,7 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>No game started or loaded yet (the logos, the prologue, the title), and nothing else of the client's over the screen.</summary>
-		private static bool AtStart => BeforeGame && !ModListScreen.IsOpen && !PauseMenu.IsOpen && !(TextEntry.Instance != null && TextEntry.Instance.IsActive);
+		internal static bool AtStart => BeforeGame && !TexturesScreen.IsOpen && !ModListScreen.IsOpen && !PauseMenu.IsOpen && !(TextEntry.Instance != null && TextEntry.Instance.IsActive);
 
 		// A game started (a new one, a load, a --map test start): from then on, no offer this run.
 		private static bool _started = GameProfile.StartStage != null;
