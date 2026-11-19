@@ -14,7 +14,7 @@ namespace Crystal.Editor
 {
 	internal static class OpenFFClient
 	{
-		// The client keeps it in userdata\settings beside OpenFF.exe (Crystal sits beside the client in a release); the older place is %LOCALAPPDATA%\OpenFF.
+		// The client keeps it in userdata\settings beside OpenFF3 Enhanced.exe (Crystal sits beside the client in a release); the older place is %LOCALAPPDATA%\OpenFF.
 		public static string SettingsPath
 		{
 			get
@@ -67,7 +67,7 @@ namespace Crystal.Editor
 			return null;
 		}
 
-		/// <summary>The client's OpenFF.exe: the one that last ran (launch.json), else the development build; null when neither is found.</summary>
+		/// <summary>The client's OpenFF3 Enhanced.exe: the one that last ran (launch.json), else the development build; null when neither is found.</summary>
 		public static string Executable()
 		{
 			try
@@ -142,7 +142,7 @@ namespace Crystal.Editor
 			return null;
 		}
 
-		/// <summary>OpenFF/bin/{Debug,Release}/net8.0/OpenFF.exe, looked for upward from where Crystal runs.</summary>
+		/// <summary>OpenFF/bin/{Debug,Release}/net8.0/OpenFF3 Enhanced.exe, looked for upward from where Crystal runs.</summary>
 		/// <summary>
 		/// The folder of the client's own menu screens (the Gambits), and whether it is the source's: a checkout's
 		/// OpenFF/Data/menus when Crystal runs from one (walking up, as for the development build - ahead of what
@@ -186,7 +186,7 @@ namespace Crystal.Editor
 				{
 					foreach (string configuration in new[] { "Debug", "Release" })
 					{
-						foreach (string exe in new[] { "OpenFF3 Enhanced.exe", "OpenFF.exe" })
+						foreach (string exe in new[] { "OpenFF3 Enhanced.exe", "OpenFF3 Enhanced.exe" })
 						{
 							string candidate = Path.Combine(directory.FullName, "OpenFF", "bin", configuration, "net8.0", exe);
 							if (File.Exists(candidate))

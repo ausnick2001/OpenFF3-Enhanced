@@ -5,8 +5,8 @@ rem Double-click, or run from anywhere. Rebuild while the client runs and it hot
 setlocal
 set HERE=%~dp0
 set CLIENT=%HERE%..\..\OpenFF\bin\Debug\net8.0
-if not exist "%CLIENT%\OpenFF.exe" (
-  echo The client has not been built: expected %CLIENT%\OpenFF.exe
+if not exist "%CLIENT%\OpenFF3 Enhanced.exe" (
+  echo The client has not been built: expected %CLIENT%\OpenFF3 Enhanced.exe
   echo Build OpenFF first ^(dotnet build OpenFF^), then run this again.
   pause
   exit /b 1

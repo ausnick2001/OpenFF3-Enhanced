@@ -1,5 +1,5 @@
 # Starlit Menu: the Equipment screen - slot labels with items in them, the hands' count, the list, the icons under the hand. Run with:
-#   OpenFF.exe --game=ff3 --only-mod=StarlitMenu --map=t01_01 --pos=-88,0,140 --drive=Docs/Drives/starlit-equip.drive --screenshot-dir=shots
+#   "OpenFF3 Enhanced.exe" --game=ff3 --only-mod=StarlitMenu --map=t01_01 --pos=-88,0,140 --drive=Docs/Drives/starlit-equip.drive --screenshot-dir=shots
 wait 10
 item 1001 1
 item 1002 1

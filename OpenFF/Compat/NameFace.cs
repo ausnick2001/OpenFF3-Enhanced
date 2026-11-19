@@ -1,5 +1,5 @@
 // The speaker's name in a dialogue window, in a face of its own: the first font in the fonts\names folder beside the
-// game (OpenFF.exe's folder; the older name-font folder still works). With none there, the name is drawn as before.
+// game (OpenFF3 Enhanced.exe's folder; the older name-font folder still works). With none there, the name is drawn as before.
 
 using System;
 using System.IO;

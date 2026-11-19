@@ -7,7 +7,7 @@ Two kinds of mod exist, for two audiences:
 | Plays on | the Steam release of FF3 or FF4, unmodified client | the OpenFF client |
 | Made with | Crystal | Crystal, or a text editor and the .NET SDK |
 | Can change | the game's own files: text, scripts, tables, menu layouts, maps, models, textures | the same, plus anything code can do through the engine API, and content from both games at once |
-| Installed by | Crystal, into the Steam copy, with a backup; *Remove* restores the original | dropping a folder into `mods/` beside `OpenFF.exe` |
+| Installed by | Crystal, into the Steam copy, with a backup; *Remove* restores the original | dropping a folder into `mods/` beside `OpenFF3 Enhanced.exe` |
 | Shared as | a `.zip` of the project (Crystal installs it on the other machine) | the mod folder |
 
 The first is for people who own the game and want it changed; the second is for people who
@@ -50,7 +50,7 @@ content, draw its own UI, or run code. That is what the OpenFF target is for.
 
 ## Part 2 - an OpenFF mod: files
 
-The client reads a `mods/` folder beside `OpenFF.exe`, one mod per subfolder:
+The client reads a `mods/` folder beside `OpenFF3 Enhanced.exe`, one mod per subfolder:
 
 ```
 mods/

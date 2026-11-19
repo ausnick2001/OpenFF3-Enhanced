@@ -51,7 +51,7 @@ namespace OpenFF.Client
 					// Relative --content, --mod and --project paths were resolved against where this run started.
 					WorkingDirectory = Options.LaunchDirectory
 				};
-				// Under "dotnet OpenFF.dll" the first argument is the dll; under OpenFF.exe it is the program itself.
+				// Under "dotnet OpenFF3 Enhanced.dll" the first argument is the dll; under OpenFF3 Enhanced.exe it is the program itself.
 				if (string.Equals(Path.GetFileNameWithoutExtension(executable), "dotnet", StringComparison.OrdinalIgnoreCase) && args.Length > 0)
 				{
 					start.ArgumentList.Add(args[0]);

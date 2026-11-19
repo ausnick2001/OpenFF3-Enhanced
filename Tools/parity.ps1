@@ -28,7 +28,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
-if (-not $Exe) { $Exe = Join-Path $root 'OpenFF\bin\Debug\net8.0\OpenFF.exe' }
+if (-not $Exe) { $Exe = Join-Path $root 'OpenFF\bin\Debug\net8.0\OpenFF3 Enhanced.exe' }
 if (-not (Test-Path $Exe)) { Write-Error "no client at $Exe - dotnet build OpenFF.sln first"; exit 2 }
 $Drive = (Resolve-Path $Drive).Path
 if (-not $Out) { $Out = Join-Path $env:TEMP 'parity' }
@@ -41,7 +41,7 @@ function Run([string] $name, [string[]] $extra) {
 	$args = @("--game=$Game", "--map=$Map", "--drive=$Drive", "--trace=$trace", "--log=general,file", "--log-file=$log", '--novoice') + $extra
 	if ($Pos) { $args += "--pos=$Pos" }
 	if ($Rot) { $args += "--rot=$Rot" }
-	Write-Host "parity: $name  OpenFF.exe $($args -join ' ')"
+	Write-Host "parity: $name  OpenFF3 Enhanced.exe $($args -join ' ')"
 	& $Exe @args | Out-Null
 	if (-not (Test-Path $trace)) { Write-Error "parity: the $name run wrote no trace ($log)"; exit 2 }
 	$bad = Select-String -Path $log -Pattern '^\s*[\d.]+\s+Exception\s' | Select-Object -First 1

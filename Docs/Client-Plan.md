@@ -103,7 +103,7 @@ own names and in its own containers. What the FF3 logic asks for by FF3's name a
 not get is logged as `missing: <name>` (`Compat/MissingFiles.cs`), and each of those is a
 mapping to write, not a file to ship.
 
-**Done (2026-09-03):** `OpenFF.exe --content="<FF4 install>"` lands Cecil (`p00_00`) in
+**Done (2026-09-03):** `"OpenFF3 Enhanced.exe" --content="<FF4 install>"` lands Cecil (`p00_00`) in
 Baron castle's grounds (`d01_00`) from the Steam install alone: the map with its textures,
 water and bridge, Cecil with his shadow, the castle's BGM from `BGM12.akb`, and the map's
 own script running through the shared command table. The pieces:
@@ -239,7 +239,7 @@ editor's Export already writes. Each is small once A-D exist; none is possible b
 
 ## Starting the client (2026-09-04, from a direction note)
 
-`OpenFF.exe` with no arguments starts FF3 from its Steam install: the client finds the
+`OpenFF3 Enhanced.exe` with no arguments starts FF3 from its Steam install: the client finds the
 installs the way the editor does and remembers them, with the last choice, in
 `%LocalAppData%\OpenFF\launch.json`. `--game=ff4` switches game, `--source=content`
 uses our extracted Content directory instead of Steam; both are remembered, so the next
@@ -295,7 +295,7 @@ each mod's `scenes/<map>.json` on entering the map: a GameObject per target in t
 scene, a `MapObject` component (kind, index, and for a character the `Npc` handle from the
 new `Npcs.Existing(index)`), the behaviours with fields set from JSON (numbers, strings,
 bools, enums, Vector3/Vector2/Color); owned by the mod, so a hot reload remakes them.
-**Run in OpenFF** (`/api/project/run`): export, then start OpenFF.exe (`OpenFFClient.Executable`,
+**Run in OpenFF** (`/api/project/run`): export, then start OpenFF3 Enhanced.exe (`OpenFFClient.Executable`,
 from launch.json or the development build) unless it is running. **API reference**
 (`Editor/ApiReference.cs`, `/api/openff/reference`): OpenFF.Engine.xml as a searchable
 dialog. Testing C-30, E-21..E-23. Later: a scene view that shows attached behaviours in the
@@ -436,7 +436,7 @@ act rather than observe; then the scene format.
 
 ## The mods folder (2026-09-04)
 
-`mods/` beside `OpenFF.exe`, one mod per subfolder: `mod.json` (name, version, author,
+`mods/` beside `OpenFF3 Enhanced.exe`, one mod per subfolder: `mod.json` (name, version, author,
 description, target), `files/` mirroring the game's names, a README. The client
 reads the folder at start (`Shared/Content/Mods.cs`, `GameArchive.ModsFolderOverrides`),
 puts the enabled mods that target `openff` in front of the shipped content (an OpenFF mod
@@ -463,7 +463,7 @@ the hand cursor is put, F3 their ids, F4 the 2D sprites as drawn, F5 the world t
 (part, stage, type, mirror, hero position and spot, focused frame), F6 the stats (fps,
 frame time, draw calls and vertices from `NativeRenderer`, memory, viewport).
 `--debug=all` or `--debug=boxes,labels` starts with it on, which is how a headless run is
-inspected: `OpenFF.exe --debug=all --screenshot-every=3 --screenshot-dir=<dir>` and read the
+inspected: `"OpenFF3 Enhanced.exe" --debug=all --screenshot-every=3 --screenshot-dir=<dir>` and read the
 pictures. Add to it freely: it is the place for anything that helps a diagnosis (camera,
 chip streaming, script state) rather than more log lines.
 

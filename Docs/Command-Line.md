@@ -1,6 +1,6 @@
 # Command line and diagnostics
 
-`OpenFF.exe` with no arguments finds your Steam or GOG installs, boots FF3 and remembers the
+`OpenFF3 Enhanced.exe` with no arguments finds your Steam or GOG installs, boots FF3 and remembers the
 choice in `%LocalAppData%\OpenFF\launch.json`. These switches change that for one run.
 
 ## Starting

@@ -1,6 +1,6 @@
 // The help line across the top of the battle while the command list is open: what the command under the hand does,
 // as the spell and item lists already do for theirs. The game has no text for commands, so the words are here -
-// a few for the common ones - and any more go in command-help.txt beside OpenFF.exe, one "Name=What it does" a line
+// a few for the common ones - and any more go in command-help.txt beside OpenFF3 Enhanced.exe, one "Name=What it does" a line
 // (the name as the list shows it). A command with neither shows no line (and the log says which, once).
 
 using System;

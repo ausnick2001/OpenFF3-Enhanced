@@ -19,7 +19,7 @@ dotnet run --project Crystal.Editor -- extract-archives Content <somewhere> "en.
 ```
 
 Copy out only the files actually being changed - the rest just costs load time.
-Another directory can be used instead, with `OpenFF.exe --content-override=<dir>`.
+Another directory can be used instead, with `"OpenFF3 Enhanced.exe" --content-override=<dir>`.
 
 Files here are ignored by git (see `.gitignore`), so local experiments do not end
 up in the repository. Content meant to ship goes in deliberately, with the

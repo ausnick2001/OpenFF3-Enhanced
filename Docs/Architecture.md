@@ -198,7 +198,7 @@ editing - scripts, menus and text. `Docs/Editor.md`.
 Every run writes `bin/Debug/net8.0/logs/ff3.log`. `--log=all` or a channel list
 (`gl, texture, content, file, sound, input, event, firstchance`). `--test=3d` and
 `--test=model` are isolated render harnesses; `--capture-model` grabs live geometry
-out of the game so it can be inspected on its own. `OpenFF.exe --help` lists everything.
+out of the game so it can be inspected on its own. `"OpenFF3 Enhanced.exe" --help` lists everything.
 
 `firstchance` matters: large parts of the game's own logic swallow exceptions, so a
 fault usually surfaces as "nothing happened" rather than an error.

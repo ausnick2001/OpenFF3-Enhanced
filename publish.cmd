@@ -1,6 +1,6 @@
 @echo off
 rem Builds a ready-to-run OpenFF folder for people who do not have the .NET SDK: the client
-rem (OpenFF.exe), the engine mods reference, and Crystal (crystal.exe) side by side, with the
+rem (OpenFF3 Enhanced.exe), the engine mods reference, and Crystal (crystal.exe) side by side, with the
 rem .NET runtime included, in dist\OpenFF - and zips it as dist\OpenFF-<version>-win-x64.zip,
 rem which is what a GitHub release carries. The games themselves are not in it: the client
 rem reads the Steam installs on the machine it runs on.
@@ -38,9 +38,9 @@ copy /y dist\samples\HelloMod\Hello.dll dist\OpenFF\Samples\HelloMod\ >nul || go
 copy /y dist\samples\Mastery\Mastery.dll dist\OpenFF\Samples\Mastery\ >nul || goto fail
 copy /y dist\samples\Survivors\Survivors.dll dist\OpenFF\Samples\Survivors\ >nul || goto fail
 copy /y dist\samples\Rogue\Rogue.dll dist\OpenFF\Samples\Rogue\ >nul || goto fail
-rem The PlayStation button pictures (Settings > Button icons), which the client reads from pad-icons beside OpenFF.exe.
+rem The PlayStation button pictures (Settings > Button icons), which the client reads from pad-icons beside OpenFF3 Enhanced.exe.
 robocopy pad-icons dist\OpenFF\pad-icons /e /njh /njs /ndl /nfl /nc /ns >nul
-rem The fonts that come with it (fonts\menus, fonts\names and their licences), which the client reads from fonts beside OpenFF.exe.
+rem The fonts that come with it (fonts\menus, fonts\names and their licences), which the client reads from fonts beside OpenFF3 Enhanced.exe.
 robocopy fonts dist\OpenFF\fonts /e /njh /njs /ndl /nfl /nc /ns >nul
 rem The guide: the HTML tutorials Crystal opens with Help, readable on their own too.
 if exist Docs\Guide robocopy Docs\Guide dist\OpenFF\Guide /e /njh /njs /ndl /nfl /nc /ns >nul

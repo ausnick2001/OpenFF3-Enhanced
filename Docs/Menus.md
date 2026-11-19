@@ -23,7 +23,7 @@ dotnet run --project Crystal.Editor -- extract-archives Content Content/Override
 dotnet run --project Crystal.Editor -- xbn Content/Override/files/MenuDefine.xbn
 # edit Content/Override/files/MenuDefine.xml
 dotnet run --project Crystal.Editor -- xbn-build Content/Override/files/MenuDefine.xml
-OpenFF.exe
+OpenFF3 Enhanced.exe
 ```
 
 `xbn` decodes and then immediately rebuilds what it decoded, comparing against the

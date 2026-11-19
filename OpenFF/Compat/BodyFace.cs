@@ -1,5 +1,5 @@
 // Ordinary dialogue (the lines a speaker says in a message window) in a face of its own: the first font in the
-// fonts\dialogue folder beside the game (OpenFF.exe's folder; the older body-font folder still works), at a size of
+// fonts\dialogue folder beside the game (OpenFF3 Enhanced.exe's folder; the older body-font folder still works), at a size of
 // its own. With no font there, dialogue is drawn as before. A scale.txt beside the font holding a number (1 = the
 // menus' size) sets the size; 0.88 without one. See FontFolders.
 

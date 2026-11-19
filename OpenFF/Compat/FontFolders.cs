@@ -1,4 +1,4 @@
-// Fonts the player drops in: a "fonts" folder beside OpenFF.exe, made at the first start, with a folder for each
+// Fonts the player drops in: a "fonts" folder beside OpenFF3 Enhanced.exe, made at the first start, with a folder for each
 // place text is drawn. Put any .ttf, .otf or .ttc in one and it is used from the next start; empty, the game's own
 // is drawn as before. Nothing to configure, no command line.
 //

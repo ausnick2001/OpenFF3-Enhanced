@@ -1,7 +1,7 @@
 // Where the game keeps what it writes: portable by default.
 //
 // Everything the player's game makes - saves, settings, the achievements, the game-file check's cache, the record of
-// the game last played - goes in one folder, "userdata", beside OpenFF.exe, so deleting the game's folder deletes the
+// the game last played - goes in one folder, "userdata", beside OpenFF3 Enhanced.exe, so deleting the game's folder deletes the
 // game and moving the folder moves it. --data-dir=<dir> (FF3_DATA_DIR) puts it elsewhere. (Not "Data": that is the
 // client's own files, which an update replaces.)
 //

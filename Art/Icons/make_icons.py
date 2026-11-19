@@ -26,7 +26,7 @@ def bmp_with_alpha(img, path, size=256):
     off = 14 + len(info)
     open(path, 'wb').write(b'BM' + struct.pack('<IHHI', off + len(px), 0, 0, off) + info + px)
 
-openff = square('openff.png')
+openff = square('luneth.png', 0.02)   # Luneth's upscaled portrait (was openff.png)
 ico(openff, '../../OpenFF/Icon.ico')
 bmp_with_alpha(openff, '../../OpenFF/Icon.bmp')
 crystal = square('crystal.png')

@@ -164,7 +164,7 @@ before it looks in the archives:
 ```bash
 dotnet run --project Crystal.Editor -- extract-archives Content Content/Override "files/*.script"
 # edit Content/Override/files/whatever.script
-OpenFF.exe
+OpenFF3 Enhanced.exe
 ```
 
 `--content-override=<dir>` points somewhere else instead - handy for keeping a whole

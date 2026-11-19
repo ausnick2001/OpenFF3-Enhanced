@@ -5,7 +5,7 @@
 //
 // Extraction is deliberately flat: the game looks an override up as
 // <override-dir>/<name>, so an extracted directory can be pointed at directly with
-//   OpenFF.exe --content-override=<out-dir>
+//   "OpenFF3 Enhanced.exe" --content-override=<out-dir>
 // and every file in it takes precedence over the archived copy. Edit one, keep it,
 // throw the rest away - the game only reads what is there.
 
@@ -158,7 +158,7 @@ namespace Crystal
 			Console.WriteLine("written to " + Path.GetFullPath(outputDir));
 			Console.WriteLine();
 			Console.WriteLine("to have the game read these instead of the archives:");
-			Console.WriteLine("  OpenFF.exe --content-override=" + Path.GetFullPath(outputDir));
+			Console.WriteLine("  \"OpenFF3 Enhanced.exe\" --content-override=" + Path.GetFullPath(outputDir));
 			return failed > 0 ? 1 : 0;
 		}
 
