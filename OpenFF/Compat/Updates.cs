@@ -28,7 +28,7 @@ namespace OpenFF.Client
 {
 	internal static class Updates
 	{
-		public const string Feed = "https://api.github.com/repos/zerratar/openff/releases/latest";
+		public const string Feed = "https://api.github.com/repos/ausnick2001/OpenFF3-Enhanced/releases/latest";
 
 		public enum Stage { Idle, Checking, UpToDate, Available, Downloading, Verifying, Unpacking, Installing, Failed }
 

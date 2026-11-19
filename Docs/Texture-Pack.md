@@ -19,7 +19,7 @@ python Tools/make-texture-pack.py --mod "mods/FF3 HD Textures" --portraits "mods
 
 1. On the fork, make a release with the tag `hd-textures` (a pre-release, so it is never the "latest" the update check reads).
 2. Attach `pack.json` and every `hd-textures-N.zip` from the output folder.
-3. Set `HdTextures.PackUrl` (the `OWNER` in it) to the fork's account, so the game reads `https://github.com/<owner>/OpenFF3-Enhanced/releases/download/hd-textures/pack.json`.
+3. `HdTextures.PackUrl` already points at the fork (ausnick2001/OpenFF3-Enhanced), so the game reads `https://github.com/<owner>/OpenFF3-Enhanced/releases/download/hd-textures/pack.json`.
 
 Every part is checked against the SHA-256 in `pack.json` before anything is unpacked. The pack is unpacked in `mods\.hd-textures-staging` (a dot folder is not a mod) and moved to `mods\FF3 HD Textures` whole, so a failed or cancelled download leaves nothing half-installed.
 

@@ -32,8 +32,8 @@ namespace OpenFF.Client
 {
 	internal static class HdTextures
 	{
-		/// <summary>Where pack.json is: the fork's release tagged "hd-textures". Set OWNER to the GitHub account the fork lives under.</summary>
-		public const string PackUrl = "https://github.com/OWNER/OpenFF3-Enhanced/releases/download/hd-textures/pack.json";
+		/// <summary>Where pack.json is: the fork's release tagged "hd-textures". The fork: ausnick2001/OpenFF3-Enhanced.</summary>
+		public const string PackUrl = "https://github.com/ausnick2001/OpenFF3-Enhanced/releases/download/hd-textures/pack.json";
 
 		public const string DefaultFolder = "FF3 HD Textures";
 
