@@ -15,7 +15,11 @@ Use encounter rate modifiers, or don't.
 Use enhanced textures, or don't.
 Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
 
-No game files are included. You need your own copy of Final Fantasy III from Steam or GOG.
+## IMPORTANT: you need your own copy of Final Fantasy III
+
+**This download does not include the game.** No game files of any kind (models, textures, music, text, scripts) are in the zip. OpenFF3 Enhanced only works if you already own **Final Fantasy III** and have it installed from **Steam or GOG**. It reads the game from your own install, never copies or ships its files, and never changes them. Without the game it will not run.
+
+The optional texture packs (see *Texture packs* below) are fan-made upscales of the game's own artwork. They are only add-ons for people who already own the game, and they do nothing without it.
 
 <!-- TODO: screenshots. Suggested: the OpenFF3 Enhanced menu, a turn-based battle, the minimap, the HD textures. Put them in Docs/Images and link them here. -->
 
