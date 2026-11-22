@@ -82,6 +82,10 @@ The full list, with the details, is in [Releases](Docs/Releases.md).
 
 ## Install
 
+<a href="https://recomplauncher.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" alt="Get it on RecompLauncher" height="48"></picture></a>
+
+The easiest way to install is through the Recomp Launcher - click above. But if you prefer to install manually the process is still fairly simple:
+
 1. Install **Final Fantasy III** from Steam or GOG.
 2. Download `OpenFF3-Enhanced-<version>-win-x64.zip` from [Releases](../../releases) and unzip it anywhere. Nothing needs installing.
 3. Run `OpenFF3 Enhanced.exe`. It finds the game by itself.
