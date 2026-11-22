@@ -11,11 +11,17 @@ I have always disliked JRPGs that have the combat system where your entire party
 I wanted to keep the changes as modular and adjustable as possible with the emphasis on being able to enjoy the game the way you want to.
 
 Use turn based battles or don't.
+
 Use the minimap or don't.
+
 Make the minimap massive, or tiny. Make it opaque, make it transparent. Make it display unopened treasure chests, or hide them. Make it already complete or make it so you can uncover it as you go (fog of war), FF4 3D style.
+
 Use encounter rate modifiers, or don't.
+
 Use enhanced textures, or don't.
+
 Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
+
 
 ![OpenFF3 Enhanced: before and after](Docs/Images/hero-1.jpg)
 
