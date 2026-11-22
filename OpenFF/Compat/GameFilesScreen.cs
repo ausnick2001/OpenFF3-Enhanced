@@ -143,7 +143,7 @@ namespace OpenFF.Client
 			Rectangle bar = new Rectangle(panel.X + 50, panel.Y + 150, panel.Width - 100, 22);
 			float fraction = GameFileCheck.Total > 0 ? (float)GameFileCheck.Got / GameFileCheck.Total : 0f;
 
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearWrap);
 			UiTheme.Panel(_batch, panel, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 78, panel.Width - 60, view);
 			if (stage == GameFileCheck.Stage.Checking) UiTheme.Progress(_batch, bar, fraction, view);
@@ -154,7 +154,7 @@ namespace OpenFF.Client
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menus' own face, as the pause menu
 			try
 			{
 				UiTheme.Left(graphics, title, panel.X + 30, panel.Y + 14, 34, 15, UiTheme.Ink);

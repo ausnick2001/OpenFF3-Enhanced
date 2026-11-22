@@ -117,6 +117,11 @@ internal static partial class GlobalScope
 								}
 								sendBattle(_sys);
 								sendMenu(_sys);
+								// PORT: Select changes the party's leader on the field, as on the DS (the method was never called in the port).
+								if (!_sys.IsMenu() && !_sys.IsAreaMap() && !_sys.IsBattle() && !_sys.IsMapJump() && !_sys.IsTalk() && !_sys.IsSave() && !_sys.IsShop())
+								{
+									changePartyMember(_sys);
+								}
 								if (_sys.IsMapJump() | _sys.IsBattle() | _sys.IsMogNet() | _sys.IsTitle() | _sys.IsShop() | _sys.IsMenu() | _sys.IsTalk() | _sys.IsSave() | _sys.IsSpecial() | _sys.IsInn() | _sys.IsAreaMap())
 								{
 									setPhase(PHASE.END);
@@ -385,7 +390,8 @@ internal static partial class GlobalScope
 										cPlayerVehicle.startMotion(cPlayerVehicle.getWaitMotionIndex(), _Loop: true, 5u);
 									}
 								}
-								if (_sys.World2DMng().CameraButton().isTouch())
+								// PORT: the Map button also answers the Y button and the M key, which the touch button's hiding leaves as the way in.
+								if (_sys.World2DMng().CameraButton().isTouch() || (_sys.World2DMng().visibleMap() && ((ds.g_Pad.edge() & 0x800) != 0 || OpenFF.Client.Qol.TakeMapPress())))
 								{
 									_sys.World2DMng().refMapNameWindow().close();
 									MatrixSound.MtxSENDS_Play(0, 1, 192, 127);

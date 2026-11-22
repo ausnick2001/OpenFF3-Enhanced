@@ -10,7 +10,7 @@
     <LangVersion>latest</LangVersion>
     <Version>0.9.0</Version>
     <Authors>OpenFF contributors</Authors>
-    <Copyright>Final Fantasy III and IV are Square Enix's; this is a fan-made client and editor that read the copies you own</Copyright>
+    <Copyright>Final Fantasy III is Square Enix's; this is a fan-made client that reads the copy you own</Copyright>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Platforms>AnyCPU;x64</Platforms>
     <ApplicationIcon>Icon.ico</ApplicationIcon>

@@ -33,7 +33,7 @@ namespace OpenFF.Client
 		private bool _restartTried, _restarted;
 		private static readonly Keys[] Watched = { Keys.Up, Keys.Down, Keys.W, Keys.S, Keys.Enter, Keys.Space, Keys.Z, Keys.X, Keys.Back, Keys.Escape };
 
-		private static readonly Rectangle PanelRect = new Rectangle(160, 70, 480, 340);
+		private static readonly Rectangle PanelRect = new Rectangle(150, 40, 500, 400);
 
 		private TexturesScreen(Game game) : base(game)
 		{
@@ -57,6 +57,7 @@ namespace OpenFF.Client
 			switch (HdTextures.Now)
 			{
 				case HdTextures.Stage.Offer: return new[] { "Download now", "Not now", "Don't ask again" };
+				case HdTextures.Stage.Confirm: return new[] { "Delete and reinstall (game will restart, save first!)", "Cancel" };
 				case HdTextures.Stage.Downloading: return new[] { "Cancel" };
 				case HdTextures.Stage.Failed: return new[] { "OK" };
 				case HdTextures.Stage.Done: return _restartTried && !_restarted ? new[] { "OK" } : Array.Empty<string>();
@@ -68,7 +69,7 @@ namespace OpenFF.Client
 		{
 			const int h = 28, step = 34;
 			int top = PanelRect.Bottom - 46 - count * step;
-			return new Rectangle(PanelRect.X + 60, top + row * step, PanelRect.Width - 120, h);
+			return new Rectangle(PanelRect.X + 40, top + row * step, PanelRect.Width - 80, h);   // wide enough for the longest words to sit inside the highlight
 		}
 
 		public override void Update(GameTime gameTime)
@@ -77,8 +78,17 @@ namespace OpenFF.Client
 			if (!_open)
 			{
 				// Offered once the game has not started and the update's panel (and the file check's) is not asking.
-				if (stage != HdTextures.Stage.Offer || !UpdateScreen.AtStart || GameFilesScreen.IsOpen) return;
-				if (Updates.Now == Updates.Stage.Checking || Updates.Now == Updates.Stage.Available || UpdateScreen.IsOpen) return;
+				if (stage != HdTextures.Stage.Offer && stage != HdTextures.Stage.Confirm && stage != HdTextures.Stage.Failed) return;
+				if (HdTextures.Manual)
+				{
+					// Asked for in Settings, so it comes up wherever the player is (the game is held still under it).
+					if (PauseMenu.IsOpen || GameFilesScreen.IsOpen || ModListScreen.IsOpen || UpdateScreen.IsOpen) return;
+				}
+				else
+				{
+					if (!UpdateScreen.AtStart || GameFilesScreen.IsOpen) return;
+					if (Updates.Now == Updates.Stage.Checking || Updates.Now == Updates.Stage.Available || UpdateScreen.IsOpen) return;
+				}
 				_open = true;
 				_selected = 0;
 				_restartTried = _restarted = false;
@@ -136,6 +146,15 @@ namespace OpenFF.Client
 						_selected = 0;
 					}
 					break;
+				case HdTextures.Stage.Confirm:
+					if (cancel) HdTextures.Later();
+					else if (confirm)
+					{
+						if (_selected == 0) HdTextures.Install(true);
+						else HdTextures.Later();
+						_selected = 0;
+					}
+					break;
 				case HdTextures.Stage.Downloading:
 					if (cancel || confirm) HdTextures.Cancel();
 					break;
@@ -164,24 +183,24 @@ namespace OpenFF.Client
 			Rectangle panel = PanelRect;
 			string[] rows = Rows();
 			HdTextures.Pack pack = HdTextures.Found;
-			string title = stage == HdTextures.Stage.Offer ? "HD textures" : stage == HdTextures.Stage.Failed ? "The download did not go in" : stage == HdTextures.Stage.Done ? "HD textures installed" : "Getting the HD textures";
-			string sub = stage == HdTextures.Stage.Offer ? "Sharper textures and portraits for Final Fantasy III" : "";
+			string title = stage == HdTextures.Stage.Offer ? "HD textures" : stage == HdTextures.Stage.Confirm ? "Reinstall the HD textures" : stage == HdTextures.Stage.Failed ? "The download did not go in" : stage == HdTextures.Stage.Done ? "HD textures installed" : "Getting the HD textures";
+			string sub = stage == HdTextures.Stage.Confirm ? "They are installed already" : stage == HdTextures.Stage.Offer ? "Sharper textures and portraits for Final Fantasy III" : "";
 			Rectangle bar = new Rectangle(panel.X + 50, panel.Y + 150, panel.Width - 100, 22);
 			bool progress = Busy(stage);
 			float fraction = HdTextures.Total > 0 ? (float)HdTextures.Got / HdTextures.Total : 0f;
 
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearWrap);
 			UiTheme.Panel(_batch, panel, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 78, panel.Width - 60, view);
 			if (progress) UiTheme.Progress(_batch, bar, stage == HdTextures.Stage.Verifying ? 1f : fraction, view);
-			for (int i = 0; i < rows.Length; i++) { Rectangle rr = RowRect(i, rows.Length); UiTheme.Row(_batch, rr, i == _selected, view); if (i == _selected) UiTheme.Hand(_batch, rr, rr.X + 44, view); }
+			for (int i = 0; i < rows.Length; i++) { Rectangle rr = RowRect(i, rows.Length); UiTheme.Row(_batch, rr, i == _selected, view); if (i == _selected) UiTheme.Hand(_batch, rr, HandX(graphics, rows[i], rr), view); }
 			_batch.End();
 
 			graphics.SetImageOrigin(0f, 0f);
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menus' own face, as the pause menu
 			try
 			{
 				UiTheme.Left(graphics, title, panel.X + 30, panel.Y + 14, 34, 15, UiTheme.Ink);
@@ -196,9 +215,22 @@ namespace OpenFF.Client
 						"",
 						"Would you like OpenFF3 Enhanced to download them now? Total download size is " + size + ".",
 						"",
-						"The game restarts when they are in. You can also add them later with --get-textures."
+						(UpdateScreen.BeforeGame ? "" : "Save first: anything unsaved is lost when the game restarts. ") + "The game restarts when they are in. You can also add them later from Settings > HD textures, and remove them by deleting the \"FF3 HD Textures\" folder in \"mods\" next to the game .exe."
 					};
-					foreach (string line in Wrap(graphics, lines, 8, panel.Width - 100)) { UiTheme.Left(graphics, line, panel.X + 50, y, 18, 8, UiTheme.Ink); y += 17; }
+					foreach (string line in Wrap(graphics, lines, 8, panel.Width - 100)) { if (line.Length == 0) { y += 8; continue; } UiTheme.Left(graphics, line, panel.X + 50, y, 18, 8, UiTheme.Ink); y += 17; }
+				}
+				else if (stage == HdTextures.Stage.Confirm)
+				{
+					string size = pack != null && pack.Size > 0 ? "about " + Size(pack.Size) : "large";
+					List<string> lines = new List<string>
+					{
+						"Everything in the mods folder \"" + HdTextures.FolderName + "\" needs to be deleted before the new textures are installed, including any changes you made to its files.",
+						"",
+						"The new ones are downloaded first (" + size + ") and the old ones are removed only when they are ready. " + (UpdateScreen.BeforeGame ? "" : "Save first: anything unsaved is lost when the game restarts. ") + "The game restarts when they are in.",
+						"",
+						"Okay to proceed?"
+					};
+					foreach (string line in Wrap(graphics, lines, 8, panel.Width - 100)) { if (line.Length == 0) { y += 8; continue; } UiTheme.Left(graphics, line, panel.X + 50, y, 18, 8, UiTheme.Ink); y += 17; }
 				}
 				else if (stage == HdTextures.Stage.Failed)
 				{
@@ -229,16 +261,27 @@ namespace OpenFF.Client
 						detail = HdTextures.Got + " of " + HdTextures.Total + " files";
 					}
 					if (detail.Length > 0) UiTheme.Left(graphics, detail, bar.X, bar.Bottom + 8, 20, 8, UiTheme.Sub);
+					// While it downloads: a thank-you to the author of some of the textures.
+					float cy = bar.Bottom + 52;
+					foreach (string line in Wrap(graphics, new List<string> { "Many thanks to Panda Venom for contributing some of their textures to the project. You can buy them a coffee and check out their other upscale projects at https://ko-fi.com/pandavenom" }, 8, panel.Width - 100)) { UiTheme.Left(graphics, line, panel.X + 50, cy, 18, 8, UiTheme.Ink); cy += 17; }
 				}
 			}
 			finally { TrueTypeText.TitleFace = false; }
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menus' own face, as the pause menu
 			try
 			{
 				for (int i = 0; i < rows.Length; i++) UiTheme.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);
 			}
 			finally { TrueTypeText.TitleFace = false; }
 			graphics.DrawStringEnd();
+		}
+
+		/// <summary>Where the pointing hand goes: its tip a small, even gap left of where the row's centred words begin, whichever row is lit.</summary>
+		private static float HandX(GlobalScope.Graphics graphics, string text, Rectangle row)
+		{
+			TrueTypeText.TitleFace = false;
+			float width = Ui.Width(graphics, text, 11);
+			return Math.Max(row.X + row.Width / 2f - width / 2f - 8f, PanelRect.X + 40);
 		}
 
 		/// <summary>A size in the unit that reads best: MB, or GB from a gigabyte up.</summary>

@@ -72,12 +72,22 @@ internal static partial class GlobalScope
 				{
 					byte[] png = m_Ncgr.pDataCg()?.m_aPng as byte[];
 					IMAGE_TABLE data = m_ImageProxy?.data as IMAGE_TABLE;
-					if (png == null || png.Length < 24 || data == null || data.tex == 0 || baseW <= 0 || baseH <= 0) return;
+					string key = "sheetbase-" + baseW + "x" + baseH;
+					if (png == null || png.Length < 24 || data == null || data.tex == 0 || baseW <= 0 || baseH <= 0)
+					{
+						OpenFF.Client.Log.First(OpenFF.Client.LogChannel.General, key, 3, () => "ui: sheet " + baseW + " x " + baseH + " not checked for an upscale (png " + (png == null ? "none" : png.Length + " bytes") + ", image " + (data == null ? "none" : data.tex == 0 ? "no texture yet" : "ready") + ")");
+						return;
+					}
 					int w = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
 					int h = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
-					if (w <= baseW || h <= baseH) return;
+					if (w <= baseW || h <= baseH)
+					{
+						OpenFF.Client.Log.First(OpenFF.Client.LogChannel.General, key, 3, () => "ui: sheet " + baseW + " x " + baseH + " is the game's own picture (" + w + " x " + h + "); no upscale in use");
+						return;
+					}
 					data.texScaleU *= (float)w / baseW;
 					data.texScaleV *= (float)h / baseH;
+					OpenFF.Client.Log.First(OpenFF.Client.LogChannel.General, key, 3, () => "ui: sheet " + baseW + " x " + baseH + " is a " + w + " x " + h + " upscale; drawn at x" + ((float)w / baseW).ToString("0.##"));
 				}
 				catch (Exception) { }
 			}

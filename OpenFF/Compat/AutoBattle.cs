@@ -421,6 +421,29 @@ namespace OpenFF.Client
 
 		public static void Attach(Game game) => game.Components.Add(new AutoBattleHint(game));
 
+		/// <summary>The pad button bound to auto battle: the picture's name in pad-icons (null when it has none), its name on a PlayStation pad and on another; empty names when it is unbound.</summary>
+		private static (string Picture, string Ps, string Other) BoundButton()
+		{
+			string on = (DisplaySettings.Current.Pad?.Auto ?? "r3").Trim().ToLowerInvariant();
+			switch (on)
+			{
+				case "cross": case "a": return ("cross", "Cross", "A");
+				case "circle": case "b": return ("circle", "Circle", "B");
+				case "square": case "x": return ("square", "Square", "X");
+				case "triangle": case "y": return ("triangle", "Triangle", "Y");
+				case "l1": case "lb": return ("l1", "L1", "LB");
+				case "r1": case "rb": return ("r1", "R1", "RB");
+				case "l2": case "lt": return ("l2", "L2", "LT");
+				case "r2": case "rt": return ("r2", "R2", "RT");
+				case "l3": case "ls": return ("l3", "L3", "LS");
+				case "options": case "start": return ("start", "Options", "Menu");
+				case "share": case "create": case "back": case "select": return ("select", "Share", "View");
+				case "touchpad": case "guide": case "ps": return (null, "Touchpad", "Guide");
+				case "none": case "": return (null, "", "");
+				default: return ("r3", "R3", "RS");
+			}
+		}
+
 		public override void Draw(GameTime gameTime)
 		{
 			if (RenderTest.Active || GameProfile.IsFf4 || !AutoBattle.HintShown) return;
@@ -429,7 +452,10 @@ namespace OpenFF.Client
 			EnsureKeys();
 
 			string words = "Auto battle";
-			string key = DesktopInput.PadConnected ? (Ui.PlayStationPad ? "R3" : "RS") : "F";
+			// The pad button auto battle is on (settings.json "pad": "auto", the Controller configuration page): its picture and name.
+			(string chip, string psName, string otherName) = BoundButton();
+			bool padOn = DesktopInput.PadConnected && !string.IsNullOrEmpty(psName);
+			string key = padOn ? (Ui.PlayStationPad ? psName : otherName) : "F";
 			float wordsWidth = TrueTypeText.Width(words, TextSize) / TextSpaceWidth * 480f;
 			float wordsX = RightX - wordsWidth;
 			float capX = wordsX - Gap - CapSize;
@@ -437,7 +463,7 @@ namespace OpenFF.Client
 
 			Viewport view = GraphicsDevice.Viewport;
 			float sx = view.Width / 480f, sy = view.Height / 320f;
-			bool pad = DesktopInput.PadConnected;
+			bool pad = padOn;
 			Color chipInk = Color.White;
 			bool picture = false;
 			if (pad)
@@ -446,7 +472,7 @@ namespace OpenFF.Client
 				_batch ??= new SpriteBatch(GraphicsDevice);
 				_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearClamp);
 				float chipX = (capX + CapSize / 2f) / 480f * Ui.W, chipY = (capY + CapSize / 2f) / 320f * Ui.H, chipSize = CapSize / 480f * Ui.W * 1.05f;   // PORT: the R3 picture at a size that sits with the words beside it
-				picture = Ui.PadPictureCentred(_batch, "r3", chipX, chipY, chipSize, view);
+				picture = chip != null && Ui.PadPictureCentred(_batch, chip, chipX, chipY, chipSize, view);
 				if (!picture) chipInk = Ui.Chip(_batch, chipX, chipY, chipSize, view);
 				_batch.End();
 			}

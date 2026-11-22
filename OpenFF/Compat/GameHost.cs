@@ -101,16 +101,20 @@ namespace OpenFF.Client
 				return;
 			}
 			// An update offered before any game (UpdateScreen), or the pause menu: the game held still under it, its last frame shown; a drive goes on.
-			if ((UpdateScreen.HoldsGame || GameFilesScreen.HoldsGame || TexturesScreen.HoldsGame || PauseMenu.HoldsGame) && FrameCapture.HasFrame)
+			bool held = (UpdateScreen.HoldsGame || GameFilesScreen.HoldsGame || TexturesScreen.HoldsGame || PauseMenu.HoldsGame) && FrameCapture.HasFrame;
+			if (held)
 			{
 				if (steps > 0) Drive.Update();
+				_game?.keepSoundGoing(FramePacer.WindowActive);   // the music plays on behind the menu
 			}
 			else if (steps > 0 || !FrameCapture.HasFrame)
 			{
 				Step(Math.Max(1, steps) * speed);
 			}
 			long replayAt = System.Diagnostics.Stopwatch.GetTimestamp();
-			FrameCapture.Replay(device, GlobalScope.m_Graphics, FramePacer.Blend());
+			// Held still: the last step's frame as it is. The pacer's blend keeps running with no step to reset it, so smoothing
+			// would swing the held picture back toward the step before and forward again - a blur behind the menu.
+			FrameCapture.Replay(device, GlobalScope.m_Graphics, held ? 1f : FramePacer.Blend());
 			ReplayMs = System.Diagnostics.Stopwatch.GetElapsedTime(replayAt).TotalMilliseconds;
 		}
 

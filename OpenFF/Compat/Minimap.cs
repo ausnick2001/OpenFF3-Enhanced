@@ -57,7 +57,7 @@ namespace OpenFF.Client
 		private int _frame, _recheckAt, _lastSet;
 		private int _startX, _startZ;
 		private int _minX, _maxX, _minZ, _maxZ;
-		private bool _failed, _haveFixed, _dirty, _realloc, _lastPassages, _lastFog;
+		private bool _failed, _haveFixed, _dirty, _realloc, _lastFog;
 		private int _seenX = int.MinValue, _seenZ;
 		private Dictionary<long, byte> _memory = new Dictionary<long, byte>();   // the cells shown, by what they were when last found: kept between visits
 		private readonly List<(int dx, int dz)> _near = new List<(int, int)>();
@@ -357,8 +357,66 @@ namespace OpenFF.Client
 				if (!_cells.TryGetValue(Key(cx, cz), out Cell old) || (old.State != Wall && old.State != Secret) || _frame - old.Stamp < RecheckEvery) continue;
 				byte state = ProbeCell(first, mapFlags, colFlags, cx, cz, old.GroundY, old.DirX, old.DirZ, out int gy);   // the way it was found: a wall is only hit from its front
 				if (state == Void) state = Edge;
+				if (ProbeLog && (state == Floor || state == Exit)) Log.Write(LogChannel.General, "minimap-probe: wall cell " + cx + "," + cz + " (" + (old.State == Secret ? "switchable" : "wall") + ", found going " + old.DirX + "," + old.DirZ + ") is floor on a re-check; the party is at " + pcx + "," + pcz);
 				Put(cx, cz, new Cell { State = state, GroundY = state == Edge ? old.GroundY : gy, Stamp = _frame, DirX = old.DirX, DirZ = old.DirZ });
 				if (state == Floor || state == Exit) _frontier.Enqueue((cx, cz));
+			}
+
+			if (ProbeLog && _frame - _probeAt >= 180) { _probeAt = _frame; DumpProbe(first, mapFlags, colFlags, pcx, pcz, py); }
+		}
+
+		// ---- --minimap-probe: what the map found round the party, written to the log every few seconds ----
+
+		private int _probeAt;
+		private static readonly bool ProbeLog = Options.Get("minimap-probe") != null;
+
+		/// <summary>
+		/// Two pictures of the cells round the party: what the map made of each (F floor, W wall, S switchable wall, E edge, X way out, . not found,
+		/// P the party) what the map draws there (- nothing, f floor, w wall, x way out, s marked passage), and which of the five wall classes have any wall at the cell whatever the map's flags say (a digit/letter: bit 1 = WALL_01
+		/// ... bit 16 = WALL_05). A wall that is shut shows in the second picture, so if the first calls the cell floor, the flags or the probe are
+		/// what missed it.
+		/// </summary>
+		private void DumpProbe(GlobalScope.dgs.CRestrictor first, int mapFlags, int colFlags, int pcx, int pcz, int py)
+		{
+			const int R = 11;
+			Log.Write(LogChannel.General, "minimap-probe: party cell " + pcx + "," + pcz + " y " + py + " mapFlags 0x" + mapFlags.ToString("X") + " colFlags 0x" + colFlags.ToString("X") + " (north is up: z grows downwards)");
+			for (int dz = -R; dz <= R; dz++)
+			{
+				var states = new System.Text.StringBuilder();
+				var classes = new System.Text.StringBuilder();
+				var shown = new System.Text.StringBuilder();
+				for (int dx = -R; dx <= R; dx++)
+				{
+					int cx = pcx + dx, cz = pcz + dz;
+					shown.Append("-fwxs"[ShownState(cx, cz)]);   // what the map draws: nothing, floor, wall, way out, marked passage
+					if (dx == 0 && dz == 0) { states.Append('P'); }
+					else if (!_cells.TryGetValue(Key(cx, cz), out Cell c)) { states.Append('.'); }
+					else states.Append(c.State == Floor ? 'F' : c.State == Wall ? 'W' : c.State == Secret ? 'S' : c.State == Edge ? 'E' : c.State == Exit ? 'X' : '?');
+					if (_cells.TryGetValue(Key(cx, cz), out Cell cc))
+					{
+						int mask = 0;
+						int x = cx * CellFx + CellFx / 2, z = cz * CellFx + CellFx / 2;
+						for (int i = 0; i < 5; i++)
+						{
+							bool hit = false;
+							for (int d = 0; d < 4 && !hit; d++)
+							{
+								_ahead2.set(d == 0 ? 4096 : d == 1 ? -4096 : 0, 0, d == 2 ? 4096 : d == 3 ? -4096 : 0);
+								for (GlobalScope.dgs.CRestrictor r = first; r != null && !hit; r = (GlobalScope.dgs.CRestrictor)r.dgsllNext())
+								{
+									if (!r.rorActivity()) continue;
+									_probe.set(x, cc.GroundY, z);
+									if (r.rorEvaluateSphere(_probe, _ahead2, WallRadiusFx, (int)GlobalScope.mcl.MCL_ATTRIBUTE.ATTRIBUTE_WALL_01 + i, _result)
+										&& !(_result.normal.x == 0 && _result.normal.y == 0 && _result.normal.z == 0)) hit = true;
+								}
+							}
+							if (hit) mask |= 1 << i;
+						}
+						classes.Append("0123456789ABCDEFGHIJKLMNOPQRSTUV"[mask]);
+					}
+					else classes.Append(' ');
+				}
+				Log.Write(LogChannel.General, "minimap-probe: " + states + "   |   " + classes + "   |   " + shown);
 			}
 		}
 
@@ -449,23 +507,77 @@ namespace OpenFF.Client
 		private int _dx0, _dy0, _dx1 = -1, _dy1;   // the part of the picture changed since it was last sent (empty when _dx1 < _dx0)
 
 		/// <summary>The cells about the party, shown from now on with fog of war (the floor is found before it is shown, so a hidden room is not given away).</summary>
+		private bool _seePending;   // some cell near the party could not be judged yet (not explored): looked at again next frame
+
 		private void MarkSeen(int pcx, int pcz)
 		{
-			if (pcx == _seenX && pcz == _seenZ) return;
+			bool moved = !(pcx == _seenX && pcz == _seenZ);
+			if (!moved && !_seePending) return;
 			_seenX = pcx; _seenZ = pcz;
+			_seePending = false;
+			bool any = false;
 			foreach ((int dx, int dz) in _near)
 			{
 				long key = Key(pcx + dx, pcz + dz);
 				if (_memory.ContainsKey(key)) continue;
-				_memory[key] = _cells.TryGetValue(key, out Cell c) ? c.State : Void;
+				// A cell is only seen once what lies between it and the party has been explored: until then it is neither seen nor ruled out
+				// (the floor is found a few cells a frame, so right after a map starts, or the party arrives somewhere, nothing is known yet).
+				if (!_cells.ContainsKey(key)) { _seePending = true; continue; }
+				int sight = Sight(pcx, pcz, pcx + dx, pcz + dz);
+				if (sight < 0) { _seePending = true; continue; }
+				if (sight == 0) continue;   // behind a wall: the party cannot see it, so it stays blank
+				_memory[key] = _cells[key].State;
 				SetShown(pcx + dx, pcz + dz);
+				any = true;
 			}
+			if (!moved && !any) return;
 			// ...and the ring just outside, whose walls now border seen floor.
 			int ring = _see + 1;
 			for (int dz = -ring; dz <= ring; dz++)
 				for (int dx = -ring; dx <= ring; dx++)
 					if (Math.Max(Math.Abs(dx), Math.Abs(dz)) == ring || !_memory.ContainsKey(Key(pcx + dx, pcz + dz)))
 						SetShown(pcx + dx, pcz + dz);
+		}
+
+		/// <summary>
+		/// Whether the party, standing in cell (ax, az), could see cell (bx, bz): 1 if so, 0 if a wall (or a switchable wall) is between, -1 if a cell
+		/// between is not explored yet. A slant between two wall cells that touch at a corner is no gap. The wall cell itself is seen (its face),
+		/// what lies past it is not.
+		/// </summary>
+		private int Sight(int ax, int az, int bx, int bz)
+		{
+			int n = Math.Max(Math.Abs(bx - ax), Math.Abs(bz - az));
+			int px = ax, pz = az;
+			for (int i = 1; i < n; i++)
+			{
+				int cx = ax + (int)Math.Round((bx - ax) * (double)i / n, MidpointRounding.AwayFromZero);
+				int cz = az + (int)Math.Round((bz - az) * (double)i / n, MidpointRounding.AwayFromZero);
+				int o = Opaque(cx, cz);
+				if (o != 0) return o < 0 ? -1 : 0;
+				if (cx != px && cz != pz)
+				{
+					int o1 = Opaque(cx, pz), o2 = Opaque(px, cz);
+					if (o1 > 0 && o2 > 0) return 0;
+					if (o1 < 0 || o2 < 0) return -1;
+				}
+				px = cx; pz = cz;
+			}
+			if (n > 0 && bx != px && bz != pz)
+			{
+				int o1 = Opaque(bx, pz), o2 = Opaque(px, bz);
+				if (o1 > 0 && o2 > 0) return 0;
+				if (o1 < 0 || o2 < 0) return -1;
+			}
+			return 1;
+		}
+
+		/// <summary>1: wall (or switchable wall); 0: open; -1: not explored yet.</summary>
+		private int Opaque(int cx, int cz)
+		{
+			long key = Key(cx, cz);
+			if (!_cells.ContainsKey(key) && !_memory.ContainsKey(key)) return -1;
+			byte st = StateOf(cx, cz);
+			return st == Wall || st == Secret ? 1 : 0;
 		}
 
 		/// <summary>What the map shows of a cell: what is found of it now, else what was kept of it; with fog of war, only if the party has been near.</summary>
@@ -490,7 +602,7 @@ namespace OpenFF.Client
 				case Floor: return ShowFloor;
 				case Exit: return ShowExit;
 				case Wall: case Edge: return ShowWall;
-				case Secret: return Qol.MinimapPassages ? ShowSecret : ShowWall;
+				case Secret: return ShowWall;   // a wall that can open is drawn as plain wall
 				default: return ShowNone;
 			}
 		}
@@ -597,8 +709,6 @@ namespace OpenFF.Client
 
 		private void Rebuild()
 		{
-			bool passages = Qol.MinimapPassages;
-			if (passages != _lastPassages) { _lastPassages = passages; _realloc = true; }
 			if (Qol.MinimapFog != _lastFog) { _lastFog = Qol.MinimapFog; _realloc = true; }
 			if (_tex != null && _tex.IsDisposed) _realloc = true;
 			if (_realloc)

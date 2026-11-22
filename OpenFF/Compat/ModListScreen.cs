@@ -62,6 +62,7 @@ namespace OpenFF.Client
 		private int _conflicts;
 		private KeyboardState _previousKeys;
 		private int _previousPad;
+		private long _openedAt;
 		private MouseState _previousMouse;
 		private SpriteBatch _batch;
 		private Texture2D _pixel;
@@ -98,6 +99,11 @@ namespace OpenFF.Client
 			Instance._open = true;
 			Instance._previousKeys = Keyboard.GetState();
 			Instance._previousMouse = Mouse.GetState();
+			// The press that chose "Mods" on the title is still down: it must not also toggle the first mod.
+			Instance._previousPad = DesktopInput.RawPadBits();
+			Instance._injectedBefore.Clear();
+			foreach (Keys k in DesktopInput.Injected) Instance._injectedBefore.Add(k);
+			Instance._openedAt = Environment.TickCount64;
 			Log.Write(LogChannel.General, "mod list: opened, " + Instance._mods.Count + " mod(s) in " + Instance._folder);
 		}
 
@@ -207,6 +213,15 @@ namespace OpenFF.Client
 			// A game pad drives the list as the keys do: the d-pad or stick, A toggles, B closes, the shoulders move a mod.
 			int pad = DesktopInput.RawPadBits(), padEdge = pad & ~_previousPad;
 			_previousPad = pad;
+			// The first moments after opening take no input (a press that opened the list may be seen twice: key and pad, or two frames).
+			if (Environment.TickCount64 - _openedAt < 250)
+			{
+				_previousKeys = keys;
+				_previousMouse = mouse;
+				_injectedBefore.Clear();
+				foreach (Keys k in DesktopInput.Injected) _injectedBefore.Add(k);
+				return;
+			}
 			bool padUp = (padEdge & 64) != 0, padDown = (padEdge & 128) != 0, padA = (padEdge & 1) != 0, padB = (padEdge & 2) != 0, padL = (padEdge & 512) != 0, padR = (padEdge & 256) != 0, padY = (padEdge & 0x800) != 0;
 			int was = _selected;
 
@@ -349,7 +364,7 @@ namespace OpenFF.Client
 			bool pad = Ui.PadConnected;
 			const int titleSize = 16, subSize = 8, rowSize = 11, descSize = 10, footSize = 9;
 
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearWrap);
 			UiTheme.Panel(_batch, panel, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 80, panel.Width - 60, view);
 			for (int row = 0; row < RowsPerPage; row++)
@@ -383,7 +398,7 @@ namespace OpenFF.Client
 			if (pad)
 			{
 				float total = 0;
-				TrueTypeText.TitleFace = true;
+				TrueTypeText.TitleFace = false;
 				try
 				{
 					foreach ((Ui.PadButton b, string w) in padHints) total += Ui.HintWidth(graphics, w, footSize, 18, b) + 22;
@@ -399,7 +414,7 @@ namespace OpenFF.Client
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;
 			try
 			{
 				UiTheme.Left(graphics, "Mods", panel.X + 30, panel.Y + 12, 34, titleSize, UiTheme.Ink);
@@ -420,6 +435,9 @@ namespace OpenFF.Client
 					Rectangle r = RowRect(row);
 					bool lit = index == _selected, on = mod.Enabled;
 					string name = (index + 1) + ".  " + Fit(mod.DisplayName, 26) + (string.IsNullOrWhiteSpace(mod.Manifest.Version) ? "" : "   " + mod.Manifest.Version);
+					// The name stops short of the description's column, whatever face it is drawn in.
+					float nameRoom = r.X + (int)(r.Width * 0.54f) - 12 - (r.X + 46 + (int)RowH);
+					while (name.Length > 4 && Ui.Width(graphics, name, rowSize) > nameRoom) name = name.Substring(0, name.Length - 2).TrimEnd() + "…";
 					UiTheme.Left(graphics, name, r.X + 46 + (int)RowH, r.Y, r.Height, rowSize, lit ? Color.White : on ? UiTheme.Ink : UiTheme.Hint);
 					SampleMods.Status sample = StatusOf(mod);
 					string standing = sample == null ? null : Updatable(sample) ? "update (U)" : sample.State == SampleMods.State.UpToDate ? "sample" : null;

@@ -14,6 +14,8 @@
 //                pacer's last half second - how evenly the frames went out and moved
 //   F7  free camera   fly about the scene with the mouse and WASD, the player's input held
 //                off meanwhile (FreeCamera.cs) - for a close look at what is drawn
+//   Insert / Home / End / Delete   in an FF3 battle: pick a status, pick a party member, put it on, clear it
+//                (BattleDebug.cs) - to see how a status looks without waiting for an enemy to cause it
 //
 // It is a DrawableGameComponent drawn after the game and before the screenshot
 // component, so screenshots taken with --screenshot-every include it: a headless run
@@ -488,6 +490,8 @@ namespace OpenFF.Client
                 .Append("   F6 stats ").Append(State(Layer.Stats))
                 .Append("   F7 free camera ").Append(FreeCamera.Active ? "[on]" : "[off]").Append('\n');
             if (FreeCamera.Active) _text.Append(FreeCamera.Describe()).Append('\n');
+            string battleLine = BattleDebug.Describe();
+            if (battleLine != null) _text.Append(battleLine).Append('\n');
         }
 
         private string State(Layer layer) => (_layers & layer) != 0 ? "[on]" : "[off]";

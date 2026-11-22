@@ -24,6 +24,9 @@ internal static partial class GlobalScope
 								public void setup(NNSG2dBGSelect _BGSelect, string _Name)
 								{
 									bg_.bgLoad2(_Name);
+									// OpenFF: a mod's larger picture of the world map is cut by the same cells, scaled to match (the size the game's own has).
+									(int W, int H) own = OpenFF.Client.UpscaledSheets.OriginalOf(_Name);
+									bg_.BaseW = own.W; bg_.BaseH = own.H;
 									bg_.bgSetUp(_BGSelect, GXBGScrBase.GX_BG_SCRBASE_0x7800, GXBGCharBase.GX_BG_CHARBASE_0x14000);
 									bg_.bgRelease();
 								}

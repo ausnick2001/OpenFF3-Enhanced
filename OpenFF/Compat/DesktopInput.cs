@@ -442,6 +442,7 @@ namespace OpenFF.Client
 			if (IsTyping)
 			{
 				_mouseOverlay = true;
+				_padOverlay = true;   // a held game (a menu over it) never asks PadBits: the hand-back is noted here, every frame, so what closed the menu is not also the game's press
 				return;
 			}
 			if (_mouseOverlay)

@@ -186,6 +186,21 @@ public class AppShell
 		suspend = true;
 	}
 
+	private bool heldPaused;
+
+	/// <summary>
+	/// PORT: the game held still under a menu (GameHost.Frame) takes no steps, and the music is run by the steps: a tune's intro and its loop start
+	/// together, and updateSound hands the one over to the other when the intro ends. Held, the intro ran out and the tune fell silent. So the
+	/// sound's own upkeep goes on while the game is held - the music plays on behind the menu. A window without focus is paused by onPause, as
+	/// ever; the music is taken up again here when the focus comes back, as the next step would.
+	/// </summary>
+	public void keepSoundGoing(bool windowActive)
+	{
+		if (!windowActive) { heldPaused = true; return; }
+		if (heldPaused) { heldPaused = false; sound.pauseSoundAll(pause: false); }
+		sound.updateSound();
+	}
+
 	/// <summary>Asks whether to quit. The confirm path calls appEnd().</summary>
 	public void finish()
 	{

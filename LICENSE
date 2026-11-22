@@ -25,23 +25,23 @@ SOFTWARE.
 Notice
 
 OpenFF is an independent, non-commercial project published for study,
-preservation and interoperability: it lets people play and modify the copies
-of Final Fantasy III and Final Fantasy IV (the 3D remakes) that they own. It is
+preservation and interoperability: it lets people play and modify the copy
+of Final Fantasy III (the 3D remake) that they own. It is
 not affiliated with, endorsed by or connected to Square Enix Co., Ltd. Final
-Fantasy and the games' names, characters, art, music and data are their
+Fantasy and the game's name, characters, art, music and data are their
 owners' trademarks and copyrighted works.
 
-No game asset, data file or executable of the games is contained in this
-repository or its releases. Running OpenFF requires the Steam releases of the
-games, legitimately obtained and installed on the same machine; OpenFF reads
-them in place and writes nothing into them without a backup. The code under
-OpenFF/GlobalScope recreates the games' program logic through reverse
-engineering of the publicly sold releases so that they can run on modern
+No game asset, data file or executable of the game is contained in this
+repository or its releases. Running OpenFF requires the Steam or GOG release of
+the game, legitimately obtained and installed on the same machine; OpenFF reads
+it in place and writes nothing into it without a backup. The code under
+OpenFF/GlobalScope recreates the game's program logic through reverse
+engineering of the publicly sold release so that it can run on modern
 systems and be modified; it is provided as-is, for educational and
 interoperability purposes.
 
 The MIT licence above covers the code and documentation written for OpenFF.
-It grants no rights in the games themselves. Anyone redistributing OpenFF, a
+It grants no rights in the game itself. Anyone redistributing OpenFF, a
 build of it or a mod made with it is responsible for complying with the laws
-of their jurisdiction and with the games' own terms; the authors and
+of their jurisdiction and with the game's own terms; the authors and
 contributors accept no liability for how the software is used.

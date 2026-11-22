@@ -26,3 +26,12 @@ Every part is checked against the SHA-256 in `pack.json` before anything is unpa
 ## Testing it without GitHub
 
 Point the game at the output folder: `"OpenFF3 Enhanced.exe" --get-textures --textures-url=C:\path\to\textures\pack.json`. The parts are read from beside `pack.json`. To see a real first install, rename your `mods` folder out of the way first, and put it back afterwards (delete the new `mods\FF3 HD Textures` first). `--update-throttle=<KB/s>` slows the download to see the progress bar.
+
+## Battle effect pictures
+
+The effects' own pictures (the particles and models of `e###.efp`) are PNGs in `textures/` like the rest, but named by what the picture is, since a package name cannot say which effect a picture belongs to:
+
+- particle pictures: `fx.<name>_<W>x<H>.png` (`fx.chinmoku_64x16.png` is the silence bubble), or `fx.<name>_<W>x<H>.<crc>.png` where the game has two different pictures with one name and size (CRC32 of its texel bytes, then its palette bytes, 8 hex digits);
+- model pictures: `fxm.<name>_<W>x<H>.png`.
+
+`Tools/make-effect-textures.py` writes these names from a folder of upscales named `<name>_<W>x<H>.png` (`_v1`/`_v2` for same-name variants, `__model` for a model picture whose name a particle picture also has); it reads the game's `.efp` packs for the variants' CRCs. The log says "textures: fx.<name>... drawn from ..." for each picture used and "effect picture fx.<name>... is the game's own" once for one without a PNG. Not named yet: the two model variants each of `ice_64x64` and `rock_64x64`.

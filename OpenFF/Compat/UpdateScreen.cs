@@ -56,7 +56,7 @@ namespace OpenFF.Client
 		// A game started (a new one, a load, a --map test start): from then on, no offer this run.
 		private static bool _started = GameProfile.StartStage != null;
 
-		private static bool BeforeGame
+		internal static bool BeforeGame
 		{
 			get
 			{
@@ -208,12 +208,12 @@ namespace OpenFF.Client
 			string title = stage == Updates.Stage.Available ? "Update available"
 				: stage == Updates.Stage.Failed ? "The update did not go in"
 				: "Updating to " + (r?.Tag ?? "");
-			string sub = r == null ? "" : stage == Updates.Stage.Available ? "OpenFF " + r.Version.ToString(3) + "  -  you have " + Updates.Current.ToString(3) : "";
+			string sub = r == null ? "" : stage == Updates.Stage.Available ? "OpenFF3 Enhanced " + r.Version.ToString(3) + "  -  you have " + Updates.Current.ToString(3) : "";
 			Rectangle bar = new Rectangle(panel.X + 50, panel.Y + 150, panel.Width - 100, 22);
 			float fraction = Updates.Total > 0 ? (float)Updates.Got / Updates.Total : 0f;
 			bool progress = stage == Updates.Stage.Downloading || stage == Updates.Stage.Verifying || stage == Updates.Stage.Unpacking || stage == Updates.Stage.Installing;
 
-			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied);
+			_batch.Begin(SpriteSortMode.Deferred, BlendState.NonPremultiplied, SamplerState.LinearWrap);
 			UiTheme.Panel(_batch, panel, view);
 			UiTheme.Divider(_batch, panel.Center.X, panel.Y + 78, panel.Width - 60, view);
 			if (progress) UiTheme.Progress(_batch, bar, stage == Updates.Stage.Downloading ? fraction : 1f, view);
@@ -234,7 +234,7 @@ namespace OpenFF.Client
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menus' own face, as the pause menu
 			try
 			{
 				UiTheme.Left(graphics, title, panel.X + 30, panel.Y + 14, 34, 15, UiTheme.Ink);
@@ -268,7 +268,7 @@ namespace OpenFF.Client
 				}
 			}
 			finally { TrueTypeText.TitleFace = false; }
-			TrueTypeText.TitleFace = true;
+			TrueTypeText.TitleFace = false;   // the menus' own face, as the pause menu
 			try
 			{
 				for (int i = 0; i < rows.Length; i++) UiTheme.Centred(graphics, rows[i], RowRect(i, rows.Length), 11, i == _selected ? Color.White : UiTheme.Ink);

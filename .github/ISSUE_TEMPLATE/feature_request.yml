@@ -1,0 +1,16 @@
+name: Feature request
+description: An idea for OpenFF3 Enhanced
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: What it would do, and what is awkward without it.
+    validations:
+      required: true
+  - type: textarea
+    id: how
+    attributes:
+      label: How might it work?
+      description: Optional - where it would sit in the menus, which button it would use, and so on.

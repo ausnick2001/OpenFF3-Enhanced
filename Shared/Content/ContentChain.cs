@@ -234,29 +234,37 @@ namespace OpenFF.Content
 			return data;
 		}
 
-		/// <summary>Whether an override exists for a name, and where.</summary>
+		/// <summary>Whether an override exists for a name, and where. A mod's files folder holds the game's own file names as the
+		/// guide says (files/name_i.NCGR for the game's "files/name_i.NCGR"), so a name that starts with "files/" is also looked for
+		/// without it in a directory that is itself called files.</summary>
 		public string OverridePath(string name)
 		{
 			foreach (string directory in _overrides)
 			{
-				string path = Path.Combine(directory, name);
-				string full;
-				try
+				string found = Within(directory, name);
+				if (found == null && name.StartsWith("files/", StringComparison.OrdinalIgnoreCase)
+					&& string.Equals(Path.GetFileName(directory), "files", StringComparison.OrdinalIgnoreCase))
 				{
-					full = Path.GetFullPath(path);
+					found = Within(directory, name.Substring(6));
 				}
-				catch (Exception)
-				{
-					continue;
-				}
-				// Names come from game data; one containing "..\" must not reach outside.
-				if (full.StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)
-					&& File.Exists(full))
-				{
-					return full;
-				}
+				if (found != null) return found;
 			}
 			return null;
+		}
+
+		private static string Within(string directory, string name)
+		{
+			string full;
+			try
+			{
+				full = Path.GetFullPath(Path.Combine(directory, name));
+			}
+			catch (Exception)
+			{
+				return null;
+			}
+			// Names come from game data; one containing "..\" must not reach outside.
+			return full.StartsWith(directory + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) && File.Exists(full) ? full : null;
 		}
 
 		public bool Exists(string name)

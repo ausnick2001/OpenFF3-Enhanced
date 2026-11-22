@@ -20,6 +20,14 @@
 // texture block carries it (NNSG3dResTex.package), and a PNG that names a package is drawn only
 // for that package's texture. A PNG with just the texture's name ("eye.png") is still for every
 // texture of that name; a pinned one wins over it where the package is known.
+//
+// Expressions are different: a character's blinks and smiles are the pictures of a ".face" pack
+// (j101_001.face), one set per number, each holding one picture called "eye" or "mouth" - so no
+// package and texture name can tell them apart. A PNG named <pack>-<part>-<number>.png
+// (j101_001-eye-0.png, j101_001-mouth-7.png: the names Crystal's Expressions card and the texture
+// export use) is drawn for that set of that pack. The game repeats pictures across a model's packs
+// (j101_002's four are j101_001's 0, 6, 3 and 7), so a picture is named after the first pack and number
+// holding it, and every other set of the model's packs with the very same picture (FacePack.Signature) draws that PNG too.
 
 using System;
 using System.Collections.Generic;
@@ -35,6 +43,12 @@ namespace OpenFF.Client
 		private static readonly Dictionary<string, List<(string Package, string Key)>> _pinned = new Dictionary<string, List<(string, string)>>(StringComparer.OrdinalIgnoreCase);
 		private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<byte[], string> _sources = new System.Runtime.CompilerServices.ConditionalWeakTable<byte[], string>();
 		private static readonly HashSet<string> _told = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		// face-pack pictures: <pack>-<eye|mouth>-<number>
+		private static readonly System.Text.RegularExpressions.Regex FaceName = new System.Text.RegularExpressions.Regex(@"^([a-z]\d{3}(?:_\d{3})?)-(eye|mouth)-(\d+)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+		private static readonly List<(string Pack, string Part, int Number, string Key)> _faceNames = new List<(string, string, int, string)>();
+		private static readonly Dictionary<string, OpenFF.Graphics.FacePack> _facePacks = new Dictionary<string, OpenFF.Graphics.FacePack>(StringComparer.OrdinalIgnoreCase);
+		private static Dictionary<string, string> _faceTwins;
+		private static readonly object _faceLock = new object();
 
 		/// <summary>The mods' textures folders scanned (the first root that has a name wins, as with files).</summary>
 		public static void Register(IEnumerable<string> roots)
@@ -43,6 +57,7 @@ namespace OpenFF.Client
 			_decoded.Clear();
 			_pinned.Clear();
 			_told.Clear();
+			lock (_faceLock) { _faceNames.Clear(); _facePacks.Clear(); _faceTwins = null; }
 			int count = 0;
 			foreach (string root in roots ?? Array.Empty<string>())
 			{
@@ -54,6 +69,9 @@ namespace OpenFF.Client
 					if (_files.ContainsKey(key)) continue;
 					_files[key] = file;
 					count++;
+					System.Text.RegularExpressions.Match face = FaceName.Match(key);
+					if (face.Success && int.TryParse(face.Groups[3].Value, out int faceNumber))
+						lock (_faceLock) _faceNames.Add((face.Groups[1].Value, face.Groups[2].Value.ToLowerInvariant(), faceNumber, key));
 					if (Pinned(key, out string package, out string texture))
 					{
 						if (!_pinned.TryGetValue(texture, out List<(string Package, string Key)> list)) _pinned[texture] = list = new List<(string, string)>();
@@ -61,7 +79,7 @@ namespace OpenFF.Client
 					}
 				}
 			}
-			if (count > 0) Log.Write(LogChannel.General, "textures: " + count + " PNG(s) of the mods' own in place of the game's (textures/<name>.png; " + _pinned.Count + " texture name(s) pinned to a package)");
+			if (count > 0) Log.Write(LogChannel.General, "textures: " + count + " PNG(s) of the mods' own in place of the game's (textures/<name>.png; " + _pinned.Count + " texture name(s) pinned to a package; " + _faceNames.Count + " expression picture(s) named <pack>-<part>-<number>)");
 		}
 
 		/// <summary>A file name that says its package: "files_j104.ntxp.eye" or "j104.nmdp.eye" (package, a dot, the texture), or "j104.eye" (crystal tex's).</summary>
@@ -127,7 +145,9 @@ namespace OpenFF.Client
 			width = height = 0; rgba = null;
 			if (_files.Count == 0 || string.IsNullOrEmpty(texture)) return false;
 			string key = null;
-			if (_pinned.TryGetValue(texture, out List<(string Package, string Key)> pinned))
+			// a face pack's set (the package is "face:<pack>#<number>"): the mod's picture for that pack and number, or for the same picture elsewhere
+			if (package != null && package.StartsWith("face:", StringComparison.OrdinalIgnoreCase)) key = FaceKeyFor(texture, package);
+			if (key == null && _pinned.TryGetValue(texture, out List<(string Package, string Key)> pinned))
 			{
 				if (!string.IsNullOrEmpty(package))
 				{
@@ -153,6 +173,66 @@ namespace OpenFF.Client
 			if (got.Rgba == null) return false;
 			width = got.W; height = got.H; rgba = got.Rgba;
 			return true;
+		}
+
+		/// <summary>The file key of the mod's picture for a face pack's set ("face:j101_001#3", part "eye"): the one named for that very
+		/// pack and number, else the one named for the first set of the game's packs holding the same picture; null when the mod has none.</summary>
+		private static string FaceKeyFor(string part, string package)
+		{
+			try
+			{
+				int hash = package.LastIndexOf('#');
+				if (hash < 6 || !int.TryParse(package.Substring(hash + 1), out int number)) return null;
+				string pack = package.Substring(5, hash - 5);
+				part = (part ?? "").ToLowerInvariant();
+				string own = pack + "-" + part + "-" + number;
+				if (_files.ContainsKey(own)) return own;
+				lock (_faceLock)
+				{
+					if (_faceNames.Count == 0) return null;
+					string signature = FacePackOf(pack)?.Signature(number, part);
+					if (signature == null) return null;
+					string model = pack.Length >= 4 ? pack.Substring(0, 4) : pack;   // a model's packs only: n591's and j101's closed mouth are the same picture, drawn apart
+					if (_faceTwins == null)
+					{
+						Dictionary<string, string> twins = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+						List<(string Pack, string Part, int Number, string Key)> names = new List<(string, string, int, string)>(_faceNames);
+						names.Sort((a, b) => { int c = string.Compare(a.Pack, b.Pack, StringComparison.OrdinalIgnoreCase); return c != 0 ? c : a.Number.CompareTo(b.Number); });
+						foreach ((string namePack, string namePart, int nameNumber, string nameKey) in names)
+						{
+							string sig = FacePackOf(namePack)?.Signature(nameNumber, namePart);
+							if (sig != null) twins.TryAdd((namePack.Length >= 4 ? namePack.Substring(0, 4) : namePack) + "/" + namePart + "/" + sig, nameKey);
+						}
+						_faceTwins = twins;
+					}
+					return _faceTwins.TryGetValue(model + "/" + part + "/" + signature, out string twin) ? twin : null;
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Write(LogChannel.General, "textures: " + package + " - " + ex.Message);
+				return null;
+			}
+		}
+
+		/// <summary>A game face pack by name (j101_001), read once (callers hold _faceLock).</summary>
+		private static OpenFF.Graphics.FacePack FacePackOf(string pack)
+		{
+			if (_facePacks.TryGetValue(pack, out OpenFF.Graphics.FacePack faces)) return faces;
+			try
+			{
+				GlobalScope.ds.CFile file = new GlobalScope.ds.CFile();
+				string name = pack + ".face";
+				uint size = file.getSize(name);
+				if (size > 0)
+				{
+					byte[] data = new byte[size];
+					if (file.load(data, name)) faces = OpenFF.Graphics.FacePack.Read(data);
+				}
+			}
+			catch (Exception ex) { Log.Write(LogChannel.General, "textures: " + pack + ".face - " + ex.Message); }
+			_facePacks[pack] = faces;
+			return faces;
 		}
 
 		private static (int, int, byte[]) Decode(string path)

@@ -215,6 +215,7 @@ internal static partial class GlobalScope
 				int num = OS_GetTick();
 				dgs.CCurtain.execute();
 				BattlePerformer.getInstance().progress();
+				OpenFF.Client.BattleDebug.Tick(getBattleSystem());   // PORT: the debug overlay's status test (F1, then Insert/Home/End/Delete)
 				getBattleSystem().execute();
 				num = OS_GetTick() - num;
 				if (getBattleSystem().isEnd())

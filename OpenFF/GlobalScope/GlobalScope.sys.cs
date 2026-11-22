@@ -891,7 +891,11 @@ internal static partial class GlobalScope
 				for (int i = 0; i < _unNbTextures; i++)
 				{
 					array3[i] = new ds.sys3d.CModelTexture();
-					array3[i].setup(ds.sys3d.CModelTexture.ChainPointer((byte[])array2, i), tdl: true);
+					Array slice = ds.sys3d.CModelTexture.ChainPointer((byte[])array2, i);
+					// PORT: remember which face pack and number this set is ("face:j101_001#3"), so a mod's PNG for it
+					// (textures/j101_001-eye-3.png, OpenFF.Client.TextureOverrides) can be drawn in its place.
+					OpenFF.Client.TextureOverrides.NoteSource(slice, "face:" + System.IO.Path.GetFileNameWithoutExtension(szPackfile) + "#" + i);
+					array3[i].setup(slice, tdl: true);
 				}
 				return true;
 			}

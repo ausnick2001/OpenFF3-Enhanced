@@ -86,6 +86,9 @@ namespace OpenFF.Client
 		/// <summary>The game whose window the refresh is read for and whose focus the VSync check heeds.</summary>
 		public static void Attach(Game game) => _game = game;
 
+		/// <summary>The window has the focus (or there is no window to ask).</summary>
+		public static bool WindowActive => _game == null || _game.IsActive;
+
 		/// <summary>The device was made or reset (a VSync change, Alt+Enter, a mode switch): MonoGame has set its own swap interval again, and whether VSync holds is asked afresh.</summary>
 		public static void DeviceChanged()
 		{

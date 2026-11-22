@@ -21,6 +21,7 @@ namespace OpenFF.Client
 		private long _step = long.MinValue;
 		private System.Func<bool> _visible;
 		private SpriteBatch _batch;
+		private bool _drawing;
 
 		// How far in from each end of a row the lines stop, in text space: the grey border covers about a unit and a
 		// bit of the row at each side (measured on screen: the lines ran 6 pixels onto it), and they must not touch it.
@@ -60,8 +61,9 @@ namespace OpenFF.Client
 
 		public override void Draw(GameTime gameTime)
 		{
-			if (_lines.Count == 0 || RenderTest.Active || GameHost.StepsTaken - _step > 2) return;
-			if (_visible != null && !_visible()) return;   // the panel under them is not up
+			if (_lines.Count == 0 || RenderTest.Active || (_visible == null && GameHost.StepsTaken - _step > 2)) { _drawing = false; return; }   // with a visibility test the owner clears the lines when the list goes; without, they must be fresh
+			if (_visible != null && !_visible()) { _drawing = false; return; }   // the panel under them is not up
+			if (!_drawing) { _drawing = true; Log.Write(LogChannel.File, "lines: first drawn at step " + GameHost.StepsTaken + " (set at step " + _step + ")"); }
 			Ui.Ensure(GraphicsDevice);
 			_batch ??= new SpriteBatch(GraphicsDevice);
 			Viewport view = GraphicsDevice.Viewport;

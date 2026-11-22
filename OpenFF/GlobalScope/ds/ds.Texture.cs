@@ -101,7 +101,7 @@ internal static partial class GlobalScope
 						_unKeyTexel = NNS_GfdAllocLnkTexVram(0u, 0, 0u);
 						addrNtft = NNS_GfdGetTexKeyAddr(_unKeyTexel);
 					}
-					LoadTexture(_unKeyTexel, _byFormatType_8, _bySizeS_8, _bySizeT_8, _byTransparentZero_8, (ushort[])_unOffsetNtft, (ushort[])_unOffsetNtfp);
+					LoadTexture(_unKeyTexel, _byFormatType_8, _bySizeS_8, _bySizeT_8, _byTransparentZero_8, (ushort[])_unOffsetNtft, (ushort[])_unOffsetNtfp, _cDatabaseName, _unSizeNtft, _unSizeNtfp);
 					enable(FLAG_INITIALIZED);
 					disable(FLAG_STATIONED);
 					setAddress(addrNtft, addrNtfp);

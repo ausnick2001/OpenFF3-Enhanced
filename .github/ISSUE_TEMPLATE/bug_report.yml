@@ -1,0 +1,62 @@
+name: Bug report
+description: Something in OpenFF3 Enhanced does not work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it. The more exact you are, the quicker it can be fixed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can it be made to happen?
+      description: Where you were in the game and what you did, step by step.
+      placeholder: |
+        1. Load the save at ...
+        2. Walk to ...
+        3. ...
+  - type: input
+    id: version
+    attributes:
+      label: OpenFF3 Enhanced version
+      description: Shown in the Esc menu's Settings (Check for updates), and in the name of the zip you downloaded.
+      placeholder: "0.9.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: store
+    attributes:
+      label: Which copy of Final Fantasy III?
+      options:
+        - Steam
+        - GOG
+        - Other
+  - type: dropdown
+    id: input
+    attributes:
+      label: Keyboard or controller?
+      options:
+        - Keyboard
+        - Xbox-style controller
+        - PlayStation controller
+        - Switch controller
+        - Other
+  - type: checkboxes
+    id: mods
+    attributes:
+      label: Add-ons in use
+      options:
+        - label: FF3 HD Textures (the in-game texture pack or the mod)
+        - label: Another mod from the mods folder
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: Open the `logs` folder beside the game, and paste the newest file here (or drag it in). Screenshots help too (F12 takes one).

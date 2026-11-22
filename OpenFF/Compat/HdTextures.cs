@@ -37,7 +37,7 @@ namespace OpenFF.Client
 
 		public const string DefaultFolder = "FF3 HD Textures";
 
-		public enum Stage { Idle, Checking, Offer, Downloading, Verifying, Unpacking, Done, Failed }
+		public enum Stage { Idle, Checking, Offer, Confirm, Downloading, Verifying, Unpacking, Done, Failed }
 
 		public sealed class Part { public string Name, Url, Sha256; public long Size; }
 
@@ -59,6 +59,9 @@ namespace OpenFF.Client
 		public static int PartNow, PartCount;
 
 		private static CancellationTokenSource _cancel;
+		private static bool _replace;
+		/// <summary>Asked for from Settings (not the start's offer): the panel comes up over whatever is on, the game held still under it.</summary>
+		public static bool Manual { get; private set; }
 		private static readonly object _sync = new object();
 
 		private static string Source => Options.Get("textures-url") ?? PackUrl;
@@ -99,7 +102,20 @@ namespace OpenFF.Client
 		public static void CheckAtStart()
 		{
 			if (!Wanted()) return;
-			lock (_sync) { Now = Stage.Checking; }
+			Fetch(false);
+		}
+
+		/// <summary>Settings > HD textures: pack.json fetched again whatever was answered before. With the mod's folder there already the panel asks
+		/// first (Stage.Confirm: the folder is deleted before the new pack goes in); without it, the usual offer. A failure is said (Stage.Failed).</summary>
+		public static void Reinstall() => Fetch(true);
+
+		private static void Fetch(bool manual)
+		{
+			lock (_sync)
+			{
+				if (Now == Stage.Checking || Now == Stage.Downloading || Now == Stage.Verifying || Now == Stage.Unpacking) return;
+				Now = Stage.Checking; Error = null; _replace = false; Manual = manual;
+			}
 			Task.Run(async () =>
 			{
 				try
@@ -108,13 +124,15 @@ namespace OpenFF.Client
 					Pack pack = Parse(json, Source);
 					if (pack.Parts.Count == 0) throw new InvalidDataException("pack.json lists no parts");
 					Found = pack;
-					Now = Stage.Offer;
-					Log.Write(LogChannel.General, "textures: HD pack " + pack.Version + " offered (" + (pack.Size / 1048576) + " MB to download)");
+					bool there = manual && Directory.Exists(Path.Combine(ModsFolder.Beside(AppContext.BaseDirectory), pack.Folder));
+					Now = there ? Stage.Confirm : Stage.Offer;
+					Log.Write(LogChannel.General, "textures: HD pack " + pack.Version + (there ? " found, asking before it replaces the installed one (" : " offered (") + (pack.Size / 1048576) + " MB to download)");
 				}
 				catch (Exception ex)
 				{
-					// Offline, or no release yet: said nowhere.
-					Now = Stage.Idle;
+					// At the start (offline, or no release yet): said nowhere. Asked for from Settings: said.
+					if (manual) { Error = Plain(ex); Now = Stage.Failed; }
+					else Now = Stage.Idle;
 					Log.Write(LogChannel.General, "textures: pack not offered - " + ex.Message);
 				}
 			});
@@ -181,25 +199,28 @@ namespace OpenFF.Client
 			return await http.GetStringAsync(url, token);
 		}
 
+		/// <summary>The mods folder's name for the pack's mod, as said in the panel that asks before replacing it.</summary>
+		public static string FolderName => Found?.Folder ?? DefaultFolder;
+
 		/// <summary>"Not now": no offer until the next start.</summary>
-		public static void Later() { Now = Stage.Idle; Log.Write(LogChannel.General, "textures: not now"); }
+		public static void Later() { Now = Stage.Idle; Manual = false; Log.Write(LogChannel.General, "textures: not now"); }
 
 		/// <summary>"Don't ask again": remembered in settings.json.</summary>
 		public static void Decline()
 		{
 			DisplaySettings.Current.HdTextures = "no";
 			try { DisplaySettings.Current.Save(); } catch (Exception) { }
-			Now = Stage.Idle;
+			Now = Stage.Idle; Manual = false;
 			Log.Write(LogChannel.General, "textures: declined for good");
 		}
 
 		/// <summary>Said back from a failure: the offer again (or nothing, without the pack).</summary>
-		public static void Dismiss() { Now = Stage.Idle; }
+		public static void Dismiss() { Now = Stage.Idle; Manual = false; }
 
 		public static void Cancel() => _cancel?.Cancel();
 
 		/// <summary>Downloads, checks and unpacks the pack in the background. Done when the mod is in place; the screen then restarts the client.</summary>
-		public static void Install()
+		public static void Install(bool replace = false)
 		{
 			Pack pack = Found;
 			if (pack == null) return;
@@ -208,6 +229,7 @@ namespace OpenFF.Client
 				if (Now == Stage.Downloading || Now == Stage.Verifying || Now == Stage.Unpacking) return;
 				Now = Stage.Downloading;
 				Error = null;
+				_replace = replace;
 				Got = 0; Total = pack.Size; Rate = 0; PartNow = 0; PartCount = pack.Parts.Count;
 				_cancel = new CancellationTokenSource();
 			}
@@ -285,7 +307,12 @@ namespace OpenFF.Client
 					File.WriteAllText(Path.Combine(staging, "pack-installed.json"), JsonSerializer.Serialize(new { version = pack.Version, installed = DateTime.UtcNow.ToString("o") }));
 
 					string target = Path.Combine(mods, pack.Folder);
-					if (Directory.Exists(target)) MoveInto(staging, target);
+					if (Directory.Exists(target))
+					{
+						// A reinstall (asked first): the old files go only now, the new ones are all here and checked.
+						if (_replace) { Directory.Delete(target, true); Directory.Move(staging, target); }
+						else MoveInto(staging, target);
+					}
 					else Directory.Move(staging, target);
 					try { Directory.Delete(work, true); } catch (Exception) { }
 					Log.Write(LogChannel.General, "textures: HD pack " + pack.Version + " installed in " + target);

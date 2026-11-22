@@ -131,6 +131,20 @@ namespace OpenFF.Client
 			{
 				return;
 			}
+			// PORT: the game alpha-tests many sprites at 0.01, so the faint band that linear filtering leaves round a hard edge (a few percent
+			// opaque, invisible) still passes the test and writes depth: whatever is drawn behind it afterwards is kept out of that band and the
+			// clear colour shows through as a thin pale outline. A large (modded) picture is tested at 0.5, as the game's usual cut-off, so the
+			// band is dropped; --alpharef=game keeps the game's own value.
+			if (alphaTest && alphaReference < 0.5f && texture != null && !texture.IsDisposed && texture.Width >= 1536 && Options.Get("alpharef") != "game")
+			{
+				alphaReference = 0.5f;
+			}
+			// PORT: which draw settings the big (modded) textures are drawn with, once per distinct combination - to find why a sprite's edge draws as it does.
+			if (texture != null && !texture.IsDisposed && texture.Width >= 1536)
+			{
+				string combo = texture.Width + "x" + texture.Height + " alphaTest=" + alphaTest + " ref=" + alphaReference + " fn=" + alphaFunction + " blendDst=" + destinationBlend + " filter=" + filter + " u=" + addressU + " v=" + addressV + " depthTest=" + depthTest + " depthWrite=" + depthWrite + " cull=" + cull + " mode=" + mode + " fog=" + Fog.On;
+				Log.First(LogChannel.File, "bigdraw-" + combo, 1, () => "draw: " + combo);
+			}
 			if (FrameCapture.Recording)
 			{
 				// A step of the game is running: written down, drawn (interpolated, between steps) by FrameCapture.Replay.

@@ -1,8 +1,8 @@
 // The player's display settings: %LocalAppData%\OpenFF\settings.json.
 //
 //   {
-//     "width": 1600, "height": 960,        the window's size (windowed mode)
-//     "mode": "windowed",                   windowed | borderless (the desktop's size, no frame) | fullscreen
+//     "width": 1920, "height": 1080,       the window's size (windowed mode)
+//     "mode": "borderless",                  windowed | borderless (the desktop's size, no frame) | fullscreen
 //     "msaa": 4,                            anti-aliasing samples: 0 (off), 2, 4, 8
 //     "vsync": true                         wait for the monitor
 //   }
@@ -28,10 +28,10 @@ namespace OpenFF.Client
 
 	internal sealed class DisplaySettings
 	{
-		[JsonPropertyName("width")] public int Width { get; set; } = 1600;
-		[JsonPropertyName("height")] public int Height { get; set; } = 960;
+		[JsonPropertyName("width")] public int Width { get; set; } = 1920;
+		[JsonPropertyName("height")] public int Height { get; set; } = 1080;
 		/// <summary>windowed, borderless or fullscreen.</summary>
-		[JsonPropertyName("mode")] public string Mode { get; set; } = "windowed";
+		[JsonPropertyName("mode")] public string Mode { get; set; } = "borderless";
 		/// <summary>Anti-aliasing samples: 0, 2, 4 or 8.</summary>
 		[JsonPropertyName("msaa")] public int Msaa { get; set; } = 4;
 		[JsonPropertyName("vsync")] public bool VSync { get; set; } = true;
@@ -57,15 +57,15 @@ namespace OpenFF.Client
 		/// install and Steam is running; false keeps OpenFF away from Steam.</summary>
 		[JsonPropertyName("achievements")] public bool Achievements { get; set; } = true;
 		[JsonPropertyName("_help")] public string Help { get; } =
-			"width/height: the window (windowed mode). mode: windowed | borderless | fullscreen. msaa: 0, 2, 4 or 8. vsync: true/false. fps: 30 (the game's frames as they are) | 60 (smoothed - a frame interpolated between each two of the game's; where the display's refresh is no multiple of sixty, the nearest even rate above it, 72 at 144 Hz) | max (smoothed, at the display's rate); the game's logic runs 30 steps a second whatever is chosen. run: stick (the left stick's push is the pace - a walk part way, the full run all the way) | hold (the run button held runs). pad: which pad button is each DS button - cross/circle/square/triangle or a/b/x/y, l1/r1/l2/r2 or lb/rb/lt/rt, l3/r3, options/start, share/create/back, touchpad/guide, none; run and fast are the run and fast-forward buttons, speed and encounters the quality-of-life keys (F8, F11). updates: ask (a new version offered at the start, before the logos) | auto (installed at the start) | off. achievements: true (Steam achievements earned as the game earns them, when playing from the Steam install with Steam running; Steam then shows you in the game) | false. qol: speed 1-8 (the game's steps a frame; F8 cycles 1-4), encounters true/false (random battles; F11), exp and jobExp multipliers 0-100 (the menu offers 0, 0.5, 1, 2, 4), saveAnywhere, jobAdjustment (false: no lowered stats after a job change), indicator (the corner's note of what is on). storyGlow: 0-3, the pale glow behind the prologue's text (0 off, 1 default). Alt+Enter in the game switches windowed and full screen and saves it here. The command line (--size=WxH, --fullscreen, --windowed, --msaa=n, --fps=30|60|max) wins for one run.";
+			"width/height: the window (windowed mode). mode: windowed | borderless | fullscreen. msaa: 0, 2, 4 or 8. vsync: true/false. fps: 30 (the game's frames as they are) | 60 (smoothed - a frame interpolated between each two of the game's; where the display's refresh is no multiple of sixty, the nearest even rate above it, 72 at 144 Hz) | max (smoothed, at the display's rate); the game's logic runs 30 steps a second whatever is chosen. run: stick (the left stick's push is the pace - a walk part way, the full run all the way) | hold (the run button held runs). pad: which pad button is each DS button - cross/circle/square/triangle or a/b/x/y, l1/r1/l2/r2 or lb/rb/lt/rt, l3/r3, options/start, share/create/back, touchpad/guide, none; y is also the overworld map on FF3 (M on the keyboard too), select changes the party's leader on the field, start opens the client's menu; run and fast are the run and fast-forward buttons, speed and encounters the quality-of-life keys (F8, F11). updates: ask (a new version offered at the start, before the logos) | auto (installed at the start) | off. achievements: true (Steam achievements earned as the game earns them, when playing from the Steam install with Steam running; Steam then shows you in the game) | false. qol: speed 1-8 (the game's steps a frame; F8 cycles 1-4), encounterRate 0, 0.5, 1, 2 or 4 (how often random battles come, 0 none; F11 switches between 0 and the last rate; the older \"encounters\": false still means none), exp and jobExp multipliers 0-100 (the menu offers 0, 0.5, 1, 2, 4), saveAnywhere, jobAdjustment (false: no lowered stats after a job change), indicator (the corner's note of what is on). storyGlow: 0-3, the pale glow behind the prologue's text (0 off, 1 default). Alt+Enter in the game switches windowed and full screen and saves it here. The command line (--size=WxH, --fullscreen, --windowed, --msaa=n, --fps=30|60|max) wins for one run.";
 
 		/// <summary>DS buttons as pad button names; the defaults are a PlayStation pad's natural layout, which SDL lays out the same as an Xbox pad's.</summary>
 		public sealed class PadMap
 		{
 			[JsonPropertyName("a")] public string A { get; set; } = "cross";
 			[JsonPropertyName("b")] public string B { get; set; } = "circle";
-			[JsonPropertyName("x")] public string X { get; set; } = "square";
-			[JsonPropertyName("y")] public string Y { get; set; } = "triangle";
+			[JsonPropertyName("x")] public string X { get; set; } = "triangle";
+			[JsonPropertyName("y")] public string Y { get; set; } = "square";
 			[JsonPropertyName("l")] public string L { get; set; } = "l1";
 			[JsonPropertyName("r")] public string R { get; set; } = "r1";
 			[JsonPropertyName("start")] public string Start { get; set; } = "options";
@@ -74,10 +74,10 @@ namespace OpenFF.Client
 			[JsonPropertyName("run")] public string RunButton { get; set; } = "r2";
 			/// <summary>Held to fast-forward, like Tab.</summary>
 			[JsonPropertyName("fast")] public string Fast { get; set; } = "l2";
-			/// <summary>Turns auto battle on and off, like F.</summary>
+			/// <summary>Turns auto battle on and off, like F; R3 by default (on the Controller configuration page).</summary>
 			[JsonPropertyName("auto")] public string Auto { get; set; } = "r3";
-			/// <summary>Cycles the game's speed, like F8 (quality of life).</summary>
-			[JsonPropertyName("speed")] public string SpeedUp { get; set; } = "none";
+			/// <summary>Cycles the game's speed, like F8 (quality of life); L3 by default.</summary>
+			[JsonPropertyName("speed")] public string SpeedUp { get; set; } = "l3";
 			/// <summary>Turns random encounters on and off, like F11 (quality of life).</summary>
 			[JsonPropertyName("encounters")] public string Encounters { get; set; } = "none";
 		}
@@ -89,7 +89,7 @@ namespace OpenFF.Client
 			[JsonPropertyName("speed")] public int Speed { get; set; } = 1;
 			/// <summary>Random battles; scripted ones always come.</summary>
 			[JsonPropertyName("encounters")] public bool Encounters { get; set; } = true;
-			/// <summary>How often random battles come: 0.5, 1, 2 or 4 times as often.</summary>
+			/// <summary>How often random battles come: 0 (none), 0.5, 1, 2 or 4 times as often.</summary>
 			[JsonPropertyName("encounterRate")] public double EncounterRate { get; set; } = 1;
 			/// <summary>Battle EXP multiplier, 0-100.</summary>
 			[JsonPropertyName("exp")] public double Exp { get; set; } = 1;
@@ -107,10 +107,10 @@ namespace OpenFF.Client
 			[JsonPropertyName("minimapFog")] public bool MinimapFog { get; set; } = true;
 			[JsonPropertyName("minimapRotate")] public bool MinimapRotate { get; set; }
 			/// <summary>0 small, 1 medium, 2 large.</summary>
-			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 1;
+			[JsonPropertyName("minimapSize")] public int MinimapSize { get; set; } = 0;
 			[JsonPropertyName("minimapZoom")] public int MinimapZoom { get; set; } = 2;
 			/// <summary>How much of the map the party uncovers with fog of war: 0 is 100% (as first made), up to 4, 200%.</summary>
-			[JsonPropertyName("minimapSee")] public int MinimapSee { get; set; }
+			[JsonPropertyName("minimapSee")] public int MinimapSee { get; set; } = 4;
 			/// <summary>A solid map; false lets the game show through.</summary>
 			[JsonPropertyName("minimapOpaque")] public bool MinimapOpaque { get; set; }
 			/// <summary>A marker on each chest not yet opened.</summary>
@@ -118,7 +118,7 @@ namespace OpenFF.Client
 			/// <summary>Walls that can open (secret passages) marked in their own colour; false draws them as walls.</summary>
 			[JsonPropertyName("minimapPassages")] public bool MinimapPassages { get; set; }
 			/// <summary>The corner's note of what is on.</summary>
-			[JsonPropertyName("indicator")] public bool Indicator { get; set; } = true;
+			[JsonPropertyName("indicator")] public bool Indicator { get; set; }
 			/// <summary>With the indicator on: show only the speed and the encounter rate (when they are not x1), not every setting.</summary>
 			[JsonPropertyName("indicatorSimple")] public bool IndicatorSimple { get; set; }
 		}

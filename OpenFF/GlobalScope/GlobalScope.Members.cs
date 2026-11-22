@@ -12121,10 +12121,12 @@ internal static partial class GlobalScope
 						/// normalised by the material's declared size, not the picture's, so it maps the same -
 						/// with linear filtering; else the package's texels as ever.
 						/// </summary>
-						internal static uint LoadTextureNamed(string texName, uint fmt, uint sizeS, uint sizeT, uint color0, ushort[] texData, int iTexDataOffset, uint[] tex4x4Data, int iTex4x4DataOffset, ushort[] tex4x4IdxData, int iTex4x4IdxDataOffset, ushort[] plttData, int iPlttDataOffset, uint wrap, string package = null)
+						internal static uint LoadTextureNamed(string texName, uint fmt, uint sizeS, uint sizeT, uint color0, ushort[] texData, int iTexDataOffset, uint[] tex4x4Data, int iTex4x4DataOffset, ushort[] tex4x4IdxData, int iTex4x4IdxDataOffset, ushort[] plttData, int iPlttDataOffset, uint wrap, string package = null, bool grey = false)
 						{
 							if (OpenFF.Client.TextureOverrides.Any && OpenFF.Client.TextureOverrides.TryGet(texName, package, out int ow, out int oh, out byte[] rgba))
 							{
+								// PORT: a petrified body: the game turns it to stone by binding a grey palette, which means nothing to a full-colour PNG, so the picture itself is drawn grey while that palette is bound.
+								if (grey) rgba = StoneGrey(rgba);
 								uint own = GenTexture(ow, oh, rgba, wrap, 9729u, 5121u);
 								if (own != 0)
 								{
@@ -12132,7 +12134,37 @@ internal static partial class GlobalScope
 									return own;
 								}
 							}
+							// PORT: a battle effect model's own picture: a mod's fxm.<name>_<W>x<H>.png (OpenFF.Client.EffectTextures), found by name and declared size.
+							if (OpenFF.Client.TextureOverrides.Any && !grey && OpenFF.Client.EffectTextures.TryGetModel(texName, sizeS, sizeT, out int effectW, out int effectH, out byte[] effectRgba))
+							{
+								uint effectTex = GenTexture(effectW, effectH, effectRgba, wrap, 9729u, 5121u);
+								if (effectTex != 0)
+								{
+									texCount++;
+									return effectTex;
+								}
+							}
+							// PORT: a battle stage's own textures (no PNG of the mod's for them) are logged once each, to find which texture a stage draws something from.
+							if (package != null && package.Contains("/b"))
+							{
+								string own = package + "#" + texName;
+								OpenFF.Client.Log.First(OpenFF.Client.LogChannel.File, "stage-own-" + own, 1, () => "textures: " + texName + " of " + package + " is the game's own (fmt " + fmt + ", " + (8 << (int)sizeS) + "x" + (8 << (int)sizeT) + ")");
+							}
 							return LoadTexture(fmt, sizeS, sizeT, color0, texData, iTexDataOffset, tex4x4Data, iTex4x4DataOffset, tex4x4IdxData, iTex4x4IdxDataOffset, plttData, iPlttDataOffset, wrap);
+						}
+
+						/// <summary>PORT: the picture's colours as a stone body's grey (luminance, a little flattened and darkened, as the game's own stone palettes are), its alpha kept; a copy - the mod's picture is cached as it is.</summary>
+						private static byte[] StoneGrey(byte[] rgba)
+						{
+							byte[] grey = new byte[rgba.Length];
+							for (int i = 0; i + 3 < rgba.Length; i += 4)
+							{
+								float l = 0.299f * rgba[i] + 0.587f * rgba[i + 1] + 0.114f * rgba[i + 2];
+								byte v = (byte)Math.Clamp((int)(l * 0.9f + 8f), 0, 255);
+								grey[i] = grey[i + 1] = grey[i + 2] = v;
+								grey[i + 3] = rgba[i + 3];
+							}
+							return grey;
 						}
 
 						internal static uint LoadTexture(uint fmt, uint sizeS, uint sizeT, uint color0, ushort[] texData, int iTexDataOffset, uint[] tex4x4Data, int iTex4x4DataOffset, ushort[] tex4x4IdxData, int iTex4x4IdxDataOffset, ushort[] plttData, int iPlttDataOffset, uint wrap)
@@ -12333,7 +12365,7 @@ internal static partial class GlobalScope
 							return num34;
 						}
 
-						internal static void LoadTexture(TexVram vramKey, GXTexFmt fmt, GXTexSizeS sizeS, GXTexSizeT sizeT, int color0, ushort[] texData, ushort[] plttData)
+						internal static void LoadTexture(TexVram vramKey, GXTexFmt fmt, GXTexSizeS sizeS, GXTexSizeT sizeT, int color0, ushort[] texData, ushort[] plttData, string effectName = null, uint texBytes = 0u, uint plttBytes = 0u)
 						{
 							if (vramKey.list == null)
 							{
@@ -12343,6 +12375,18 @@ internal static partial class GlobalScope
 							}
 							if (vramKey.list[0].tex == 0)
 							{
+								// PORT: a battle effect's own picture (an NTPK block of an .efp pack): a mod's PNG for it (OpenFF.Client.EffectTextures) is uploaded in its place, at its own size, with linear filtering.
+								if (effectName != null && OpenFF.Client.EffectTextures.TryGetParticle(effectName, (uint)sizeS, (uint)sizeT, texData, (int)texBytes, plttData, (int)plttBytes, out int effectW, out int effectH, out byte[] effectRgba))
+								{
+									uint effectTex = GenTexture(effectW, effectH, effectRgba, 33071u, 9729u, 5121u);
+									if (effectTex != 0)
+									{
+										texCount++;
+										vramKey.list[0].fmt = (uint)fmt;
+										vramKey.list[0].tex = effectTex;
+										return;
+									}
+								}
 								vramKey.list[0].fmt = (uint)fmt;
 								vramKey.list[0].tex = LoadTexture((uint)fmt, (uint)sizeS, (uint)sizeT, (uint)color0, texData, 0, null, 0, null, 0, plttData, 0, 33071u);
 							}
@@ -12600,6 +12644,9 @@ internal static partial class GlobalScope
 							NNSG3dResDict dict = pTex.plttInfo.dict;
 							NNSG3dResDictEntryHeader entry = dict.entry;
 							NNSG3dResName[] name = entry.name;
+							// PORT: the stone palette of a petrified party member (j101_stone ...): a mod's full-colour picture is drawn grey under it.
+							bool stonePalette = pTex.package != null && pTex.package.IndexOf("_stone", StringComparison.OrdinalIgnoreCase) >= 0;
+							if (pTex.package != null && pTex.package.Contains("j")) OpenFF.Client.Log.First(OpenFF.Client.LogChannel.File, "pltt-" + pTex.package, 1, () => "palette bound from " + pTex.package + (stonePalette ? " (stone: mod pictures draw grey)" : ""));
 							NNSG3dResMat nNSG3dResMat = NNS_G3dGetMat(pMdl);
 							_ = nNSG3dResMat.dict.entry;
 							NNSG3dResDict dictPal = nNSG3dResMat.dictPal;
@@ -12639,7 +12686,7 @@ internal static partial class GlobalScope
 										}
 										texImageParam.tex = 0u;
 										// PORT: a mod's PNG for this texture stays through a palette rebind (it is a full picture; a palette means nothing to it).
-										texImageParam.tex = LoadTextureNamed(texImageParam.texName, (dictTexData[0] >> 26) & 7, (dictTexData[0] >> 20) & 7, (dictTexData[0] >> 23) & 7, (dictTexData[0] >> 29) & 1, pTex2.texInfo.tex, (num2 << 3) / 2, pTex2.tex4x4Info.tex, (num2 << 3) / 4, pTex2.tex4x4Info.pal, (num2 << 2) / 2, pTex.plttInfo.pal, (array3[0] << 3) / 2, 10497u, pTex2.package);
+										texImageParam.tex = LoadTextureNamed(texImageParam.texName, (dictTexData[0] >> 26) & 7, (dictTexData[0] >> 20) & 7, (dictTexData[0] >> 23) & 7, (dictTexData[0] >> 29) & 1, pTex2.texInfo.tex, (num2 << 3) / 2, pTex2.tex4x4Info.tex, (num2 << 3) / 4, pTex2.tex4x4Info.pal, (num2 << 2) / 2, pTex.plttInfo.pal, (array3[0] << 3) / 2, 10497u, pTex2.package, stonePalette);
 									}
 								}
 							}

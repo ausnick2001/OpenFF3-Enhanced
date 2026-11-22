@@ -77,7 +77,9 @@ namespace OpenFF.Client
 			return m == "auto" || m == "automatic" ? "auto" : m == "off" || m == "never" ? "off" : "ask";
 		}
 
-		private static string UpdaterPath => Path.Combine(AppContext.BaseDirectory, "OpenFF.Updater.exe");
+		// The updater sits in the tools folder (the root holds only the game); an older install has it beside the exe.
+		private static string UpdaterIn(string folder) => File.Exists(Path.Combine(folder, "tools", "OpenFF.Updater.exe")) ? Path.Combine(folder, "tools", "OpenFF.Updater.exe") : Path.Combine(folder, "OpenFF.Updater.exe");
+		private static string UpdaterPath => UpdaterIn(AppContext.BaseDirectory);
 
 		private static string Work => Path.Combine(Path.GetTempPath(), "OpenFF-update");
 
@@ -154,7 +156,7 @@ namespace OpenFF.Client
 		private static HttpClient Client()
 		{
 			HttpClient http = new HttpClient();
-			http.DefaultRequestHeaders.UserAgent.ParseAdd("OpenFF/" + Current.ToString(3));
+			http.DefaultRequestHeaders.UserAgent.ParseAdd("OpenFF3-Enhanced/" + Current.ToString(3));
 			return http;
 		}
 
@@ -220,7 +222,7 @@ namespace OpenFF.Client
 					Now = Stage.Installing;
 					// The updater runs from the temp folder - the new release's own, else this one's.
 					string updater = Path.Combine(Work, "OpenFF.Updater.exe");
-					string fresh = Path.Combine(from, "OpenFF.Updater.exe");
+					string fresh = UpdaterIn(from);
 					File.Copy(File.Exists(fresh) ? fresh : UpdaterPath, updater, overwrite: true);
 					string to = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 					List<string> args = new List<string> { "--from", from, "--to", to, "--wait", Environment.ProcessId.ToString(), "--run", exeName };

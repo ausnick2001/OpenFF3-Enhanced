@@ -162,7 +162,7 @@ internal static partial class GlobalScope
 					cwDATA d = commandWindowData(j);
 					lines.Add((d.Position.vx, d.Position.vx + d.Size.vx, d.Position.vy));
 				}
-				OpenFF.Client.ListLines.Set(lines, () => panelMade_ && IsShow() && panel_.IsShow() && commandWindow_[0].IsShow());
+				OpenFF.Client.ListLines.Set(lines, () => panelMade_ && panel_.IsShow() && commandWindow_[0].IsShow());   // the panel's own showing, not the list's: the panel is up from the step it is built
 			}
 
 			public void createCommandWindow()
@@ -196,6 +196,8 @@ internal static partial class GlobalScope
 					panel_.SetPanelStyle(BasicWindow.NavyFill, 29);
 					panel_.SetShow(show: true, user: true);
 					panelMade_ = true;
+					OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "command list: built at step " + OpenFF.Client.GameHost.StepsTaken + (IsShow() ? " (shown)" : " (not yet shown)"));
+					if (commandWindow_[0].IsShow()) DrawRowLines();   // PORT: the panel is up from here, so the lines come up with it (whether or not the list itself is marked shown yet)
 				}
 			}
 
@@ -243,6 +245,8 @@ internal static partial class GlobalScope
 					commandWindow_[i].SetShow(show, user: true);
 				}
 				if (panelMade_) panel_.SetShow(show, user: true);
+				if (show) OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "command list: shown at step " + OpenFF.Client.GameHost.StepsTaken + (panelMade_ ? "" : " (panel not made)"));
+				if (show && panelMade_ && commandWindow_[0].IsShow()) DrawRowLines();   // PORT: the lines the very step the list is shown, not the step after (execute), so they come up with it
 				if (!show)
 				{
 					OpenFF.Client.ListLines.Clear();   // PORT: the row lines go the moment the list does

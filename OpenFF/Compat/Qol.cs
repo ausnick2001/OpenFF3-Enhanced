@@ -3,7 +3,7 @@
 // saving anywhere, and no adjustment period after a job change. Player options, not a mod - they
 // are kept in settings.json ("qol") and work alongside any mods. The Esc menu's Quality of life page
 // sets them; F8 cycles the speed and F11 turns random encounters on and off while playing (a pad
-// button can be bound to either on the Pad buttons page), and a small indicator in the corner says
+// button can be bound to either on the Controller configuration page), and a small indicator in the corner says
 // what is on.
 //
 // The game's hooks: map.CEnCountManager.checkEncount (random battles; scripted ones stay),
@@ -46,10 +46,10 @@ namespace OpenFF.Client
 		public static int Speed => Math.Clamp(S.Speed, 1, MostSpeed);
 
 		/// <summary>Whether random battles come (scripted ones always do).</summary>
-		public static bool Encounters => S.Encounters;
-		public static readonly double[] Rates = { 0.5, 1, 2, 4 };
-		/// <summary>How many times as often random battles come (the menu offers 0.5, 1, 2, 4).</summary>
-		public static double EncounterRate => S.EncounterRate > 0 ? S.EncounterRate : 1;
+		public static bool Encounters => EncounterRate > 0;
+		public static readonly double[] Rates = { 0, 0.5, 1, 2, 4 };
+		/// <summary>How many times as often random battles come (the menu offers 0, 0.5, 1, 2, 4; 0 is none). An older file's "encounters": false is none too.</summary>
+		public static double EncounterRate => !S.Encounters ? 0 : double.IsFinite(S.EncounterRate) ? Math.Clamp(S.EncounterRate, 0, 100) : 1;
 
 		public static bool SaveAnywhere => S.SaveAnywhere;
 
@@ -108,11 +108,39 @@ namespace OpenFF.Client
 		// ---- the keys: F8 the speed, F11 random encounters, or the pad buttons bound to them ----
 
 		private static bool _speedWas, _encountersWas;
+		private static double _restoreRate = 1;
+
+		private static bool _mapWas, _mapEdge;
+
+		/// <summary>Once a frame: whether M went down this frame (the pad's Y is read by the field itself). FF3 only; FF4's M is its own map.</summary>
+		private static void SampleMap(bool idle)
+		{
+			_mapEdge = false;
+			if (GameProfile.IsFf4) return;
+			bool down = false;
+			if (!idle)
+			{
+				KeyboardState keys = Keyboard.GetState();
+				down = keys.IsKeyDown(Keys.M) || DesktopInput.Injected.Contains(Keys.M);
+			}
+			_mapEdge = down && !_mapWas;
+			_mapWas = idle || down;
+		}
+
+		/// <summary>Whether M went down this frame, once: the field takes it when it can open the map (CStateWorldMove.sendMenu).</summary>
+		public static bool TakeMapPress()
+		{
+			bool pressed = _mapEdge;
+			_mapEdge = false;
+			return pressed;
+		}
 
 		/// <summary>Once a frame, before the game's step: the keys that change a setting while playing.</summary>
 		public static void Tick(Game game)
 		{
-			if (game == null || (!game.IsActive && !Drive.Active) || PauseMenu.IsOpen || EngineInput.Captured || (TextEntry.Instance != null && TextEntry.Instance.IsActive)) { _speedWas = _encountersWas = true; return; }
+			bool idle = game == null || (!game.IsActive && !Drive.Active) || PauseMenu.IsOpen || EngineInput.Captured || (TextEntry.Instance != null && TextEntry.Instance.IsActive);
+			SampleMap(idle);
+			if (idle) { _speedWas = _encountersWas = true; return; }
 			KeyboardState keys = Keyboard.GetState();
 			DisplaySettings.PadMap map = DisplaySettings.Current.Pad ?? new DisplaySettings.PadMap();
 			bool shift = keys.IsKeyDown(Keys.LeftShift) || keys.IsKeyDown(Keys.RightShift);
@@ -126,9 +154,12 @@ namespace OpenFF.Client
 			}
 			if (encounters && !_encountersWas)
 			{
-				S.Encounters = !S.Encounters;
-				Toast(S.Encounters ? "Encounters on" : "No encounters");
-				Changed("random encounters " + (S.Encounters ? "on" : "off"));
+				// F11 is the rate's x0 and back: to none, remembering the rate; from none, to the rate it had (x1 if it never had one).
+				if (EncounterRate > 0) { _restoreRate = EncounterRate; S.EncounterRate = 0; }
+				else S.EncounterRate = _restoreRate > 0 ? _restoreRate : 1;
+				S.Encounters = true;
+				Toast(S.EncounterRate > 0 ? "Encounters " + Times(S.EncounterRate) : "No encounters");
+				Changed("encounter rate " + Times(S.EncounterRate));
 			}
 			_speedWas = speed;
 			_encountersWas = encounters;
@@ -174,8 +205,7 @@ namespace OpenFF.Client
 			{
 				if (Speed != 1) lines.Add("Speed " + Times(Speed));
 				// Random battles off is a rate of x0.
-				if (!s.Encounters) lines.Add("Encounter rate " + Times(0));
-				else if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounter rate " + Times(EncounterRate));
+				if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounter rate " + Times(EncounterRate));
 				if (!s.IndicatorSimple)
 				{
 					if (Math.Abs(s.Exp - 1) > 1e-9) lines.Add("EXP " + Times(s.Exp));

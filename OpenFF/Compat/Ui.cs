@@ -639,7 +639,7 @@ namespace OpenFF.Client
 			return x + HintWidth(g, word, size, disc) + 26;
 		}
 
-		// ---- a bound pad button, for the Pad buttons screen ----
+		// ---- a bound pad button, for the Controller configuration screen ----
 		//
 		// The bindings are kept under the PlayStation pad's names (cross, circle, l1, options, share...). Each is drawn as the
 		// button of the icons in force: the PlayStation pictures, the Xbox / Switch discs for the face buttons and shoulders,
@@ -685,12 +685,60 @@ namespace OpenFF.Client
 			return Math.Max(disc, Width(g, label, CapSize(size)) + disc * 0.7f);
 		}
 
+		// The pictures have different margins (a shadow below, a pill wider than a disc), so drawn by their own edges they sit at
+		// different heights and sideways; each is placed by where its visible body is, on one centre line for the whole column.
+		private static readonly System.Collections.Generic.Dictionary<Texture2D, Rectangle> _bodies = new System.Collections.Generic.Dictionary<Texture2D, Rectangle>();
+
+		/// <summary>The box of a picture's solid pixels (alpha over 128), the whole picture when it has none.</summary>
+		private static Rectangle Body(Texture2D tex)
+		{
+			if (_bodies.TryGetValue(tex, out Rectangle known)) return known;
+			Rectangle body = new Rectangle(0, 0, tex.Width, tex.Height);
+			try
+			{
+				Color[] px = new Color[tex.Width * tex.Height];
+				tex.GetData(px);
+				int x0 = tex.Width, y0 = tex.Height, x1 = -1, y1 = -1;
+				for (int y = 0; y < tex.Height; y++)
+					for (int x = 0; x < tex.Width; x++)
+						if (px[y * tex.Width + x].A > 128) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+				if (x1 >= x0 && y1 >= y0) body = new Rectangle(x0, y0, x1 - x0 + 1, y1 - y0 + 1);
+			}
+			catch (Exception) { }
+			_bodies[tex] = body;
+			return body;
+		}
+
+		/// <summary>Draws a pad picture with the centre of its solid body at (cx, cy) in text space, at the disc size times scale.</summary>
+		private static void DrawPadPictureByBody(SpriteBatch b, Texture2D tex, float cx, float cy, float disc, float scale, Viewport v)
+		{
+			(float w, float h) = PadPictureSize(tex, disc);
+			w *= scale; h *= scale;
+			Rectangle body = Body(tex);
+			float fx = w / tex.Width, fy = h / tex.Height;
+			float left = cx - (body.X + body.Width / 2f) * fx, top = cy - (body.Y + body.Height / 2f) * fy;
+			float sx = v.Width / W, sy = v.Height / H;
+			b.Draw(tex, new Rectangle((int)Math.Round(left * sx), (int)Math.Round(top * sy), (int)Math.Round(w * sx), (int)Math.Round(h * sy)), Color.White);
+		}
+
 		/// <summary>Shape pass of a bound button: its picture or disc, or a plate for the name, at x (left edge) and cy.</summary>
 		public static void BoundShape(SpriteBatch b, string name, float x, float cy, float disc, float width, Viewport v)
 		{
 			if (!BoundKnown(name, out PadButton? logical, out string picture, out string label)) return;
-			if (logical.HasValue) { HintShape(b, logical.Value, x, cy, disc, v, keys: false); return; }
-			if (PlayStationPad && PadPicture(picture) != null) { PadPictureAt(b, picture, x, cy, disc, v); return; }
+			// The column's centre line is that of a face button's disc, at the right of the button's room; a touch below the row's middle, where the eye puts it.
+			float cx = x + width - disc / 2, drop = 1f;
+			if (logical.HasValue)
+			{
+				Texture2D pic = PadPictureFor(logical.Value);
+				if (pic != null) { DrawPadPictureByBody(b, pic, cx, cy + drop, disc, 1f, v); return; }
+				HintShape(b, logical.Value, x, cy, disc, v, keys: false);
+				return;
+			}
+			if (PlayStationPad)
+			{
+				Texture2D pic = PadPicture(picture);
+				if (pic != null) { DrawPadPictureByBody(b, pic, cx, cy + drop, disc, 1f, v); return; }
+			}
 			float h = disc * 0.92f;
 			Rectangle plate = Scale(new Rectangle((int)Math.Round(x), (int)Math.Round(cy - h / 2), (int)Math.Round(width), (int)Math.Round(h)), v);
 			RoundPlate(b, plate, new Color(150, 160, 190, 255), v);

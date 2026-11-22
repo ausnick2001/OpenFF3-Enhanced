@@ -28,7 +28,7 @@ Usage
 import argparse, hashlib, json, os, sys, time, zipfile
 
 SKIP_WORDS = ('backup', 'annotated', 'copy of', ' - copy')     # stray work files that are not textures
-SKIP_NAMES = {'put-pngs-here.txt', 'thumbs.db', 'desktop.ini', '.ds_store'}
+SKIP_NAMES = {'put-pngs-here.txt', 'thumbs.db', 'desktop.ini', '.ds_store', 'pack-installed.json'}   # pack-installed.json: the game's own note of which pack version is installed
 
 
 def sha256_file(path, chunk=1 << 20):

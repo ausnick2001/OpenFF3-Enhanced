@@ -14,8 +14,14 @@ namespace OpenFF.Client
 {
 	internal static class UpscaledSheets
 	{
-		// The hand cursor, icon_yubi: two 48 x 48 frames in a 96 x 48 PNG.
-		private static readonly HashSet<string> Names = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "icon_yubi" };
+		// The hand cursor, icon_yubi: two 48 x 48 frames in a 96 x 48 PNG. The speech balloons (fukidashi), and the world map's markers,
+		// ship and cursor sheets, which the world map draws as cells over their sheets.
+		private static readonly HashSet<string> Names = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+		{
+			"icon_yubi", "fukidashi", "fukidashi_2",
+			"map_marker_02", "map_marker_03", "map_marker_04", "map_marker_05", "map_marker_06", "map_marker_07", "map_marker_08", "map_marker_09", "map_marker_10",
+			"w_map_mark", "w_map_ship01", "w_map_ship02", "w_map_ship03"
+		};
 		private static readonly Dictionary<string, (int W, int H)> _original = new Dictionary<string, (int, int)>(StringComparer.OrdinalIgnoreCase);
 
 		/// <summary>How much larger (across, down) a sheet's picture is than the game's own, 1 when it is not an upscaled listed sheet. The engine divides this by the padded texture's size.</summary>
@@ -31,7 +37,7 @@ namespace OpenFF.Client
 				int width = (png[16] << 24) | (png[17] << 16) | (png[18] << 8) | png[19];
 				int height = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
 				string stem = Path.GetFileNameWithoutExtension(file.Replace('\\', '/'));
-				if (!Names.Contains(stem)) return;
+				if (!Names.Contains(stem)) { WarnIfUnlisted(stem, file, width, height); return; }
 				if (!_original.TryGetValue(stem, out (int W, int H) original))
 				{
 					original = Original(file);
@@ -47,6 +53,30 @@ namespace OpenFF.Client
 				}
 			}
 			catch (Exception) { }
+		}
+
+		// Sheets whose code gives their size itself (Cell.SheetBase), so a larger picture is already handled.
+		private static readonly HashSet<string> Elsewhere = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "name_i", "ok" };
+
+		/// <summary>A mod's picture for a sheet that is not listed above, larger than the game's own: it would be cut by the old cells and show only its corner. Said once in the log.</summary>
+		private static void WarnIfUnlisted(string stem, string file, int width, int height)
+		{
+			if (Elsewhere.Contains(stem)) return;
+			if (!_original.TryGetValue(stem, out (int W, int H) original)) { original = Original(file); _original[stem] = original; }
+			if (original.W > 0 && original.H > 0 && width > original.W && height > original.H)
+				Log.First(LogChannel.General, "upscaled-unlisted-" + stem, 1, () => "ui: " + stem + " is " + width + " x " + height + " over the game's " + original.W + " x " + original.H + " but is not in UpscaledSheets - it may draw as its top-left corner only");
+		}
+
+		/// <summary>The size of the game's own picture of a background (the world map's pieces: "w_map00_00" -> its .NCGR), (0, 0) when the shipped content has none. A background cut by cells is told this as Bg.BaseW / BaseH.</summary>
+		public static (int W, int H) OriginalOf(string name)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(name)) return (0, 0);
+				if (!_original.TryGetValue(name, out (int W, int H) size)) { size = Original(name + ".NCGR"); _original[name] = size; }
+				return size;
+			}
+			catch (Exception) { return (0, 0); }
 		}
 
 		/// <summary>The size of the PNG the shipped content has under this name, (0, 0) when it has none.</summary>

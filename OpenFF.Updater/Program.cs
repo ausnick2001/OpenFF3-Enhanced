@@ -46,16 +46,16 @@ namespace OpenFF.Updater
 					case "--wait": if (int.TryParse(next, out int pid)) wait.Add(pid); i++; break;
 				}
 			}
-			Console.Title = "OpenFF - updating";
+			Console.Title = "OpenFF3 Enhanced - updating";
 			try
 			{
 				if (log != null) { Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(log))); _log = new StreamWriter(log, append: true) { AutoFlush = true }; }
 			}
 			catch (Exception) { }
-			Say("OpenFF updater " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+			Say("OpenFF3 Enhanced updater " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
 			if (from == null || to == null || !Directory.Exists(from) || !Directory.Exists(to))
 			{
-				Say("usage: OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run "OpenFF3 Enhanced.exe" [--arg <a>]... [--log <file>]");
+				Say("usage: OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run \"OpenFF3 Enhanced.exe\" [--arg <a>]... [--log <file>]");
 				return 2;
 			}
 			from = Path.GetFullPath(from);
@@ -70,8 +70,8 @@ namespace OpenFF.Updater
 
 			WaitForExit(wait, to);
 			bool ok = Install(from, to);
-			if (ok) Say("OpenFF is up to date.");
-			else Say("The update did not go in; OpenFF is as it was.");
+			if (ok) Say("OpenFF3 Enhanced is up to date.");
+			else Say("The update did not go in; OpenFF3 Enhanced is as it was.");
 			if (run != null)
 			{
 				try

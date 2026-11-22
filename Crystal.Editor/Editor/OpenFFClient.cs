@@ -14,13 +14,17 @@ namespace Crystal.Editor
 {
 	internal static class OpenFFClient
 	{
-		// The client keeps it in userdata\settings beside OpenFF3 Enhanced.exe (Crystal sits beside the client in a release); the older place is %LOCALAPPDATA%\OpenFF.
+		// The client keeps it in userdata\settings beside OpenFF3 Enhanced.exe (Crystal sits in a "Modding Tools" folder inside the client's folder, or beside it); the older place is %LOCALAPPDATA%\OpenFF.
 		public static string SettingsPath
 		{
 			get
 			{
+				// Beside Crystal, or one folder up: the modding tools are unzipped into a "Modding Tools" folder inside the game's folder.
 				string beside = Path.Combine(AppContext.BaseDirectory, "userdata", "settings", "launch.json");
-				return File.Exists(beside) ? beside : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "launch.json");
+				if (File.Exists(beside)) return beside;
+				string game = Path.GetDirectoryName(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+				string above = game == null ? null : Path.Combine(game, "userdata", "settings", "launch.json");
+				return above != null && File.Exists(above) ? above : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenFF", "launch.json");
 			}
 		}
 
@@ -186,7 +190,7 @@ namespace Crystal.Editor
 				{
 					foreach (string configuration in new[] { "Debug", "Release" })
 					{
-						foreach (string exe in new[] { "OpenFF3 Enhanced.exe", "OpenFF3 Enhanced.exe" })
+						foreach (string exe in new[] { "OpenFF3 Enhanced.exe", "OpenFF.exe" })
 						{
 							string candidate = Path.Combine(directory.FullName, "OpenFF", "bin", configuration, "net8.0", exe);
 							if (File.Exists(candidate))
