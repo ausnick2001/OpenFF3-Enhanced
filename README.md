@@ -1,4 +1,4 @@
-![OpenFF3 Enhanced](Docs/Images/banner.jpg)
+[![OpenFF3 Enhanced: watch the showcase video](Docs/Images/banner-video.jpg)](https://www.youtube.com/watch?v=cnKPI1xDIpE)
 
 # OpenFF3 Enhanced
 
