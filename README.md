@@ -171,7 +171,7 @@ OpenFF also has an in-progress Final Fantasy IV port, written by zerratar, and i
 - **zerratar** for [OpenFF](https://github.com/zerratar/openff), which this is built on.
 - **Panda Venom** for their amazing work on the [textures for the PSP version](https://www.reddit.com/r/GameUpscale/comments/1cztzsz/psp_final_fantasy_iii_us_hd_textures/). Most of the HD textures here were made by me with the help of AI, but around 100 of them I struggled to get right, and Panda Venom very kindly let me use parts of their textures to fix mine. I don't really want or need donations for this project, but if you feel like giving someone a donation, please consider giving a few $ to them. Their Ko-Fi page is https://ko-fi.com/pandavenom
 - **How the HD textures were made:** most were upscaled with [Upscayl](https://upscayl.org) using its standard and Digital Art models, then combined and touched up by hand. Parts of some textures were repainted with [Fooocus](https://github.com/lllyasviel/Fooocus) and the inpainting model it comes with. Faces and a few problem textures were corrected with small Python scripts (Pillow, OpenCV and NumPy). Models and textures were checked in the Crystal editor, and the game's own formats were read with OpenFF's tools.
-- **Claude**, an AI model made by [Anthropic](https://www.anthropic.com), which I worked with throughout, writing and debugging much of the code and helping with the texture fixes.
+- **Claude**, which I worked with throughout, writing and debugging much of the code and helping with the texture fixes.
 
 
 ## Game data and legal
