@@ -40,7 +40,7 @@ I wanted to keep the changes as modular and adjustable as possible with the emph
 
 
 
-- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Can be enabled and disabled at any time.. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
+- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
 - **Faster battles.** The spoils and exp messages appear sooner, and can be skipped quickly with Cross/B/A.
 - **Encounter rate modifier.** 0x (none), 0.5x, 1x, 2x or 4x. Too many random battles? Halve them and double the EXP and job points.
 - **More aesthetic menu design** The battle menu and OpenFF3 Enhanced menu have been redesigned to be more cohesive with the style of the party menu and dialogue boxes.
