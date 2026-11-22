@@ -32,9 +32,7 @@ Use the included sharper fonts, or don't. If you don't like the new fonts, that 
 
 ![Before and after](Docs/Images/shot-full-battle.jpg)
 
-![Before and after](Docs/Images/shot-battle-menu-1.jpg)
 
-![Before and after](Docs/Images/shot-battle-menu-2.jpg)
 
 - **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Can be enabled and disabled at any time.. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
 - **Faster battles.** The spoils and exp messages appear sooner, and can be skipped quickly with Cross/B/A.
@@ -56,7 +54,7 @@ Use the included sharper fonts, or don't. If you don't like the new fonts, that 
 - **Party and status screens** now show each hero's job level, and how many job points are left until the next level.
 - **Controller icons** for PlayStation, Xbox, Switch or keyboard (Start/Esc > Settings > Button icons). Game ships with enhanced playstation icons.
 
-**Looks and sound**
+**Visuals**
 
 ![Before and after](Docs/Images/shot-portrait.jpg)
 
