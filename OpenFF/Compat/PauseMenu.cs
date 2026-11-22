@@ -72,8 +72,37 @@ namespace OpenFF.Client
 		private Texture2D _pixel;
 		private string _note = "";
 
-		private static readonly (int W, int H)[] Sizes = { (800, 480), (1200, 720), (1600, 960), (1920, 1080), (2000, 1200), (2400, 1440), (2560, 1440), (3200, 1920) };
+		private static readonly (int W, int H)[] Sizes = { (800, 480), (1200, 720), (1600, 960), (1920, 1080), (2000, 1200), (2400, 1440), (2560, 1440), (3200, 1920), (3840, 2160) };
 		private static readonly string[] Modes = { "windowed", "borderless", "fullscreen" };
+
+		/// <summary>
+		/// The window sizes this screen can take: in a window, the presets that fit the desktop; in full screen (a display
+		/// mode switch), only the sizes the display itself lists; none below 720p in either. The presets when the display cannot be asked.
+		/// </summary>
+		private const int MinHeight = 720;   // nothing below 720p is offered
+
+		private static (int W, int H)[] AvailableSizes(string mode)
+		{
+			try
+			{
+				DisplayMode desktop = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
+				List<(int W, int H)> found = new List<(int W, int H)>();
+				if (mode == "fullscreen")
+				{
+					foreach (DisplayMode m in GraphicsAdapter.DefaultAdapter.SupportedDisplayModes)
+						if (m.Height >= MinHeight && !found.Contains((m.Width, m.Height))) found.Add((m.Width, m.Height));
+				}
+				else
+				{
+					foreach ((int W, int H) size in Sizes)
+						if (size.H >= MinHeight && size.W <= desktop.Width && size.H <= desktop.Height) found.Add(size);
+				}
+				if (found.Count == 0) return Sizes;
+				found.Sort((a, b) => a.W != b.W ? a.W.CompareTo(b.W) : a.H.CompareTo(b.H));
+				return found.ToArray();
+			}
+			catch (Exception) { return Sizes; }
+		}
 		private static readonly int[] Msaas = { 0, 2, 4, 8 };
 		private static readonly (string Key, string Label)[] DsButtons =
 		{
@@ -250,8 +279,8 @@ namespace OpenFF.Client
 			}
 
 			int count = Rows();
-			if (up) _selected = (_selected + count - 1) % count;
-			if (downKey) _selected = (_selected + 1) % count;
+			if (up) { do _selected = (_selected + count - 1) % count; while (RowDisabled(_selected)); }
+			if (downKey) { do _selected = (_selected + 1) % count; while (RowDisabled(_selected)); }
 
 			// The mouse: a row under the pointer is selected; a click on it confirms.
 			bool mouseDown = DesktopInput.MouseInView(out int mx, out int my);
@@ -260,7 +289,7 @@ namespace OpenFF.Client
 				Layout layout = LayoutFor(_page);
 				int row = (int)Math.Floor((my - layout.Top) / layout.Step);
 				Rectangle hit = row >= 0 && row < count ? layout.RowAt(row) : Rectangle.Empty;
-				if (hit.Contains(mx, my)) { _selected = row; confirm = true; }
+				if (hit.Contains(mx, my) && !RowDisabled(row)) { _selected = row; confirm = true; }
 			}
 			_mouseWasDown = mouseDown;
 
@@ -333,6 +362,9 @@ namespace OpenFF.Client
 			get { try { return ProgressionLayer.AnyMastery && !ModMenus.HasScreen("abilities"); } catch (Exception) { return false; } }
 		}
 
+		/// <summary>A row shown greyed and passed over: the window size while the window is borderless (it draws at the desktop's size).</summary>
+		private bool RowDisabled(int row) => _page == Page.Settings && row == 1 && DisplaySettings.Current.Mode == "borderless";
+
 		private int Rows()
 		{
 			switch (_page)
@@ -359,14 +391,17 @@ namespace OpenFF.Client
 					int i = Array.IndexOf(Modes, s.Mode); if (i < 0) i = 0;
 					s.Mode = Modes[(i + by + Modes.Length) % Modes.Length];
 					ApplyDisplay(gdm);
+					_note = s.Mode == "borderless" ? "borderless full screen draws at your desktop's resolution" : "";
 					break;
 				}
 				case 1:
 				{
+					if (s.Mode == "borderless") break;   // greyed out: borderless draws at the desktop's size, so the window size has no say
+					(int W, int H)[] sizes = AvailableSizes(s.Mode);
 					int i = -1;
-					for (int k = 0; k < Sizes.Length; k++) if (Sizes[k].W == s.Width && Sizes[k].H == s.Height) i = k;
-					i = i < 0 ? (by > 0 ? 0 : Sizes.Length - 1) : (i + by + Sizes.Length) % Sizes.Length;
-					s.Width = Sizes[i].W; s.Height = Sizes[i].H;
+					for (int k = 0; k < sizes.Length; k++) if (sizes[k].W == s.Width && sizes[k].H == s.Height) i = k;
+					i = i < 0 ? (by > 0 ? 0 : sizes.Length - 1) : (i + by + sizes.Length) % sizes.Length;
+					s.Width = sizes[i].W; s.Height = sizes[i].H;
 					if (s.Mode == "windowed") ApplyDisplay(gdm);
 					else _note = "";
 					break;
@@ -839,11 +874,11 @@ namespace OpenFF.Client
 			for (int row = 0; row < count; row++)
 			{
 				Rectangle r = layout.RowAt(row);
-				bool lit = row == _selected;
+				bool off = RowDisabled(row); bool lit = row == _selected && !off;
 				UiTheme.Row(_batch, r, lit, view, diamonds: lit && (_page == Page.Main || _page == Page.Quit));
 				Kind kind = RowKind(row, out UiTheme.Icon? icon, out bool on, out _);
 				if (lit) UiTheme.Hand(_batch, r, r.X + 40, view);
-				if (kind == Kind.Stepper) UiTheme.Stepper(_batch, valueBox[row], lit, view);
+				if (kind == Kind.Stepper) { if (!off) UiTheme.Stepper(_batch, valueBox[row], lit, view); }
 				else if (kind == Kind.Switch) UiTheme.Switch(_batch, valueBox[row], on, lit, view);
 				else if (kind == Kind.Page) Ui.IconAt(_batch, Ui.Icon.Right, r.Right - 20, r.Y + r.Height / 2f, r.Height * 0.5f, lit ? UiTheme.LitInk : UiTheme.Ink, view);
 				else if (kind == Kind.Text && boundWidth[row] > 0)
@@ -897,15 +932,15 @@ namespace OpenFF.Client
 				for (int row = 0; row < count; row++)
 				{
 					Rectangle r = layout.RowAt(row);
-					bool lit = row == _selected;
+					bool off = RowDisabled(row); bool lit = row == _selected && !off;
 					Kind kind = RowKind(row, out UiTheme.Icon? icon, out bool on, out string hint);
 					RowText(row, out string label, out string value);
 					float labelX = r.X + 46;
-					L(graphics, label, labelX, r.Y + 2f, r.Height, rowSize, lit ? Color.White : UiTheme.Ink);
+					L(graphics, label, labelX, r.Y + 2f, r.Height, rowSize, off ? UiTheme.Hint : lit ? Color.White : UiTheme.Ink);
 					switch (kind)
 					{
 						case Kind.Stepper:
-							C(graphics, value ?? "", Lower(UiTheme.StepperValue(valueBox[row]), Nudge(row, layout)), FitSize(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]).Width - 10, rowSize), lit ? UiTheme.LitInk : UiTheme.Ink);
+							C(graphics, value ?? "", Lower(UiTheme.StepperValue(valueBox[row]), Nudge(row, layout)), FitSize(graphics, value ?? "", UiTheme.StepperValue(valueBox[row]).Width - 10, rowSize), off ? UiTheme.Hint : lit ? UiTheme.LitInk : UiTheme.Ink);
 							break;
 						case Kind.Switch:
 							C(graphics, on ? "On" : "Off", UiTheme.SwitchWord(valueBox[row]), rowSize - 1, on ? UiTheme.Ink : UiTheme.Hint);

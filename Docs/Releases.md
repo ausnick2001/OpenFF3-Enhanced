@@ -3,9 +3,30 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor has been separated from the main game and sits in its own `Crystal Modding Tools` folder, for those who wish to edit the game. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.1 - OpenFF3 Enhanced (2026-11-22)
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.0, the game offers this update itself; your saves and settings in `userdata` are kept.
+
+**Changed**
+- The quality-of-life indicator (top left) now only shows once you are in the game, not on the title screen or while loading.
+- When you load a save or start a new game, the indicator appears for the first few seconds to remind you what is switched on (including the minimap), even if it is normally turned off.
+- The OpenFF3 Enhanced menu's rows sit a little higher, so the line under Exit Game no longer touches the button icons.
+- Window size now offers 3840 x 2160 (4K), and only lists sizes your screen supports: in a window the sizes that fit your desktop, in full screen the sizes your display reports.
+- Window size is greyed out when selecting borderless mode, as this setting always draws at your desktop's resolution.
+
+**Fixed**
+- The game now overrides Windows' high DPI scaling by default, so it draws at your screen's real resolution instead of being stretched. Useful if you play on a TV or 4K screen with Windows scaling set up.
+
+**Added**
+- RecompLauncher support: the release now includes a `recomplauncher.json`, so players who use [RecompLauncher](https://recomplauncher.com) get one-click setup and settings. Nothing changes for anyone else.
+
 ## 0.9.0 - OpenFF3 Enhanced (2026-11-22)
 
-Builds on the excellent work from zerratar on OpenFF to make a further enhanced version of Final Fantasy III 3D on PC. New features listed below. This release is for FF3 only; it starts Final Fantasy III from the Steam or GOG install. Everything the game writes - saves, settings, achievements - now lives in a `userdata` folder beside `OpenFF3 Enhanced.exe`: delete the game's folder and it is all gone, or use `--data-dir=<folder>` to put it elsewhere. If you have pre-existing savedata from your AppData folder, a first run copies it (`%APPDATA%\FF3`, `%LOCALAPPDATA%\OpenFF`) into the game directory, and leaves those original copies where they were.
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. On first start it offers a one-off download of the HD textures (about 1.5 GB).
+
+Builds on zerratar's excellent OpenFF to make a further enhanced version of Final Fantasy III 3D on PC. New features are listed below. This release is for FF3 only.
+
+Saves, settings and achievements live in a `userdata` folder beside the exe, so deleting the game's folder removes everything. Use `--data-dir=<folder>` to put it elsewhere. On first run it also copies any existing save data from `%APPDATA%\FF3` and `%LOCALAPPDATA%\OpenFF`, and leaves the originals where they were.
 
 **Added**
 - Turn-based battles: An FFX style battle system where each combatant acts one by one at their turn in speed order. The camera stays on the command view. Enabled through the quality of life options menu. Can be enabled and disabled at any time.

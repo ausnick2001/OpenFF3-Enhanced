@@ -16,9 +16,33 @@ namespace OpenFF.Client
 
 	internal static class Program
 	{
+		// Windows scales a program that does not say it copes with a high-DPI display: at 225% a 3840x2160 desktop is
+		// reported as 1707x960, the game draws at that and Windows stretches it to the screen - soft, not sharp.
+		// Saying so before any window is made gives the real size (borderless then draws at 3840x2160).
+		[System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetProcessDpiAwarenessContext")]
+		private static extern bool SetProcessDpiAwarenessContext(IntPtr context);
+
+		[System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetProcessDPIAware")]
+		private static extern bool SetProcessDPIAware();
+
+		private static void DeclareDpiAware()
+		{
+			if (!OperatingSystem.IsWindows()) return;
+			try
+			{
+				// Per monitor, version 2 (Windows 10 1703 and later); the older call where it is not there.
+				if (!SetProcessDpiAwarenessContext(new IntPtr(-4))) SetProcessDPIAware();
+			}
+			catch (Exception)
+			{
+				try { SetProcessDPIAware(); } catch (Exception) { }
+			}
+		}
+
 		[STAThread]
 		private static void Main(string[] args)
 		{
+			DeclareDpiAware();
 			Options.Parse(args);
 			if (Options.HelpRequested)
 			{

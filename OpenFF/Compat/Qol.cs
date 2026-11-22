@@ -138,6 +138,7 @@ namespace OpenFF.Client
 		/// <summary>Once a frame, before the game's step: the keys that change a setting while playing.</summary>
 		public static void Tick(Game game)
 		{
+			Watch();
 			bool idle = game == null || (!game.IsActive && !Drive.Active) || PauseMenu.IsOpen || EngineInput.Captured || (TextEntry.Instance != null && TextEntry.Instance.IsActive);
 			SampleMap(idle);
 			if (idle) { _speedWas = _encountersWas = true; return; }
@@ -180,6 +181,42 @@ namespace OpenFF.Client
 			return false;
 		}
 
+		// ---- when the indicator shows ----
+
+		private static bool _atTitle;
+		private static double _welcomeUntil;
+		/// <summary>How long the list of what is on stays up after a game starts or a save loads, whatever the indicator's setting.</summary>
+		private const double WelcomeSeconds = 5;
+
+		/// <summary>Whether a game is being played (the field or a battle): the logos, the title, loading and the movies are not, and the indicator is not drawn over them.</summary>
+		public static bool InGame()
+		{
+			if (GameProfile.IsFf4 || Drive.Active) return true;
+			try
+			{
+				GlobalScope.GAMEPART part = (GlobalScope.GAMEPART)GlobalScope.sys.FF3PartSys.getCurrentPart();
+				return part == GlobalScope.GAMEPART.GAMEPART_WORLD || part == GlobalScope.GAMEPART.GAMEPART_BATTLE;
+			}
+			catch (Exception) { return false; }
+		}
+
+		/// <summary>Once a frame: a game that begins (a new one, or a save loaded from the title) starts the welcome, the list of what is on.</summary>
+		private static void Watch()
+		{
+			if (GameProfile.IsFf4 || Drive.Active) return;
+			try
+			{
+				GlobalScope.GAMEPART part = (GlobalScope.GAMEPART)GlobalScope.sys.FF3PartSys.getCurrentPart();
+				if (part == GlobalScope.GAMEPART.GAMEPART_TITLE) _atTitle = true;
+				else if (_atTitle && (part == GlobalScope.GAMEPART.GAMEPART_WORLD || part == GlobalScope.GAMEPART.GAMEPART_BATTLE))
+				{
+					_atTitle = false;
+					_welcomeUntil = _clock.Elapsed.TotalSeconds + WelcomeSeconds;
+				}
+			}
+			catch (Exception) { }
+		}
+
 		// ---- what the indicator says ----
 
 		private static string _toast;
@@ -200,19 +237,22 @@ namespace OpenFF.Client
 		public static System.Collections.Generic.List<string> Lines()
 		{
 			System.Collections.Generic.List<string> lines = new System.Collections.Generic.List<string>();
+			if (!InGame()) return lines;
 			DisplaySettings.QolSettings s = S;
-			if (s.Indicator)
+			bool welcome = _clock.Elapsed.TotalSeconds < _welcomeUntil;
+			if (s.Indicator || welcome)
 			{
 				if (Speed != 1) lines.Add("Speed " + Times(Speed));
 				// Random battles off is a rate of x0.
 				if (Math.Abs(EncounterRate - 1) > 1e-9) lines.Add("Encounter rate " + Times(EncounterRate));
-				if (!s.IndicatorSimple)
+				if (!s.IndicatorSimple || welcome)
 				{
 					if (Math.Abs(s.Exp - 1) > 1e-9) lines.Add("EXP " + Times(s.Exp));
 					if (Math.Abs(s.JobExp - 1) > 1e-9) lines.Add("Job EXP " + Times(s.JobExp));
 					if (s.SaveAnywhere) lines.Add("Save anywhere");
 					if (!s.JobAdjustment) lines.Add("No job adjustment");
 					if (s.TurnBased) lines.Add("Turn-based battles");
+					if (welcome && s.Minimap) lines.Add("Minimap");
 				}
 			}
 			if (Toasting) { lines.Remove(_toast); lines.Insert(0, _toast); }
