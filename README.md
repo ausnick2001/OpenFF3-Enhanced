@@ -8,19 +8,19 @@ This is built on [zerratar's OpenFF](https://github.com/zerratar/openff), which 
 
 I have always disliked JRPGs that have the combat system where your entire party puts in their commands and then you watch the round play out. It has always felt slow and clunky to me, and as a result I have never been able to stomach FF3. This all started as a very simple project to see if turn based battles were even feasible. As it turns out, implementing them as a mod was relatively simple, and in my handful of hours of playing it, does not seem to hurt the balance of the game too much. One thing led to another and before you know it I had suddenly implemented multiple optimisations, bug fixes, additional quality of life options, a minimap, and even AI upscaled textures. Despite never having coded or released anything before - I decided to release this publicly. When I started this was only for personal use but I figured other people may enjoy and want to build off what I have done here.
 
-I wanted to keep the changes as modular and adjustable as possible with the emphasis on being able to enjoy the game the way you want to.
+I wanted to keep the changes as modular and adjustable as possible with the emphasis on being able to enjoy the game the way you want to:
 
-Use turn based battles or don't.
+- Use turn based battles or don't.
 
-Use the minimap or don't.
+- Use the minimap or don't.
 
-Make the minimap massive, or tiny. Make it opaque, make it transparent. Make it display unopened treasure chests, or hide them. Make it already complete or make it so you can uncover it as you go (fog of war), FF4 3D style.
+- Make the minimap massive, or tiny. Make it opaque, make it transparent. Make it display unopened treasure chests, or hide them. Make it already complete or make it so you can uncover it as you go (fog of war), FF4 3D style.
 
-Use encounter rate modifiers, or don't.
+- Use encounter rate modifiers, or don't.
 
-Use enhanced textures, or don't.
+- Use enhanced textures, or don't.
 
-Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
+- Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
 
 
 ![OpenFF3 Enhanced: before and after](Docs/Images/hero-1.jpg)
