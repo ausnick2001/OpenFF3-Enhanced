@@ -1,0 +1,73 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "OpenFF3 Enhanced",
+  "repo": "ausnick2001/OpenFF3-Enhanced",
+  "game": {
+    "kind": "folder",
+    "label": "Your installed copy of Final Fantasy III (3D Remake) from Steam or GOG - the folder that holds FF3_Win32.exe and the files folder.",
+    "check": { "file": "FF3_Win32.exe" }
+  },
+  "start": {
+    "program": ["OpenFF3 Enhanced.exe"],
+    "args": ["--content={game}", "--no-update"]
+  },
+  "saves": [
+    "{install}/userdata/saves",
+    "{install}/userdata/achievements"
+  ],
+  "settings": [
+    {
+      "id": "window",
+      "label": "Window",
+      "help": "How the game is shown for this launch. The game's own setting (Esc menu, or Alt+Enter) is used unless you pick one here.",
+      "in": "args",
+      "choices": [
+        { "label": "Game's option", "args": [] },
+        { "label": "Windowed", "args": ["--windowed"] },
+        { "label": "Borderless", "args": ["--borderless"] },
+        { "label": "Full screen", "args": ["--fullscreen"] }
+      ]
+    },
+    {
+      "id": "fps",
+      "label": "Frame rate",
+      "help": "The game runs 30 steps a second; 60 and Max draw smoothed frames in between.",
+      "in": "args",
+      "choices": [
+        { "label": "Game's option", "args": [] },
+        { "label": "30 (as the original)", "args": ["--fps=30"] },
+        { "label": "60 (smoothed)", "args": ["--fps=60"] },
+        { "label": "Max (display's rate)", "args": ["--fps=max"] }
+      ]
+    },
+    {
+      "id": "msaa",
+      "label": "Anti-aliasing",
+      "help": "Smooths jagged edges. Higher costs more graphics power.",
+      "in": "args",
+      "advanced": true,
+      "choices": [
+        { "label": "Game's option", "args": [] },
+        { "label": "Off", "args": ["--msaa=off"] },
+        { "label": "2x", "args": ["--msaa=2"] },
+        { "label": "4x", "args": ["--msaa=4"] },
+        { "label": "8x", "args": ["--msaa=8"] }
+      ]
+    },
+    {
+      "id": "vsync",
+      "label": "V-sync",
+      "help": "Waits for the monitor. Turn it off only if you want the lowest delay and can accept tearing.",
+      "in": "args",
+      "advanced": true,
+      "choices": [
+        { "label": "Game's option", "args": [] },
+        { "label": "Off", "args": ["--novsync"] }
+      ]
+    }
+  ],
+  "system": {
+    "windows": { "version": "10" }
+  }
+}

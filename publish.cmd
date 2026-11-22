@@ -29,6 +29,8 @@ copy /y README.md dist\OpenFF3-Enhanced\README.md >nul
 copy /y Docs\Modding.md "dist\OpenFF3-Enhanced\Crystal Modding Tools\Modding.md" >nul
 copy /y LICENSE "dist\OpenFF3-Enhanced\Crystal Modding Tools\LICENSE.txt" >nul
 copy /y Docs\Releases.md dist\OpenFF3-Enhanced\Releases.md >nul
+rem RecompLauncher reads this from the top of the zip: one-click setup and settings for people who use it.
+copy /y recomplauncher.json dist\OpenFF3-Enhanced\recomplauncher.json >nul || goto fail
 copy /y LICENSE dist\OpenFF3-Enhanced\LICENSE.txt >nul
 rem The sample mods, for Crystal's Sample projects (Samples\ beside crystal.exe); their build
 rem output is left out. Nothing is put in mods\ - it starts empty, for the player's own mods.
