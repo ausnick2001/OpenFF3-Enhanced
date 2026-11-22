@@ -58,6 +58,6 @@ jobs:
           draft: true
           # The zip, and its .sha256 - what the client checks a downloaded update against.
           files: |
-            dist/OpenFF-*-win-x64.zip
-            dist/OpenFF-*-win-x64.zip.sha256
+            dist/OpenFF3-Enhanced-*-win-x64.zip
+            dist/OpenFF3-Enhanced-*-win-x64.zip.sha256
           body_path: dist/notes.md
