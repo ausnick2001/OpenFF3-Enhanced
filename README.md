@@ -32,9 +32,7 @@ Use the included sharper fonts, or don't. If you don't like the new fonts, that 
 
 ![Before and after](Docs/Images/shot-full-battle.jpg)
 
-![Before and after](Docs/Images/shot-battle-menu-1.jpg)
 
-![Before and after](Docs/Images/shot-battle-menu-2.jpg)
 
 - **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Can be enabled and disabled at any time.. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
 - **Faster battles.** The spoils and exp messages appear sooner, and can be skipped quickly with Cross/B/A.
@@ -56,7 +54,7 @@ Use the included sharper fonts, or don't. If you don't like the new fonts, that 
 - **Party and status screens** now show each hero's job level, and how many job points are left until the next level.
 - **Controller icons** for PlayStation, Xbox, Switch or keyboard (Start/Esc > Settings > Button icons). Game ships with enhanced playstation icons.
 
-**Looks and sound**
+**Visuals**
 
 ![Before and after](Docs/Images/shot-portrait.jpg)
 
@@ -83,6 +81,10 @@ The full list, with the details, is in [Releases](Docs/Releases.md).
 
 
 ## Install
+
+<a href="https://recomplauncher.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" alt="Get it on RecompLauncher" height="48"></picture></a>
+
+The easiest way to install is through the Recomp Launcher - click above. But if you prefer to install manually the process is still fairly simple:
 
 1. Install **Final Fantasy III** from Steam or GOG.
 2. Download `OpenFF3-Enhanced-<version>-win-x64.zip` from [Releases](../../releases) and unzip it anywhere. Nothing needs installing.
