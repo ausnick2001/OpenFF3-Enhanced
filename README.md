@@ -4,7 +4,9 @@
 
 An enhanced version of **Final Fantasy III** (3D remake) on PC in OpenFF. It runs from your own Steam or GOG copy as a native desktop game, and adds the things I always wanted while playing it: FFX style turn-based battles, a full customisable dungeon minimap, upscaled textures, encounter rate modifiers, a more aesthetically pleasing battle menu, easier to read fonts, and more!
 
-Download the latest release from the releases tab: https://github.com/ausnick2001/OpenFF3-Enhanced/releases 
+<a href="https://recomplauncher.com/game/openff3-enhanced"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
+Get it on the RecompLauncher (click above), or alternatively download the latest release from the releases tab: https://github.com/ausnick2001/OpenFF3-Enhanced/releases
 
 This is built on [zerratar's OpenFF](https://github.com/zerratar/openff), which did the hard work of getting FF3 3Ds code decompiled. If you like what's here, go and give that project some love too.
 
@@ -89,6 +91,9 @@ The full list, with the details, is in [Releases](Docs/Releases.md).
 
 
 ## Install
+<a href="https://recomplauncher.com/game/openff3-enhanced"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
+The easiest way to install is with the RecompLauncher (click above). However installing it manually is also very easy:
 
 1. Install **Final Fantasy III** from Steam or GOG.
 2. Download `OpenFF3-Enhanced-<version>-win-x64.zip` from [Releases](../../releases) and unzip it anywhere. Nothing needs installing.
