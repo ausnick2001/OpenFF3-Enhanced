@@ -1,6 +1,6 @@
 # Releases
 
-Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor has been separated from the main game and sits in its own `Crystal Modding Tools` folder, for those who wish to edit the game. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
+Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
 ## 0.9.5 - OpenFF3 Enhanced (2026-11-23)
@@ -8,7 +8,8 @@ repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.4, the game offers this update itself; your saves and settings in `userdata` are kept.
 
 **Changed**
-- The release is lighter: the sample mods for Crystal are no longer in the zip (they stay in the source repository).
+- The release is lighter: the Crystal editor is no longer in the game's zip. It is its own download, the "Crystal editing tools" release, only for those who want to edit the game or make mods. If you already have a `Crystal Modding Tools` folder, it stays as it is.
+- The sample mods are no longer shipped (they stay in the source repository). They were experiments to show what the modding tools can do and are not supported.
 - Updating: the game now checks that Crystal is closed before it downloads an update, and says so if it is open. The updater itself is simpler.
 
 ## 0.9.4 - OpenFF3 Enhanced (2026-11-23)
