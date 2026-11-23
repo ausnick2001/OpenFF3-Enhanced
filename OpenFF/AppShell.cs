@@ -426,7 +426,7 @@ public class AppShell
 				byte[] array2;
 				try
 				{
-					array2 = StringUtil.getBytes(StringUtil.createString(file, num6, k, charsetName), "UTF-8");
+					array2 = OpenFF.Client.TextBytes.ToUtf8(file, num6, k, charsetName);   // PORT: a Japanese Steam copy's Shift-JIS lines under the English setting (TextBytes)
 				}
 				catch (Exception)
 				{
