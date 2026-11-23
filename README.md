@@ -153,7 +153,7 @@ The Crystal editor has been separated from the main game and sits in its own `Cr
 - [The modding guide](https://zerratar.github.io/openff/)
 - [Modding manual](Docs/Modding.md)
 - [Crystal, the editor](Docs/Editor.md)
-- [Samples](Samples/)
+- [Samples](Samples/) (experimental mods from zerratar, to show what the modding tools can do; not supported and not included in releases)
 
 ## Building from source
 
