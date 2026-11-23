@@ -8,7 +8,7 @@ rem
 rem The version is the <Version> in OpenFF\OpenFF.csproj, Crystal.Editor\Crystal.Editor.csproj
 rem and OpenFF.Engine\OpenFF.Engine.csproj; keep the three the same and this line with them.
 setlocal
-set VERSION=0.9.4
+set VERSION=0.9.5
 cd /d "%~dp0"
 if exist dist\OpenFF3-Enhanced rmdir /s /q dist\OpenFF3-Enhanced
 dotnet publish OpenFF\OpenFF.csproj -c Release -r win-x64 --self-contained true -o dist\OpenFF3-Enhanced -nologo -v q || goto fail
@@ -32,20 +32,7 @@ copy /y Docs\Releases.md dist\OpenFF3-Enhanced\Releases.md >nul
 rem RecompLauncher reads this from the top of the zip: one-click setup and settings for people who use it.
 copy /y recomplauncher.json dist\OpenFF3-Enhanced\recomplauncher.json >nul || goto fail
 copy /y LICENSE dist\OpenFF3-Enhanced\LICENSE.txt >nul
-rem The sample mods, for Crystal's Sample projects (Samples\ beside crystal.exe); their build
-rem output is left out. Nothing is put in mods\ - it starts empty, for the player's own mods.
-robocopy Samples "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples" /e /xd bin obj /njh /njs /ndl /nfl /nc /ns >nul
-rem The samples with code, built against this release's engine: each one's assembly beside its mod.json, so a sample
-rem copied into mods\ plays as it stands with no .NET SDK (without it, Mastery's screens came up empty).
-if exist dist\samples rmdir /s /q dist\samples
-for %%S in (Fellowship HelloMod Mastery Survivors Rogue) do (
-  dotnet build Samples\%%S\%%S.csproj -c Release -nologo -v q -o dist\samples\%%S || goto fail
-)
-copy /y dist\samples\Fellowship\Fellowship.dll "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples\Fellowship\" >nul || goto fail
-copy /y dist\samples\HelloMod\Hello.dll "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples\HelloMod\" >nul || goto fail
-copy /y dist\samples\Mastery\Mastery.dll "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples\Mastery\" >nul || goto fail
-copy /y dist\samples\Survivors\Survivors.dll "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples\Survivors\" >nul || goto fail
-copy /y dist\samples\Rogue\Rogue.dll "dist\OpenFF3-Enhanced\Crystal Modding Tools\Samples\Rogue\" >nul || goto fail
+rem The sample mods are not in the release (they stay in the repository); nothing is put in mods\ - it starts empty, for the player's own mods.
 rem The PlayStation button pictures (Settings > Button icons), which the client reads from pad-icons beside OpenFF3 Enhanced.exe.
 robocopy pad-icons dist\OpenFF3-Enhanced\pad-icons /e /njh /njs /ndl /nfl /nc /ns >nul
 rem The fonts that come with it (fonts\menus, fonts\names and fonts\dialogue), which the client reads from fonts beside OpenFF3 Enhanced.exe.

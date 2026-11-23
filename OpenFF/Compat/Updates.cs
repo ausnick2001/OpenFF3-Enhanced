@@ -199,6 +199,8 @@ namespace OpenFF.Client
 			{
 				try
 				{
+					// Crystal (crystal.exe, in its own folder under the install) holds files the update replaces: it has to be closed first.
+					if (Process.GetProcessesByName("crystal").Length > 0) throw new InvalidOperationException("Crystal is open - close it, then update");
 					string dir = Path.Combine(Work, r.Tag);
 					if (Directory.Exists(dir)) Directory.Delete(dir, true);
 					Directory.CreateDirectory(dir);

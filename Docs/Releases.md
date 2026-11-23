@@ -3,6 +3,14 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor has been separated from the main game and sits in its own `Crystal Modding Tools` folder, for those who wish to edit the game. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.5 - OpenFF3 Enhanced (2026-11-23)
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.4, the game offers this update itself; your saves and settings in `userdata` are kept.
+
+**Changed**
+- The release is lighter: the sample mods for Crystal are no longer in the zip (they stay in the source repository).
+- Updating: the game now checks that Crystal is closed before it downloads an update, and says so if it is open. The updater itself is simpler.
+
 ## 0.9.4 - OpenFF3 Enhanced (2026-11-23)
 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.3, the game offers this update itself; your saves and settings in `userdata` are kept.

@@ -8,7 +8,7 @@
 //   OpenFF.Updater --from <unpacked release> --to <install folder> --wait <pid> --run "OpenFF3 Enhanced.exe" [--arg <a>]... [--log <file>]
 //
 // What it does:
-//   waits for the game (the --wait process) and for anything else running from the install folder (Crystal) to close;
+//   waits for the game (the --wait process) to close (the game itself checks that Crystal is closed before it hands over);
 //   copies the release's files over the install's, each file it replaces kept in <install>\.update-backup first;
 //   leaves the player's things alone - mods\ keeps its files (a mod the release brings is added only when not there),
 //   logs\ and userdata\ (the saves and settings) are not touched;
@@ -68,7 +68,7 @@ namespace OpenFF.Updater
 				return 3;
 			}
 
-			WaitForExit(wait, to);
+			WaitForExit(wait);
 			bool ok = Install(from, to);
 			if (ok) Say("OpenFF3 Enhanced is up to date.");
 			else Say("The update did not go in; OpenFF3 Enhanced is as it was.");
@@ -96,8 +96,8 @@ namespace OpenFF.Updater
 		/// <summary>A failure's message left on the screen a while, so it can be read.</summary>
 		private static void Pause() => Thread.Sleep(8000);
 
-		/// <summary>The game (and anything else running from the install folder - Crystal) closed, for up to two minutes each.</summary>
-		private static void WaitForExit(List<int> pids, string folder)
+		/// <summary>The game closed, for up to two minutes.</summary>
+		private static void WaitForExit(List<int> pids)
 		{
 			foreach (int pid in pids)
 			{
@@ -110,30 +110,6 @@ namespace OpenFF.Updater
 				catch (ArgumentException) { }   // gone already
 				catch (Exception ex) { Say("(" + ex.Message + ")"); }
 			}
-			DateTime until = DateTime.UtcNow.AddMinutes(2);
-			bool said = false;
-			while (DateTime.UtcNow < until)
-			{
-				List<string> running = RunningFrom(folder);
-				if (running.Count == 0) return;
-				if (!said) { Say("Waiting for " + string.Join(", ", running) + " to close..."); said = true; }
-				Thread.Sleep(500);
-			}
-		}
-
-		private static List<string> RunningFrom(string folder)
-		{
-			List<string> names = new List<string>();
-			foreach (Process p in Process.GetProcesses())
-			{
-				try
-				{
-					string path = p.MainModule?.FileName;
-					if (path != null && path.StartsWith(folder + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) names.Add(Path.GetFileName(path));
-				}
-				catch (Exception) { }   // another user's, or a system process
-			}
-			return names;
 		}
 
 		private enum Change { Replaced, Added, Removed }
