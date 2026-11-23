@@ -63,6 +63,8 @@ namespace OpenFF.Client
 			get
 			{
 				if (Options.Get("no-update") != null) return false;
+				// The updater is a Windows program; a Linux build is updated by downloading the new one.
+				if (!OperatingSystem.IsWindows()) return false;
 				if (TestFeed != null) return File.Exists(UpdaterPath);
 				if (!string.IsNullOrEmpty(Options.Get("drive")) || !string.IsNullOrEmpty(Options.Get("trace"))) return false;
 				return File.Exists(UpdaterPath);

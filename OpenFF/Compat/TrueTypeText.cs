@@ -179,6 +179,21 @@ namespace OpenFF.Client
 			{
 				string windows = Environment.GetFolderPath(Environment.SpecialFolder.Fonts);
 				file = string.IsNullOrEmpty(windows) ? null : Path.Combine(windows, "times.ttf");
+				if (OperatingSystem.IsLinux() && (file == null || !File.Exists(file)))
+				{
+					// No Windows fonts folder: a serif the distribution is likely to have.
+					foreach (string candidate in new[]
+					{
+						"/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+						"/usr/share/fonts/liberation/LiberationSerif-Regular.ttf",
+						"/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+						"/usr/share/fonts/dejavu/DejaVuSerif.ttf",
+						"/usr/share/fonts/TTF/DejaVuSerif.ttf"
+					})
+					{
+						if (File.Exists(candidate)) { file = candidate; break; }
+					}
+				}
 			}
 			if (string.IsNullOrEmpty(file) || !File.Exists(file))
 			{

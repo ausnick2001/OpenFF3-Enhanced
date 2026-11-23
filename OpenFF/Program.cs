@@ -67,6 +67,11 @@ namespace OpenFF.Client
 			// Both are relative to the working directory, so point that at whichever
 			// directory actually holds Content before anything else runs.
 			string contentRoot = ContentLocator.FindContentRoot();
+			if (contentRoot == null && GamePicker.Ask())
+			{
+				// Not found on its own, so the player pointed at it: that folder is remembered now.
+				contentRoot = ContentLocator.FindContentRoot();
+			}
 			if (contentRoot == null)
 			{
 				Console.Error.WriteLine(

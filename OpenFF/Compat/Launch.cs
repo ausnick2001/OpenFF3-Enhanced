@@ -118,6 +118,34 @@ namespace OpenFF.Client
 			return root;
 		}
 
+		/// <summary>
+		/// A game folder the player chose by hand (GamePicker): remembered as the FF3 install, and what ResolveRoot answers from
+		/// now on. False when the folder is not the game's.
+		/// </summary>
+		public static bool Remember(string path)
+		{
+			try
+			{
+				if (string.IsNullOrEmpty(path) || !Directory.Exists(path) || !ContentChain.Looks(path))
+				{
+					return false;
+				}
+				Settings settings = Read();
+				settings.Ff3Steam = Path.GetFullPath(path);
+				settings.Source = "steam";
+				Write(settings);
+				Source = "steam";
+				_resolved = settings.Ff3Steam;
+				_resolvedOnce = true;
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Log.Write(LogChannel.General, "launch: could not remember " + path + ": " + ex.Message);
+				return false;
+			}
+		}
+
 		private static string SteamRoot(Settings settings, string game)
 		{
 			string remembered = game == "ff4" ? settings.Ff4Steam : settings.Ff3Steam;

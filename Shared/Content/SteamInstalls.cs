@@ -312,9 +312,40 @@ namespace OpenFF.Content
 			}
 		}
 
-		/// <summary>Where Steam is installed, from the registry. Null off Windows.</summary>
+		/// <summary>Where Steam is installed: the registry on Windows, its usual folders on Linux (the Steam Deck included).</summary>
 		private static string SteamRoot()
 		{
+			if (OperatingSystem.IsLinux())
+			{
+				string home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+				if (string.IsNullOrEmpty(home))
+				{
+					return null;
+				}
+				foreach (string candidate in new[]
+				{
+					Path.Combine(home, ".local", "share", "Steam"),
+					Path.Combine(home, ".steam", "steam"),
+					Path.Combine(home, ".steam", "root"),
+					Path.Combine(home, ".var", "app", "com.valvesoftware.Steam", ".local", "share", "Steam"),
+					Path.Combine(home, "snap", "steam", "common", ".local", "share", "Steam")
+				})
+				{
+					try
+					{
+						if (Directory.Exists(Path.Combine(candidate, "steamapps")))
+						{
+							return candidate;
+						}
+					}
+					catch (Exception)
+					{
+						// Unreadable: try the next.
+					}
+				}
+				return null;
+			}
+
 			if (!OperatingSystem.IsWindows())
 			{
 				return null;

@@ -61,3 +61,49 @@ jobs:
             dist/OpenFF3-Enhanced-*-win-x64.zip
             dist/OpenFF3-Enhanced-*-win-x64.zip.sha256
           body_path: dist/notes.md
+
+  # The Linux build (Steam Deck's desktop mode and other x64 Linux): the game only - no Crystal editor and no
+  # self-updater, which are Windows programs. Runs after the Windows job so the draft release already exists, and adds
+  # its tar.gz to it. A Linux player updates by downloading the new one.
+  linux:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          lfs: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Publish
+        run: |
+          set -e
+          VERSION="${RELEASE_TAG#v}"
+          OUT=dist/OpenFF3-Enhanced
+          rm -rf dist && mkdir -p "$OUT"
+          dotnet publish OpenFF/OpenFF.csproj -c Release -r linux-x64 --self-contained true -o "$OUT" -nologo -v q
+          rm -f "$OUT"/createdump "$OUT"/*.pdb "$OUT"/*.xml
+          mkdir -p "$OUT/mods"
+          cp README.md "$OUT/README.md"
+          cp LICENSE "$OUT/LICENSE.txt"
+          cp Docs/Releases.md "$OUT/Releases.md"
+          cp -r pad-icons "$OUT/pad-icons"
+          cp -r fonts "$OUT/fonts"
+          chmod +x "$OUT/OpenFF3 Enhanced"
+          # A launcher that works from anywhere (and from a Steam shortcut): it runs the game from its own folder.
+          printf '%s\n' '#!/bin/sh' 'cd "$(dirname "$0")" || exit 1' 'exec ./"OpenFF3 Enhanced" "$@"' > "$OUT/openff3-enhanced.sh"
+          chmod +x "$OUT/openff3-enhanced.sh"
+          cd dist
+          tar -czf "OpenFF3-Enhanced-$VERSION-linux-x64.tar.gz" OpenFF3-Enhanced
+          sha256sum "OpenFF3-Enhanced-$VERSION-linux-x64.tar.gz" > "OpenFF3-Enhanced-$VERSION-linux-x64.tar.gz.sha256"
+      - name: Add it to the draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          draft: true
+          files: |
+            dist/OpenFF3-Enhanced-*-linux-x64.tar.gz
+            dist/OpenFF3-Enhanced-*-linux-x64.tar.gz.sha256
