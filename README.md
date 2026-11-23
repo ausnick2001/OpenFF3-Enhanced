@@ -4,18 +4,26 @@
 
 An enhanced version of **Final Fantasy III** (3D remake) on PC in OpenFF. It runs from your own Steam or GOG copy as a native desktop game, and adds the things I always wanted while playing it: FFX style turn-based battles, a full customisable dungeon minimap, upscaled textures, encounter rate modifiers, a more aesthetically pleasing battle menu, easier to read fonts, and more!
 
+Download the latest release from the releases tab: https://github.com/ausnick2001/OpenFF3-Enhanced/releases 
+
 This is built on [zerratar's OpenFF](https://github.com/zerratar/openff), which did the hard work of getting FF3 3Ds code decompiled. If you like what's here, go and give that project some love too.
 
 I have always disliked JRPGs that have the combat system where your entire party puts in their commands and then you watch the round play out. It has always felt slow and clunky to me, and as a result I have never been able to stomach FF3. This all started as a very simple project to see if turn based battles were even feasible. As it turns out, implementing them as a mod was relatively simple, and in my handful of hours of playing it, does not seem to hurt the balance of the game too much. One thing led to another and before you know it I had suddenly implemented multiple optimisations, bug fixes, additional quality of life options, a minimap, and even AI upscaled textures. Despite never having coded or released anything before - I decided to release this publicly. When I started this was only for personal use but I figured other people may enjoy and want to build off what I have done here.
 
-I wanted to keep the changes as modular and adjustable as possible with the emphasis on being able to enjoy the game the way you want to.
+I wanted to keep the changes as modular and adjustable as possible with the emphasis on being able to enjoy the game the way you want to:
 
-Use turn based battles or don't.
-Use the minimap or don't.
-Make the minimap massive, or tiny. Make it opaque, make it transparent. Make it display unopened treasure chests, or hide them. Make it already complete or make it so you can uncover it as you go (fog of war), FF4 3D style.
-Use encounter rate modifiers, or don't.
-Use enhanced textures, or don't.
-Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
+- Use turn based battles or don't.
+
+- Use the minimap or don't.
+
+- Make the minimap massive, or tiny. Make it opaque, make it transparent. Make it display unopened treasure chests, or hide them. Make it already complete or make it so you can uncover it as you go (fog of war), FF4 3D style.
+
+- Use encounter rate modifiers, or don't.
+
+- Use enhanced textures, or don't.
+
+- Use the included sharper fonts, or don't. If you don't like the new fonts, that is fair! Download your own and put them in the fonts folder.
+
 
 ![OpenFF3 Enhanced: before and after](Docs/Images/hero-1.jpg)
 
@@ -34,7 +42,7 @@ Use the included sharper fonts, or don't. If you don't like the new fonts, that 
 
 
 
-- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Can be enabled and disabled at any time.. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
+- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
 - **Faster battles.** The spoils and exp messages appear sooner, and can be skipped quickly with Cross/B/A.
 - **Encounter rate modifier.** 0x (none), 0.5x, 1x, 2x or 4x. Too many random battles? Halve them and double the EXP and job points.
 - **More aesthetic menu design** The battle menu and OpenFF3 Enhanced menu have been redesigned to be more cohesive with the style of the party menu and dialogue boxes.
@@ -165,7 +173,7 @@ OpenFF also has an in-progress Final Fantasy IV port, written by zerratar, and i
 - **zerratar** for [OpenFF](https://github.com/zerratar/openff), which this is built on.
 - **Panda Venom** for their amazing work on the [textures for the PSP version](https://www.reddit.com/r/GameUpscale/comments/1cztzsz/psp_final_fantasy_iii_us_hd_textures/). Most of the HD textures here were made by me with the help of AI, but around 100 of them I struggled to get right, and Panda Venom very kindly let me use parts of their textures to fix mine. I don't really want or need donations for this project, but if you feel like giving someone a donation, please consider giving a few $ to them. Their Ko-Fi page is https://ko-fi.com/pandavenom
 - **How the HD textures were made:** most were upscaled with [Upscayl](https://upscayl.org) using its standard and Digital Art models, then combined and touched up by hand. Parts of some textures were repainted with [Fooocus](https://github.com/lllyasviel/Fooocus) and the inpainting model it comes with. Faces and a few problem textures were corrected with small Python scripts (Pillow, OpenCV and NumPy). Models and textures were checked in the Crystal editor, and the game's own formats were read with OpenFF's tools.
-- **Claude**, an AI model made by [Anthropic](https://www.anthropic.com), which I worked with throughout, writing and debugging much of the code and helping with the texture fixes.
+- **Claude**, which I worked with throughout, writing and debugging much of the code and helping with the texture fixes.
 
 
 ## Game data and legal
