@@ -411,7 +411,7 @@ namespace OpenFF.Client
 			bool fast = _game != null && _game.IsActive && ((tabFast && Keyboard.GetState().IsKeyDown(Keys.Tab)) || GamePadFast());
 			GlobalScope.boost = fast ? 1 : 0;
 			// The player's speed (quality of life, F8) under Tab's: that many of the game's steps each frame.
-			return ((fast && _fastForwardFactor > 1) ? _fastForwardFactor : 1) * Qol.Speed;
+			return ((fast && _fastForwardFactor > 1) ? _fastForwardFactor : 1) * Qol.SpeedNow;
 		}
 
 		/// <summary>Translates this frame's mouse and keyboard state into game callbacks.</summary>

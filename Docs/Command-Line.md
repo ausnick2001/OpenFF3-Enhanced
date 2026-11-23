@@ -38,7 +38,7 @@ Every run writes `logs/ff3.log` beside the executable (the previous run is kept 
 | `--log-file=<path>`, `FF3_LOG_FILE=<path>` | Write the log elsewhere |
 | `--screenshot-dir=<dir> --screenshot-every=<s>` | Take a picture every N seconds; with `--drive=` this gives a headless run you can check from its pictures |
 | `--trace=<file>` | A parity trace of what the game did (flags, messages, sounds, maps, everyone on the map at each `say` of the drive). `Tools\parity.ps1` runs a drive with and without mods and diffs the two |
-| `--debug=all` or `--debug=boxes,labels` | Start with the F1 overlay on. In an FF3 battle the overlay also gives status test keys: Insert (status), Home (party member), End (inflict), Delete (clear) |
+| `--debug=all` or `--debug=boxes,labels` | Start with the F1 overlay on. In an FF3 battle the overlay also gives status test keys: Insert (status), Home (party member), End (inflict), Delete (clear); PageUp makes the party's hits always critical (on/off) |
 | `--log-stalls` | Log every frame that took over 50 ms, to find where a hitch comes from |
 | `--probe` | A per-frame heartbeat in the log (vertices, bounds, camera, world state) |
 | `--ff4table` | List every FF4 script command that is only skipped |

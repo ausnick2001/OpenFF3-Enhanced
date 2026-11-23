@@ -3,6 +3,18 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor has been separated from the main game and sits in its own `Crystal Modding Tools` folder, for those who wish to edit the game. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.4 - OpenFF3 Enhanced (2026-11-23)
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.3, the game offers this update itself; your saves and settings in `userdata` are kept.
+
+**Fixed**
+- The "missing files" warning no longer appears for the font files some copies of the game lack (arial.ttf, mona.ttf and similar). The game does not need them.
+- The Speed setting no longer speeds up the title menu. It now applies only once you start a new game or load a save.
+
+**Added**
+- Quality of life: **Critical hit flash**. Switch it off to stop the white screen flash on critical hits (on by default, as the game plays).
+- Debug overlay (F1) in an FF3 battle: the status test keys (Insert chooses a status, Home a party member, End inflicts it, Delete clears it) for seeing how each status looks, and a new PageUp that makes the party's hits always critical. They only work while the overlay is up and never run in a normal game.
+
 ## 0.9.3 - OpenFF3 Enhanced (2026-11-23)
 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.2, the game offers this update itself; your saves and settings in `userdata` are kept.

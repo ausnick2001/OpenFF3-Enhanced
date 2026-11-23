@@ -56,6 +56,9 @@ namespace OpenFF.Client
 		/// <summary>Whether FF3's battles play turn by turn (the menu's Turn-based battles; --classic-battle turns it off for a run).</summary>
 		public static bool TurnBased => S.TurnBased;
 
+		/// <summary>Whether a critical hit flashes the screen white, as the game does.</summary>
+		public static bool CriticalFlash => S.CriticalFlash;
+
 		/// <summary>The dungeon minimap is on.</summary>
 		public static bool Minimap => S.Minimap;
 		public static bool MinimapFog => S.MinimapFog;
@@ -188,6 +191,26 @@ namespace OpenFF.Client
 		/// <summary>How long the list of what is on stays up after a game starts or a save loads, whatever the indicator's setting.</summary>
 		private const double WelcomeSeconds = 5;
 
+		/// <summary>
+		/// The speed the game steps run at right now: the player's, except on the logos, the title menu and a movie, which run at
+		/// the game's own pace (a sped-up title menu is hard to use). It applies from the moment a game begins or a save loads.
+		/// </summary>
+		public static int SpeedNow
+		{
+			get
+			{
+				if (GameProfile.IsFf4 || Drive.Active) return Speed;
+				try
+				{
+					GlobalScope.GAMEPART part = (GlobalScope.GAMEPART)GlobalScope.sys.FF3PartSys.getCurrentPart();
+					if (part == GlobalScope.GAMEPART.GAMEPART_TITLE || part == GlobalScope.GAMEPART.GAMEPART_CAMPANY_LOGO
+						|| part == GlobalScope.GAMEPART.GAMEPART_DEBUG_MENU || part == GlobalScope.GAMEPART.GAMEPART_MOVIE) return 1;
+				}
+				catch (Exception) { }
+				return Speed;
+			}
+		}
+
 		/// <summary>Whether a game is being played (the field or a battle): the logos, the title, loading and the movies are not, and the indicator is not drawn over them.</summary>
 		public static bool InGame()
 		{
@@ -252,6 +275,7 @@ namespace OpenFF.Client
 					if (s.SaveAnywhere) lines.Add("Save anywhere");
 					if (!s.JobAdjustment) lines.Add("No job adjustment");
 					if (s.TurnBased) lines.Add("Turn-based battles");
+					if (!s.CriticalFlash) lines.Add("No critical hit flash");
 					if (welcome && s.Minimap) lines.Add("Minimap");
 				}
 			}

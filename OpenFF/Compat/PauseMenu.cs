@@ -573,8 +573,8 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Indicator, Back.
-		private const int QolRows = 9;
+		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Back.
+		private const int QolRows = 10;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -612,13 +612,17 @@ namespace OpenFF.Client
 					Qol.Changed("turn-based battles " + (q.TurnBased ? "on" : "off"));
 					break;
 				case 7:
+					q.CriticalFlash = !q.CriticalFlash;
+					Qol.Changed("critical hit flash " + (q.CriticalFlash ? "on" : "off"));
+					break;
+				case 8:
 					// Off, then speed and encounters only, then everything that is changed.
 					int level = !q.Indicator ? 0 : q.IndicatorSimple ? 1 : 2;
 					level = ((level + by) % 3 + 3) % 3;
 					q.Indicator = level != 0; q.IndicatorSimple = level == 1;
 					Qol.Changed("indicator " + (level == 0 ? "off" : level == 1 ? "speed and encounters" : "all"));
 					break;
-				case 8:
+				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -637,7 +641,8 @@ namespace OpenFF.Client
 				case 4: return "";
 				case 5: return "Off: no lowered stats after a job change. On: the game's default";
 				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
-				case 7: return "Text overlay in top-left corner indicating what features are on";
+				case 7: return "Off: no white screen flash when a hit is critical";
+				case 8: return "Text overlay in top-left corner indicating what features are on";
 				default: return "";
 			}
 		}
@@ -654,6 +659,7 @@ namespace OpenFF.Client
 			if (q.SaveAnywhere) on.Add("save anywhere");
 			if (!q.JobAdjustment) on.Add("no adjustment");
 			if (!q.TurnBased) on.Add("classic battles");
+			if (!q.CriticalFlash) on.Add("no critical flash");
 			if (on.Count == 0) return "as the game plays";
 			string all = string.Join(", ", on);
 			return all.Length > 40 ? on.Count + " on" : all;
@@ -736,7 +742,8 @@ namespace OpenFF.Client
 						case 4: icon = UiTheme.Icon.Save; on = q.SaveAnywhere; return Kind.Switch;
 						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
-						case 7: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
+						case 7: icon = UiTheme.Icon.Quality; on = q.CriticalFlash; return Kind.Switch;
+						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -1104,7 +1111,8 @@ namespace OpenFF.Client
 						case 4: label = "Save anywhere"; value = q.SaveAnywhere ? "On" : "Off"; return;
 						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
-						case 7: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						case 7: label = "Critical hit flash"; value = q.CriticalFlash ? "On" : "Off"; return;
+						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
 						default: label = "Back"; return;
 					}
 				}

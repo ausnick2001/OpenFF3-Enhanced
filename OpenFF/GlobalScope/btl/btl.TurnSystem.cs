@@ -2774,6 +2774,7 @@ internal static partial class GlobalScope
 
 			public void createCriticalFlash()
 			{
+				if (!OpenFF.Client.Qol.CriticalFlash) return;   // PORT: the menu's Critical hit flash, off for those the flash bothers
 				flash_.setFlash(3, 3, ds.setGXRgb(31, 31, 31));
 			}
 

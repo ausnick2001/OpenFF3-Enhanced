@@ -1131,6 +1131,7 @@ internal static partial class GlobalScope
 
 			public bool calcCritical(BaseBattleCharacter character, BaseBattleCharacter target)
 			{
+				if (character.breed() == 0 && OpenFF.Client.BattleDebug.AlwaysCritical) return true;   // PORT: the debug overlay's PageUp (BattleDebug)
 				int t = character.bodyAndBonus().dexterity().get() - target.bodyAndBonus().dexterity().get() + 5;
 				t = ds.clamp(t, 0, 10);
 				int num = (int)ds.RandomNumber.logic32(101u);

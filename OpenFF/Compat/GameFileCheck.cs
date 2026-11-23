@@ -61,6 +61,10 @@ namespace OpenFF.Client
 				{
 					OpenFF.Content.GameFiles.Manifest list = OpenFF.Content.GameFiles.Read(ListPath);
 					OpenFF.Content.GameFiles.Result r = OpenFF.Content.GameFiles.Check(root, list, CachePath, (got, total) => { Got = got; Total = total; });
+					// Some copies lack the fonts the release lists (arial.ttf, mona.ttf, simsun.ttc...): the game does without them, so
+					// they are not worth a warning. A missing font is left out of the result; anything else missing still is said.
+					int fonts = r.Missing.RemoveAll(IsFont);
+					if (fonts > 0) Log.Write(LogChannel.File, "game files: " + fonts + " font file(s) the release lists are not in this install; ignored, the game does without them");
 					Result = r;
 					string took = (DateTime.UtcNow - started).TotalSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " s";
 					if (r.Clean) Log.Write(LogChannel.General, "game files: " + r.Listed + " of " + GameName + " as the " + list.Source + " release has them (" + took + ")");
@@ -81,6 +85,13 @@ namespace OpenFF.Client
 					Now = Stage.Failed;
 				}
 			});
+		}
+
+		/// <summary>A font file by its extension (these are the files some copies lack and nothing depends on).</summary>
+		private static bool IsFont(string file)
+		{
+			string ext = Path.GetExtension(file ?? "").ToLowerInvariant();
+			return ext == ".ttf" || ext == ".ttc" || ext == ".otf";
 		}
 
 		/// <summary>Whether the panel has something to say: a check asked for (any answer), or files that differ and were not set aside.</summary>

@@ -16,6 +16,7 @@
 //                off meanwhile (FreeCamera.cs) - for a close look at what is drawn
 //   Insert / Home / End / Delete   in an FF3 battle: pick a status, pick a party member, put it on, clear it
 //                (BattleDebug.cs) - to see how a status looks without waiting for an enemy to cause it
+//   PageUp   in an FF3 battle: the party's hits are always critical, on/off (BattleDebug.cs)
 //
 // It is a DrawableGameComponent drawn after the game and before the screenshot
 // component, so screenshots taken with --screenshot-every include it: a headless run

@@ -3,6 +3,7 @@
 //
 //   Insert  the next status in the list      Home  the next party member
 //   End     put the status on that member    Delete  clear every status from that member
+//   PageUp  the party's hits are always critical (on/off)
 //
 // The overlay's legend shows the choice while a battle runs. The status goes on through the game's own routine for a spell's
 // conditions (NewMagicFormula.setCondition), so it is the same as an enemy's doing it. Nothing here runs without the overlay, and
@@ -25,6 +26,10 @@ namespace OpenFF.Client
 
 		private static int _status, _member;
 		private static string _said = "";
+		private static bool _alwaysCritical;
+
+		/// <summary>Whether the party's attacks are all critical hits: the test aid, on only while the overlay is up.</summary>
+		public static bool AlwaysCritical => _alwaysCritical && DebugOverlay.Active;
 		private static KeyboardState _previous;
 
 		private static bool Pressed(KeyboardState now, Keys key) => now.IsKeyDown(key) && !_previous.IsKeyDown(key);
@@ -33,7 +38,7 @@ namespace OpenFF.Client
 		public static string Describe()
 		{
 			if (!InBattle()) return null;
-			return "Insert status [" + Statuses[_status].Name + "]   Home member [" + (_member + 1) + "]   End inflict   Delete clear" + (_said.Length > 0 ? "   - " + _said : "");
+			return "Insert status [" + Statuses[_status].Name + "]   Home member [" + (_member + 1) + "]   End inflict   Delete clear   PageUp always critical [" + (_alwaysCritical ? "on" : "off") + "]" + (_said.Length > 0 ? "   - " + _said : "");
 		}
 
 		private static bool InBattle()
@@ -53,6 +58,7 @@ namespace OpenFF.Client
 				if (Pressed(now, Keys.Home)) { _member = (_member + 1) % 4; _said = ""; }
 				if (Pressed(now, Keys.End)) Inflict(system, clear: false);
 				if (Pressed(now, Keys.Delete)) Inflict(system, clear: true);
+				if (Pressed(now, Keys.PageUp)) { _alwaysCritical = !_alwaysCritical; _said = "party hits always critical: " + (_alwaysCritical ? "on" : "off"); }
 			}
 			catch (Exception ex) { _said = "failed: " + ex.Message; Log.Write(LogChannel.General, "battle debug: " + ex); }
 			_previous = now;
