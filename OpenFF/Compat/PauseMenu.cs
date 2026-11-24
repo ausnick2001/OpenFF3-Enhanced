@@ -51,7 +51,7 @@ namespace OpenFF.Client
 				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 32, 516, 444), 94, 26, 23.5f, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -624,7 +624,7 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Back.
+		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Bouncy damage popups, Indicator, Back.
 		private const int QolRows = 11;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>

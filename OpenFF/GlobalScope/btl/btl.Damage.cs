@@ -48,17 +48,20 @@ internal static partial class GlobalScope
 				NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
 				nNSG2dFVec.x = ds.S32toFX32(px);
 				nNSG2dFVec.y = ds.S32toFX32(py);
-				if (damage / 1000 != 0)
+				if (!OpenFF.Client.Qol.BouncyDamagePopups)
 				{
-					nNSG2dFVec.x -= 73728;
-				}
-				else if (damage / 100 != 0)
-				{
-					nNSG2dFVec.x -= 49152;
-				}
-				else if (damage / 10 != 0)
-				{
-					nNSG2dFVec.x -= 24576;
+					if (damage / 1000 != 0)
+					{
+						nNSG2dFVec.x -= 73728;
+					}
+					else if (damage / 100 != 0)
+					{
+						nNSG2dFVec.x -= 49152;
+					}
+					else if (damage / 10 != 0)
+					{
+						nNSG2dFVec.x -= 24576;
+					}
 				}
 				return create(i, damage, nNSG2dFVec, type);
 			}
@@ -69,18 +72,21 @@ internal static partial class GlobalScope
 				NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
 				nNSG2dFVec.x = ds.S32toFX32(px);
 				nNSG2dFVec.y = ds.S32toFX32(py);
-				nNSG2dFVec.x -= 24576;
-				if (damage / 1000 != 0)
-				{
-					nNSG2dFVec.x -= 36864;
-				}
-				else if (damage / 100 != 0)
+				if (!OpenFF.Client.Qol.BouncyDamagePopups)
 				{
 					nNSG2dFVec.x -= 24576;
-				}
-				else if (damage / 10 != 0)
-				{
-					nNSG2dFVec.x -= 12288;
+					if (damage / 1000 != 0)
+					{
+						nNSG2dFVec.x -= 36864;
+					}
+					else if (damage / 100 != 0)
+					{
+						nNSG2dFVec.x -= 24576;
+					}
+					else if (damage / 10 != 0)
+					{
+						nNSG2dFVec.x -= 12288;
+					}
 				}
 				return create(i, damage, nNSG2dFVec, type);
 			}

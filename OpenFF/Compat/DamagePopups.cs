@@ -62,12 +62,9 @@ namespace OpenFF.Client
 		{
 			int clamped = Math.Clamp(Math.Abs(value), 0, 9999);
 			string text = clamped.ToString();
-			// btl.Damage.create pre-shifts x480 left by 6px * (digits - 1) for 12px DS sprites;
-			// undo that offset so the true target center matches PopUpHitNumber (CRITICAL! / MISS / HITS).
-			float centerX480 = x480 + 6f * (text.Length - 1);
 			return SpawnText(
 				text,
-				centerX480,
+				x480,
 				y320,
 				isHeal ? (byte)96 : (byte)255,
 				isHeal ? (byte)255 : (byte)255,
@@ -149,9 +146,22 @@ namespace OpenFF.Client
 			}
 		}
 
+		private static bool InBattle()
+		{
+			try { return (GlobalScope.GAMEPART)GlobalScope.sys.FF3PartSys.getCurrentPart() == GlobalScope.GAMEPART.GAMEPART_BATTLE; }
+			catch (Exception) { return false; }
+		}
+
 		public override void Update(Microsoft.Xna.Framework.GameTime gameTime)
 		{
 			if (Active.Count == 0) return;
+			if (!Qol.BouncyDamagePopups || GameProfile.IsFf4 || !InBattle())
+			{
+				Active.Clear();
+				return;
+			}
+			if (PauseMenu.HoldsGame) return;
+
 			float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 			if (dt <= 0f || dt > 0.1f) dt = 1f / 60f;
 			for (int i = Active.Count - 1; i >= 0; i--)
@@ -166,7 +176,7 @@ namespace OpenFF.Client
 
 		public override void Draw(Microsoft.Xna.Framework.GameTime gameTime)
 		{
-			if (Active.Count == 0) return;
+			if (Active.Count == 0 || RenderTest.Active || GameProfile.IsFf4 || !TrueTypeText.Enabled) return;
 			if (!(GlobalScope.m_Graphics is GlobalScope.Graphics graphics)) return;
 
 			graphics.SetImageOrigin(0f, 0f);
