@@ -33,6 +33,23 @@ namespace OpenFF.Client
 			}
 		}
 
+		private static OpenFF.Content.MenuText _speaker;
+
+		/// <summary>The lettering for the speaker's name in a dialogue window, at the size the options chose (the heroes' names in a battle and the menu's title keep Style as it is).</summary>
+		public static OpenFF.Content.MenuText Speaker
+		{
+			get
+			{
+				OpenFF.Content.MenuText raw = Style;
+				if (raw != null && _speaker == null)
+				{
+					_speaker = new OpenFF.Content.MenuText { Scale = raw.Scale };
+					_speaker.Families.AddRange(raw.Families);
+				}
+				return DialogueSizing.SpeakerName(raw == null ? null : _speaker, 0.85f);
+			}
+		}
+
 		/// <summary>Whether a lettering is the story lines' (drawn with a pale glow behind it so it reads over the picture).</summary>
 		public static bool IsStory(OpenFF.Content.MenuText style) => style != null && ReferenceEquals(style, _story);
 

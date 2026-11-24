@@ -195,12 +195,14 @@ internal static partial class GlobalScope
 					if (msdElement.num_pages == m_CurrentPage + 1)
 					{
 						m_CurrentStr = StringUtil.createString(text.m_abyData, (int)msdElement.offset);
+						m_CurrentStr = OpenFF.Client.InputHints.Adjust(m_CurrentStr);   // PORT: the help text's escape button is two here
 						m_CurrentChar = m_CurrentStr;
 						m_CurrentPage = 0;
 					}
 					else
 					{
 						m_CurrentStr = StringUtil.createString(text.m_abyData, ArrayReader.indexOf(text.m_abyData, (int)msdElement.offset, (int)(text.m_abyData.Length - msdElement.offset), 0, m_CurrentPage + 1) + 1);
+						m_CurrentStr = OpenFF.Client.InputHints.Adjust(m_CurrentStr);   // PORT: the help text's escape button is two here
 						m_CurrentChar = m_CurrentStr;
 						m_CurrentPage++;
 					}
@@ -218,6 +220,7 @@ internal static partial class GlobalScope
 						page = (byte)((num_pages > 0) ? ((byte)num_pages) : 0);
 					}
 					m_CurrentStr = StringUtil.createString(text.m_abyData, (int)msdElement.offset);
+					m_CurrentStr = OpenFF.Client.InputHints.Adjust(m_CurrentStr);   // PORT: the help text's escape button is two here
 					m_CurrentChar = m_CurrentStr;
 					m_CurrentPage = 0;
 					for (int i = 0; i < page; i++)
@@ -233,6 +236,7 @@ internal static partial class GlobalScope
 				text = inf;
 				msdElement = elm;
 				m_CurrentStr = StringUtil.createString(text.m_abyData, (int)msdElement.offset);
+				m_CurrentStr = OpenFF.Client.InputHints.Adjust(m_CurrentStr);   // PORT: the help text's escape button is two here
 				m_CurrentChar = m_CurrentStr;
 				NNSG2dTextRect nNSG2dTextRect = NNS_G2dFontGetTextRect(m_TextCanvas.pFont, m_TextCanvas.hSpace, m_TextCanvas.vSpace, m_CurrentStr);
 				erase_area.x = (erase_area.y = 0);
@@ -607,6 +611,9 @@ internal static partial class GlobalScope
 			/// <summary>PORT: a lettering of this message's own (the speaker's name: OpenFF.Client.NameFace), drawn in place of the canvas's.</summary>
 			public OpenFF.Content.MenuText Lettering;
 
+			/// <summary>PORT: a message of the dialogue window (a speaker's lines, its name, a cutscene's centred line): its shadow is the dialogue's option, not the menus'.</summary>
+			public bool Narrative;
+
 			/// <summary>PORT: the face for a first line that is a speaker's name (FF3's own texts); null for none.</summary>
 			public OpenFF.Content.MenuText NameLettering;
 
@@ -629,7 +636,7 @@ internal static partial class GlobalScope
 					if (Lettering != null) m_TextCanvas.style = Lettering;
 					try
 					{
-						uint drawStyle = m_Style | (uint)(((m_Flag & 0x10) == 0) ? 16384 : 0);
+						uint drawStyle = m_Style | (uint)(((m_Flag & 0x10) == 0 && (Narrative || OpenFF.Client.DialogueSizing.MenuShadow)) ? 16384 : 0);
 						string buffer = m_Buffer;
 						// PORT: FF3 puts the speaker's name first, indented, on a line of its own: that line in its own face and a little higher.
 						if (NameLettering != null && buffer != null && buffer.Length > 0 && (buffer[0] == ' ' || buffer[0] == '\u3000') && msg_color != (int)TXT_COLOR.TXT_COLOR_YELLOW && msg_color != (int)TXT_COLOR.TXT_COLOR_PALLID_YELLOW)
@@ -657,7 +664,7 @@ internal static partial class GlobalScope
 					if (Lettering != null) m_TextCanvas.style = Lettering;
 					try
 					{
-						if ((m_Flag & 0x10) == 0 && (m_Flag & 2) == 0)
+						if ((m_Flag & 0x10) == 0 && (m_Flag & 2) == 0 && (Narrative || OpenFF.Client.DialogueSizing.MenuShadow))
 						{
 							NNS_G2dTextCanvasDrawTaggedText(m_TextCanvas, m_PositionX + 1, m_PositionY + 1, 2, m_Buffer, funcDummyTagCallback, null);
 						}

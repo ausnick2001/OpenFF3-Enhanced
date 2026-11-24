@@ -3,6 +3,21 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.7 - OpenFF3 Enhanced (2026-11-24)
+
+**Added**
+- Font / Dialogue options (Esc or Start, then Font / Dialogue): the size of the dialogue box (60% to 100%) with its text and the speaker's name together, and the dialogue text and the speaker's name larger or smaller on their own.  Two shadow switches, Dialogue shadow and Menu text shadow, take the dark drop shadow off the dialogue and off the menus' text. The prologue's and cutscenes' centred text is not changed. Final Fantasy III only.
+
+**Fixed**
+- The game's own tips now name the right button for auto battle. They used to say "Square" (the NPC who teaches it, and the battle help page); they now show the button you bound on the Controller configuration page (R3 by default, F on a keyboard).
+- The shadow behind dialogue and menu text is now the same on every line. It used to be heavier on some lines of a box than on others (with three lines of text, the first and third looked raised and the second flat), because the shadow's distance was rounded differently depending on which row the line sat on.
+- The help page's escape tip said to hold one shoulder button; escaping takes both shoulders together, and the tip now says so with your own buttons.
+
+**Changed**
+- The text over black screens and cutscenes (the crystal's words, for one) is crisper: pale lettering now has a thin dark outline with a soft glow further out, in place of a glow that blurred its edges.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.6, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.6 - OpenFF3 Enhanced (2026-11-24)
 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.5, the game offers this update itself; your saves and settings in `userdata` are kept.

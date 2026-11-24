@@ -121,8 +121,16 @@ If you prefer to keep your saves/user data somewhere else, start the game with `
 
 The `fonts` folder next to `OpenFF3 Enhanced.exe` has a folder for each kind of text: `menus`, `dialogue`, `names` (the speaker's name and the cutscene text) and `title`. To use a font of your own, put a `.ttf`, `.otf` or `.ttc` file in the right folder and restart the game. If a folder holds several fonts, the first one by file name is used.
 
-> [!TIP]
-> If the dialogue looks too big or too small, put a text file called `scale.txt` in `fonts\dialogue` containing a number from 0.5 to 1.5. Without one the size is 0.88; the font that comes with the game is set to 0.75.
+### Dialogue and text size
+
+Open the menu with **Esc** (**Start** on a pad) and choose **Font / Dialogue**. There you can change, and see the result straight away:
+
+- **Dialogue box size** (60% to 100%): a smaller box takes up less of the screen. The text moves with it.
+- **Dialogue text size** (70% to 130%): the size of the words said.
+- **Speaker name size** (70% to 130%): the size of the name above them.
+- **Dialogue shadow** and **Menu text shadow**: turn the dark shadow behind the text on or off.
+
+Prologue and cutscene text isn't affected by these, so the story scenes always look as they were meant to.
 
 
 ## Controls

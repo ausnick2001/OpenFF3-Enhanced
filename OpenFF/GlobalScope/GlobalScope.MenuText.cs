@@ -18,7 +18,7 @@ internal static partial class GlobalScope
 		{
 			if (style.Shadows == null)
 			{
-				if ((t.flags & 0x4000) != 0) f.drawString(t.text, x + 1, y + 1, (int)Premultiplied(0x000000FF, fade), 1);
+				if ((t.flags & 0x4000) != 0) f.drawShadow(t.text, x, y, (int)Premultiplied(0x000000FF, fade));   // PORT: a fixed step, not the line's row's rounding
 			}
 			else
 			{

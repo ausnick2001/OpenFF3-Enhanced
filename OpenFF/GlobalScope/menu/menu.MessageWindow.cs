@@ -387,7 +387,7 @@ internal static partial class GlobalScope
 				if (!OpenFF.Client.GameProfile.IsFf4 && !m_Bar && m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER) dGSMessage.Lettering = OpenFF.Client.NameFace.Story;   // PORT: the cutscenes' centred lines in the name font
 				else if (!OpenFF.Client.GameProfile.IsFf4 && !m_Bar)
 				{
-					dGSMessage.NameLettering = OpenFF.Client.NameFace.Style;   // PORT: FF3's speaker name, the text's first line
+					dGSMessage.NameLettering = OpenFF.Client.NameFace.Speaker;   // PORT: FF3's speaker name, the text's first line
 					dGSMessage.Lettering = OpenFF.Client.BodyFace.Style;   // PORT: the lines said, in the body-font
 				}
 				ds.Vector2<short> vector = new ds.Vector2<short>(message_pos);
@@ -401,7 +401,8 @@ internal static partial class GlobalScope
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
 				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);   // PORT: FF4's scene bar shows its line whole (EventConteManager::createMessage draws the text at once)
-				dGSMessage.setShadow(m_MessageShadow && !m_Bar);   // PORT: the Steam bar's line has no shadow
+				dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
+				dGSMessage.Narrative = true;
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
 				if (m_MessageAlign != 0)
@@ -462,7 +463,8 @@ internal static partial class GlobalScope
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
 				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);
-				dGSMessage.setShadow(m_MessageShadow && !m_Bar);   // PORT: the Steam bar's line has no shadow
+				dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
+				dGSMessage.Narrative = true;
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
 				if (m_MessageAlign != 0)
@@ -504,7 +506,8 @@ internal static partial class GlobalScope
 				dGSMessage = mm[m_Display].Message(m_NameId);
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
 				dGSMessage.setDisplayWait(0);
-				if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.NameFace.Style;   // PORT: the speaker's name in its own face
+				if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.NameFace.Speaker;   // PORT: the speaker's name in its own face
+				dGSMessage.Narrative = true;
 				OpenFF.Client.FieldHud.DialogueName(dGSMessage);   // PORT: the layout's dialogue/name look
 				m_Who = who;
 				return true;

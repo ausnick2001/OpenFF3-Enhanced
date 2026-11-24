@@ -28,8 +28,25 @@ internal static partial class GlobalScope
 
 								private ds.Vector2<short> m_MessagePosition = new ds.Vector2<short>();
 
+								private static readonly List<WeakReference<CMessageWindow>> Live = new List<WeakReference<CMessageWindow>>();
+
+								/// <summary>
+								/// PORT: the text's default place again, for the dialogue options just changed (the pause menu is open: no script is
+								/// placing a line). The window otherwise takes it up only after a message has been shown, so the first talk after a change used the old one.
+								/// </summary>
+								public static void RefreshDefaultPosition()
+								{
+									(int dx, int dy) = OpenFF.Client.BattleHud.DialogueText();
+									foreach (WeakReference<CMessageWindow> r in Live.ToArray())
+									{
+										if (r.TryGetTarget(out CMessageWindow w)) w.m_MessagePosition.set((short)dx, (short)dy);
+										else Live.Remove(r);
+									}
+								}
+
 								public void setup()
 								{
+									Live.Add(new WeakReference<CMessageWindow>(this));
 									menu.MessageWindow.mwInitializeSystem();
 									m_MesWindow.Initialize();
 									m_MesDeleteFrame = -1;

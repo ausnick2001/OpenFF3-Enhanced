@@ -11738,7 +11738,8 @@ internal static partial class GlobalScope
 									}
 									if ((tEXT_DATA.flags & 0x4000) != 0)
 									{
-										drawString(tEXT_DATA.text, num15 + 1, num16 + 1, tEXT_DATA.alpha == 255 ? 255 : alphaOf, tEXT_DATA.size);
+										if (font[tEXT_DATA.size] == null) font[tEXT_DATA.size] = new Font(tEXT_DATA.size);
+										font[tEXT_DATA.size].drawShadow(tEXT_DATA.text, num15, num16, tEXT_DATA.alpha == 255 ? 255 : alphaOf);   // PORT: a fixed step down and right, the same on every line
 									}
 									drawString(tEXT_DATA.text, num15, num16, (int)num11, tEXT_DATA.size);
 								}
@@ -19546,7 +19547,7 @@ internal static partial class GlobalScope
 								.getMessagePosition();
 							// PORT: the script's place is the game's; a layout that moved the dialogue's text (field_hud's dialogue/text,
 							// 16, 246 the game's own) moves it with it.
-							(int textX, int textY) = OpenFF.Client.BattleHud.DialogueText();
+							(int textX, int textY) = OpenFF.Client.BattleHud.DialogueTextBase();   // PORT: not the size options' - a cutscene's line sits where its script puts it
 							if (dword != 0)
 							{
 								messagePosition.vx = (short)(word + 112 + textX - 16);

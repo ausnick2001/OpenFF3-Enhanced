@@ -519,7 +519,7 @@ internal static partial class GlobalScope
                                 msg_.setMessageColor(dgs.TXT_COLOR.TXT_COLOR_BLACK);
                                 msg_.setStyle(1024u);
                                 msg_.setVSpace(10);
-                                msg_.setShadow(b: false);
+                                msg_.setShadow(b: false); msg_.Narrative = true;   // PORT: story text - the menu-shadow option leaves it alone
                                 msg_.setDisplaySpeed(byte.MaxValue);
                                 msg_.setDisplayWait(0);
                                 ds.Vector2<short> vector = new ds.Vector2<short>();

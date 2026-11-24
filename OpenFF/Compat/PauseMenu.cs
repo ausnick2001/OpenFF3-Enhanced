@@ -48,6 +48,7 @@ namespace OpenFF.Client
 				}
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
+				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
 				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
@@ -60,7 +61,7 @@ namespace OpenFF.Client
 		/// <summary>The game stands still while the menu is open: its last frame stays under the menu.</summary>
 		public static bool HoldsGame => IsOpen;
 
-		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Quit }
+		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Text, Quit }
 		private Page _page = Page.Closed;
 		private int _selected;
 		private string _binding;            // the DS button being rebound, while a press is awaited
@@ -117,7 +118,7 @@ namespace OpenFF.Client
 			List<string> rows = new List<string> { "resume" };
 			if (SceneSkip.Skippable) rows.Add("skip");   // an FF4 scene that may be skipped: Steam's click, here
 			if (AbilitiesRow) rows.Add("abilities");
-			rows.Add("settings"); rows.Add("qol"); rows.Add("map"); rows.Add("report");
+			rows.Add("settings"); rows.Add("qol"); rows.Add("map"); if (!GameProfile.IsFf4) rows.Add("text"); rows.Add("report");
 			if (CanLeaveToTitle) rows.Add("reset");
 			rows.Add("exit");
 			return rows.ToArray();
@@ -308,6 +309,7 @@ namespace OpenFF.Client
 						else if (id == "settings") { _page = Page.Settings; _selected = 0; _note = ""; }
 						else if (id == "qol") { _page = Page.Qol; _selected = 0; _note = QolNote(0); }
 						else if (id == "map") { _page = Page.Map; _selected = 0; _note = MapNote(0); }
+						else if (id == "text") { _page = Page.Text; _selected = 0; _note = TextNote(0); }
 						else if (id == "report") OpenIssues();
 						else { _leave = id; _page = Page.Quit; _selected = 1; }
 					}
@@ -316,6 +318,11 @@ namespace OpenFF.Client
 					if (cancel) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); return; }
 					if (up || downKey) _note = QolNote(_selected);
 					if (left || right || confirm) ChangeQol(_selected, left ? -1 : 1, confirm);
+					break;
+				case Page.Text:
+					if (cancel) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); return; }
+					if (up || downKey) _note = TextNote(_selected);
+					if (left || right || confirm) ChangeText(_selected, left ? -1 : 1, confirm);
 					break;
 				case Page.Map:
 					if (cancel) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); return; }
@@ -373,6 +380,7 @@ namespace OpenFF.Client
 				case Page.Settings: return 13;
 				case Page.Qol: return QolRows;
 				case Page.Map: return MapRows;
+				case Page.Text: return TextRows;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -515,6 +523,49 @@ namespace OpenFF.Client
 				case "speed": m.SpeedUp = padButton; break;
 				case "encounters": m.Encounters = padButton; break;
 			}
+		}
+
+		// ---- font / dialogue ----
+
+		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Back.
+		private const int TextRows = 6;
+
+		private static string Percent(float v) => Math.Round(v * 100) + "%";
+
+		private void ChangeText(int row, int by, bool confirm)
+		{
+			DisplaySettings.QolSettings q = Qol.S;
+			switch (row)
+			{
+				case 0: q.DialogueSize = Math.Round(Math.Clamp(DialogueSizing.Box + 0.05 * by, DialogueSizing.BoxMin, DialogueSizing.BoxMax), 2); Qol.Changed("dialogue box size " + Percent(DialogueSizing.Box)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
+				case 1: q.DialogueTextSize = Math.Round(Math.Clamp(DialogueSizing.Text + 0.05 * by, DialogueSizing.TextMin, DialogueSizing.TextMax), 2); Qol.Changed("dialogue text size " + Percent(DialogueSizing.Text)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
+				case 2: q.NameSize = Math.Round(Math.Clamp(DialogueSizing.Name + 0.05 * by, DialogueSizing.TextMin, DialogueSizing.TextMax), 2); Qol.Changed("speaker name size " + Percent(DialogueSizing.Name)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
+				case 3: q.DialogueShadow = !q.DialogueShadow; Qol.Changed("dialogue shadow " + (q.DialogueShadow ? "on" : "off")); break;
+				case 4: q.MenuShadow = !q.MenuShadow; Qol.Changed("menu text shadow " + (q.MenuShadow ? "on" : "off")); break;
+				case 5:
+					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
+					return;
+			}
+			_note = TextNote(row);
+		}
+
+		private static string TextNote(int row)
+		{
+			switch (row)
+			{
+				case 0: return "The dialogue window with its text and name, together. 100% is the game's. Shows from the next line spoken";
+				case 1: return "The said lines, larger or smaller than the box sets them";
+				case 2: return "The speaker's name. The prologue's and cutscenes' text is not changed";
+				case 3: return "The dark shadow behind the dialogue's lines. Off draws them plain";
+				case 4: return "The dark shadow behind the menus' text and other windows'. Off draws them plain";
+				default: return "";
+			}
+		}
+
+		/// <summary>The main page's row: what is changed, in a few words.</summary>
+		private static string TextSummary()
+		{
+			return DialogueSizing.Box < 0.999f || Math.Abs(DialogueSizing.Text - 1) > 0.001f || Math.Abs(DialogueSizing.Name - 1) > 0.001f ? "box " + Percent(DialogueSizing.Box) : !Qol.S.DialogueShadow || !Qol.S.MenuShadow ? "shadows changed" : "as the game";
 		}
 
 		// ---- minimap ----
@@ -727,7 +778,7 @@ namespace OpenFF.Client
 				{
 					string[] rows = MainRows();
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
-					icon = id == "resume" || id == "skip" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : id == "map" ? UiTheme.Icon.Window : id == "report" ? UiTheme.Icon.Indicator : id == "reset" ? UiTheme.Icon.Settings : UiTheme.Icon.Exit;
+					icon = id == "resume" || id == "skip" ? UiTheme.Icon.Resume : id == "abilities" ? UiTheme.Icon.Abilities : id == "settings" ? UiTheme.Icon.Settings : id == "qol" ? UiTheme.Icon.Quality : id == "map" ? UiTheme.Icon.Window : id == "text" ? UiTheme.Icon.Adjustment : id == "report" ? UiTheme.Icon.Indicator : id == "reset" ? UiTheme.Icon.Settings : UiTheme.Icon.Exit;
 					return Kind.None;
 				}
 				case Page.Qol:
@@ -747,6 +798,16 @@ namespace OpenFF.Client
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
+				case Page.Text:
+					switch (row)
+					{
+						case 0: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 1: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.Window; on = Qol.S.DialogueShadow; return Kind.Switch;
+						case 4: icon = UiTheme.Icon.Window; on = Qol.S.MenuShadow; return Kind.Switch;
+						default: icon = UiTheme.Icon.Back; return Kind.None;
+					}
 				case Page.Map:
 				{
 					DisplaySettings.QolSettings q = Qol.S;
@@ -788,7 +849,7 @@ namespace OpenFF.Client
 			}
 		}
 
-		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
+		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
 
 		public override void Draw(GameTime gameTime)
 		{
@@ -905,7 +966,7 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _page == Page.Text ? "Font / Dialogue" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				// The main page's title is in the names font (fonts\names), when there is one; it is smaller by its scale, so drawn a size up.
 					OpenFF.Content.MenuText nameStyle = _page == Page.Main ? NameFace.Style : null;
 					int shownTitleSize = nameStyle != null ? titleSize + 4 : titleSize;
@@ -917,6 +978,7 @@ namespace OpenFF.Client
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
 					: _page == Page.Map ? "A corner map for dungeons."
+					: _page == Page.Text ? "How big the dialogue is. Cutscene text is left alone."
 					: _leave == "forget" ? "Deletes all map data on this save. This cannot be reversed."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
@@ -1009,7 +1071,7 @@ namespace OpenFF.Client
 
 		private (Ui.PadButton, string)[] Hints()
 		{
-			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
+			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
 			if (_page == Page.Buttons) return new[] { (Ui.PadButton.A, _binding == null ? "Bind" : "Press a button"), (Ui.PadButton.B, "Back") };
 			return new[] { (Ui.PadButton.A, "Select"), (Ui.PadButton.B, "Back") };
 		}
@@ -1092,9 +1154,10 @@ namespace OpenFF.Client
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
 					if (id == "abilities") { label = "Abilities"; value = "job ladders, free slots"; return; }
 					if (id == "skip") { label = "Skip scene"; value = "runs through to its end"; return; }
-					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "report" ? "Report a bug / Request a feature" : id == "reset" ? "Reset" : "Exit game";
+					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "text" ? "Font / Dialogue" : id == "report" ? "Report a bug / Request a feature" : id == "reset" ? "Reset" : "Exit game";
 					if (id == "qol") value = QolSummary();
 					else if (id == "map") value = MapSummary();
+					else if (id == "text") value = TextSummary();
 					else if (id == "reset") value = "back to the title";
 					else if (id == "report") value = "opens GitHub";
 					return;
@@ -1113,6 +1176,18 @@ namespace OpenFF.Client
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
 						case 7: label = "Critical hit flash"; value = q.CriticalFlash ? "On" : "Off"; return;
 						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						default: label = "Back"; return;
+					}
+				}
+				case Page.Text:
+				{
+					switch (row)
+					{
+						case 0: label = "Dialogue box size"; value = Percent(DialogueSizing.Box); return;
+						case 1: label = "Dialogue text size"; value = Percent(DialogueSizing.Text); return;
+						case 2: label = "Speaker name size"; value = Percent(DialogueSizing.Name); return;
+						case 3: label = "Dialogue shadow"; value = Qol.S.DialogueShadow ? "On" : "Off"; return;
+						case 4: label = "Menu text shadow"; value = Qol.S.MenuShadow ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}

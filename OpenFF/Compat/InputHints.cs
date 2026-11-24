@@ -74,7 +74,7 @@ namespace OpenFF.Client
 
 		/// <summary>
 		/// The label of the button Steam's text names by "%key_assign N%" (FF3): 1 confirm, 2 back, 3 menu, 4 and 5 the Y and Start
-		/// buttons, 6 the zoom shoulder (the other of the two is the menu's, by the Config's setting), 7 L, 8 Y.
+		/// buttons, 6 the zoom shoulder (the other of the two is the menu's, by the Config's setting), 7 L, 8 auto battle (the text says so: "press 8 to switch to auto-battle", "8 Auto battle / Manual").
 		/// </summary>
 		public static string KeyAssign(int n)
 		{
@@ -89,7 +89,7 @@ namespace OpenFF.Client
 				case 5: label = h.Menu; break;
 				case 6: label = GlobalScope.opt.COptionManager.getSingleton().gameOption().menuZoomSetting() == GlobalScope.opt.MENU_ZOOM_SETTING.MENU_R_ZOOM_L ? h.L : h.R; break;
 				case 7: label = h.L; break;
-				case 8: label = h.Y; break;
+				case 8: return AutoBattleHint.TextLabel();   // auto battle: the button this player bound it to (the Controller page's "Auto battle"), not the Y button
 				default: return null;
 			}
 			// The dialogue's font may lack the PlayStation marks: their names in letters.
@@ -101,6 +101,19 @@ namespace OpenFF.Client
 				case "\u25B3": return "Triangle";
 				default: return label;
 			}
+		}
+
+		private static readonly System.Text.RegularExpressions.Regex EscapeLine = new System.Text.RegularExpressions.Regex(@"and\s+hold\s+%key_assign\s*7%\s+(?:to\s+)?(?:attempt\s+to\s+)?escape", System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Compiled);
+
+		/// <summary>
+		/// The one sentence of the game's text whose button is not a single one here: the help page says "press and hold [L] to
+		/// escape" (two places: the help page and an NPC), but escaping takes both shoulders at once. Said with the player's own L and R.
+		/// </summary>
+		public static string Adjust(string text)
+		{
+			if (text == null || GameProfile.IsFf4 || text.IndexOf("escape", StringComparison.OrdinalIgnoreCase) < 0 || text.IndexOf("key_assign", StringComparison.Ordinal) < 0) return text;
+			InputHints h = Current;
+			return EscapeLine.Replace(text, "and hold " + h.L + " and " + h.R + " together to escape");   // keeps the sentence's own "press" (and its line break)
 		}
 
 		/// <summary>A game button's label and the button it is on: the keyboard's key, or the pad's button the map puts it on.</summary>

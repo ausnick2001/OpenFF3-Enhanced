@@ -429,16 +429,22 @@ namespace OpenFF.Client
 				if (glow > 0 && NameFace.IsStory(Style))
 				{
 					const int Steps = 16;
-					float[] reach = { 0.07f, 0.14f };
-					float[] weight = { 0.20f, 0.12f };
-					float behind = depth - 0.0002f;   // this batch sorts front to back with the larger depth nearer, so smaller is behind
-					for (int ring = 0; ring < reach.Length; ring++)
+					// Rings of copies behind the lettering: how far out (in sizes), how strong, what colour, how far back. A pale glow lifts dark
+					// lettering off a picture. Pale lettering (the crystal's words) gets a tight dark outline - it keeps the edges crisp - and
+					// the soft pale glow further out, clear of the letters, so it glows without blurring them.
+					bool paleText = (color.R * 0.299f + color.G * 0.587f + color.B * 0.114f) > 150f;
+					Color cream = new Color(255, 247, 228), ink = new Color(18, 12, 6);
+					(float reach, float weight, Color colour, float back)[] rings = paleText
+						? new[] { (0.16f, 0.07f, cream, 0.0005f), (0.26f, 0.05f, cream, 0.0005f), (0.035f, 0.55f, ink, 0.0002f), (0.07f, 0.30f, ink, 0.0002f) }
+						: new[] { (0.07f, 0.20f, cream, 0.0002f), (0.14f, 0.12f, cream, 0.0002f) };
+					foreach ((float reach, float weight, Color colour, float back) ring in rings)
 					{
-						Color halo = new Color(255, 247, 228) * (float)Math.Min(1.0, weight[ring] * glow);
+						float behind = depth - ring.back;   // this batch sorts front to back with the larger depth nearer, so smaller is behind
+						Color halo = ring.colour * (float)Math.Min(1.0, ring.weight * glow);
 						for (int k = 0; k < Steps; k++)
 						{
 							double angle = Math.PI * 2 * k / Steps;
-							Vector2 away = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * (size * reach[ring] * scale.X);
+							Vector2 away = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)) * (size * ring.reach * scale.X);
 							styled.DrawText(batch, clean, position + away, halo, rotation, origin * _viewportScale, drawScale, behind, spacing, 0f, decoration, effect, amount);
 						}
 					}

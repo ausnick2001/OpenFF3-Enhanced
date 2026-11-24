@@ -422,7 +422,7 @@ namespace OpenFF.Client
 		public static void Attach(Game game) => game.Components.Add(new AutoBattleHint(game));
 
 		/// <summary>The pad button bound to auto battle: the picture's name in pad-icons (null when it has none), its name on a PlayStation pad and on another; empty names when it is unbound.</summary>
-		private static (string Picture, string Ps, string Other) BoundButton()
+		internal static (string Picture, string Ps, string Other) BoundButton()
 		{
 			string on = (DisplaySettings.Current.Pad?.Auto ?? "r3").Trim().ToLowerInvariant();
 			switch (on)
@@ -442,6 +442,14 @@ namespace OpenFF.Client
 				case "none": case "": return (null, "", "");
 				default: return ("r3", "R3", "RS");
 			}
+		}
+
+		/// <summary>The auto-battle button's name as the game's own text shows it ("%key_assign8%": the tips, the help pages, the command hint): the pad's button when one is connected, else the keyboard's F.</summary>
+		internal static string TextLabel()
+		{
+			(string _, string ps, string other) = BoundButton();
+			bool padOn = DesktopInput.PadConnected && !string.IsNullOrEmpty(ps);
+			return padOn ? (Ui.PlayStationPad ? ps : other) : "F";
 		}
 
 		public override void Draw(GameTime gameTime)

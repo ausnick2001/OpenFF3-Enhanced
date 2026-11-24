@@ -38,7 +38,14 @@ internal static partial class GlobalScope
 		{
 		}
 
-		public float drawString(string str, float x, float y, int color, int draw)
+		/// <summary>
+		/// PORT: a drop shadow's text: the line's own place on the 800 x 480 grid, then a fixed step down and right. The shadow was drawn
+		/// from the line's place plus one game unit, each rounded on its own - a step of one grid unit or two by whether the line's row was odd
+		/// or even, so a box's lines had shadows of different weight.
+		/// </summary>
+		public float drawShadow(string str, float x, float y, int color) => drawString(str, x, y, color, 1, 1);
+
+		public float drawString(string str, float x, float y, int color, int draw, int shadowStep = 0)
 		{
 			if (draw != 0 && skipFrame != 0)
 			{
@@ -50,8 +57,8 @@ internal static partial class GlobalScope
 			float y2 = 1f;
 			if (draw != 0)
 			{
-				float num3 = (int)(x * num + 0.5f);
-				float num4 = (int)(y * num2 + 0.5f);
+				float num3 = (int)(x * num + 0.5f) + shadowStep;
+				float num4 = (int)(y * num2 + 0.5f) + shadowStep;
 				m_Graphics.SetImageOrigin(0f, 0f);
 				m_Graphics.SetImageRotation((GX_GetFlipScreen() == 1) ? ((float)Math.PI) : 0f);
 				m_Graphics.SetImageScale(x2, y2);

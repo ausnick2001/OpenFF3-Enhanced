@@ -103,6 +103,16 @@ namespace OpenFF.Client
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>The white screen flash on a critical hit; false skips it (for those it bothers).</summary>
 			[JsonPropertyName("criticalFlash")] public bool CriticalFlash { get; set; } = true;
+			/// <summary>FF3's dialogue window with its text and the speaker's name, together (DialogueSizing): 0.6 to 1, 1 as the game draws it.</summary>
+			[JsonPropertyName("dialogueSize")] public double DialogueSize { get; set; } = 1;
+			/// <summary>The said lines' size on top of the window's: 0.7 to 1.3, 1 as set.</summary>
+			[JsonPropertyName("dialogueTextSize")] public double DialogueTextSize { get; set; } = 1;
+			/// <summary>The speaker's name size on top of the window's: 0.7 to 1.3, 1 as set. The prologue's and cutscenes' centred lines are not touched by any of these.</summary>
+			[JsonPropertyName("nameSize")] public double NameSize { get; set; } = 1;
+			/// <summary>The drop shadow behind the dialogue's lines (FF3); false draws them plain. Where the game's own script turns a message's shadow off it stays off.</summary>
+			[JsonPropertyName("dialogueShadow")] public bool DialogueShadow { get; set; } = true;
+			/// <summary>The drop shadow behind the menus' text and the other windows' (FF3); false draws it plain. The dialogue and the prologue's lines have their own.</summary>
+			[JsonPropertyName("menuShadow")] public bool MenuShadow { get; set; } = true;
 			/// <summary>A small map of the walls about the party in the corner of the screen, in dungeons and caves (Minimap.cs).</summary>
 			[JsonPropertyName("minimap")] public bool Minimap { get; set; } = true;
 			/// <summary>The minimap turns with the camera (up is where it looks); false keeps it fixed, as the camera first looked.</summary>

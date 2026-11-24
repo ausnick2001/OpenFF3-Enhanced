@@ -329,6 +329,9 @@ namespace OpenFF.Client
 		private static readonly Dictionary<int, GlobalScope.dgs.DGSMessage> _buttonTexts = new Dictionary<int, GlobalScope.dgs.DGSMessage>();
 
 		/// <summary>Whether field_hud's layout says anything about a look (else the game's things are left to themselves).</summary>
+		/// <summary>Whether a layout styles the field's HUD (a mod's): its dialogue is then the layout's own, and the size options leave it alone.</summary>
+		public static bool IsStyled => Styled;
+
 		private static bool Styled => _source != null && (MenuStyles.Has(_source) || _sheet.Rules.Count > 0 || _source.Descendants().Any(e => e.Name.LocalName is "background" or "textstyle" or "panel" or "tint" or "opacity" or "animation" or "colour" or "hidden"));
 
 		private static Shown New(string root, GlobalScope.menu.BasicWindow window, Func<bool> open, params string[] game)

@@ -18,7 +18,11 @@ namespace OpenFF.Client
 		private static OpenFF.Content.MenuText _style;
 
 		/// <summary>The lettering for dialogue, or null when there is no body-font to use.</summary>
-		public static OpenFF.Content.MenuText Style
+		public static OpenFF.Content.MenuText Style => DialogueSizing.Body(FileStyle, _fileScale);   // PORT: at the size the options chose
+
+		private static float _fileScale = DefaultScale;
+
+		private static OpenFF.Content.MenuText FileStyle
 		{
 			get
 			{
@@ -34,6 +38,7 @@ namespace OpenFF.Client
 					OpenFF.Content.MenuText style = new OpenFF.Content.MenuText();
 					style.Families.Add("file:" + file);
 					style.Scale = scale;
+					_fileScale = scale;
 					_style = style;
 					Log.Write(LogChannel.General, "text: dialogue in " + Path.GetFileName(file) + " at " + scale.ToString("0.##", CultureInfo.InvariantCulture));
 				}
