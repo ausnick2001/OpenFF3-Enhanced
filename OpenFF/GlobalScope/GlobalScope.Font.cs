@@ -43,7 +43,7 @@ internal static partial class GlobalScope
 		/// from the line's place plus one game unit, each rounded on its own - a step of one grid unit or two by whether the line's row was odd
 		/// or even, so a box's lines had shadows of different weight.
 		/// </summary>
-		public float drawShadow(string str, float x, float y, int color) => drawString(str, x, y, color, 1, 1);
+		public float drawShadow(string str, float x, float y, int color, int step = 1) => drawString(str, x, y, color, 1, step);
 
 		public float drawString(string str, float x, float y, int color, int draw, int shadowStep = 0)
 		{

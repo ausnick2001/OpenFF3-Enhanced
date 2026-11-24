@@ -1669,7 +1669,7 @@ internal static partial class GlobalScope
 					{
 						windowState_ = WINDOW_STATE.WINDOW_CREATING;
 					}
-					break;
+					goto case WINDOW_STATE.WINDOW_CREATING;
 				case WINDOW_STATE.WINDOW_CREATING:
 					if (creatingSelectWindow("battle_magic", battlePlayer))
 					{
@@ -1726,7 +1726,7 @@ internal static partial class GlobalScope
 					{
 						windowState_ = WINDOW_STATE.WINDOW_CREATING;
 					}
-					break;
+					goto case WINDOW_STATE.WINDOW_CREATING;
 				case WINDOW_STATE.WINDOW_CREATING:
 					if (creatingSelectWindow("battle_item", battlePlayer))
 					{
@@ -1775,7 +1775,7 @@ internal static partial class GlobalScope
 					{
 						windowState_ = WINDOW_STATE.WINDOW_CREATING;
 					}
-					break;
+					goto case WINDOW_STATE.WINDOW_CREATING;
 				case WINDOW_STATE.WINDOW_CREATING:
 					if (creatingSelectWindow("battle_song", player))
 					{
@@ -1819,9 +1819,9 @@ internal static partial class GlobalScope
 
 			public bool creatingSelectWindow(string name, BattlePlayer player)
 			{
-				if (menu.MenuManager.getSingleton().UpdateWindowState(windowId_, menu.MenuWindow.MENU_WINDOW_MOVE_TYPE.WINDOW_SIZE_MOVING_LARGE))
+				// PORT: the list's window opens to its full size at once (the magic list's grew over about ten frames, the item list's in one).
+				for (int grow = 0; grow < 64 && menu.MenuManager.getSingleton().UpdateWindowState(windowId_, menu.MenuWindow.MENU_WINDOW_MOVE_TYPE.WINDOW_SIZE_MOVING_LARGE); grow++)
 				{
-					return false;
 				}
 				player.player().updateParameter();
 				menu.MenuManager.getSingleton().SetTargetCharNo(nowPlayer_);

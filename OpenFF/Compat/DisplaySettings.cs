@@ -113,6 +113,10 @@ namespace OpenFF.Client
 			[JsonPropertyName("dialogueShadow")] public bool DialogueShadow { get; set; } = true;
 			/// <summary>The drop shadow behind the menus' text and the other windows' (FF3); false draws it plain. The dialogue and the prologue's lines have their own.</summary>
 			[JsonPropertyName("menuShadow")] public bool MenuShadow { get; set; } = true;
+			/// <summary>How strong the dialogue's shadow is when it is on: 1 light (one text-grid unit), 2 medium, 3 heavy (two units, as the game drew most menus).</summary>
+			[JsonPropertyName("dialogueShadowStrength")] public int DialogueShadowStrength { get; set; } = 2;
+			/// <summary>How strong the menus' shadow is when it is on: 1 light, 2 medium, 3 heavy. A battle's text keeps the light one whatever this says.</summary>
+			[JsonPropertyName("menuShadowStrength")] public int MenuShadowStrength { get; set; } = 2;
 			/// <summary>A small map of the walls about the party in the corner of the screen, in dungeons and caves (Minimap.cs).</summary>
 			[JsonPropertyName("minimap")] public bool Minimap { get; set; } = true;
 			/// <summary>The minimap turns with the camera (up is where it looks); false keeps it fixed, as the camera first looked.</summary>

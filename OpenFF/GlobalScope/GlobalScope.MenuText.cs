@@ -7,6 +7,17 @@ using System;
 // reads the style while it is drawn). With no text-shadow said, the game's own drop shadow stays.
 internal static partial class GlobalScope
 {
+	/// <summary>The game's drop shadow under a line, at the strength the options give its kind of text: light one text-grid unit down and right; heavy two; medium the light one with a half-strength second behind it.</summary>
+	internal static void DrawDropShadow(Font f, string text, float x, float y, int alpha, uint flags)
+	{
+		switch (OpenFF.Client.DialogueSizing.ShadowLevelOf(flags))
+		{
+			case 3: f.drawShadow(text, x, y, alpha, 2); break;
+			case 2: f.drawShadow(text, x, y, alpha * 140 / 255, 2); f.drawShadow(text, x, y, alpha, 1); break;
+			default: f.drawShadow(text, x, y, alpha, 1); break;
+		}
+	}
+
 	internal static void DrawStyledText(TEXT_DATA t, int x, int y, uint colour, int alphaOf)
 	{
 		OpenFF.Content.MenuText style = t.style;
@@ -18,7 +29,7 @@ internal static partial class GlobalScope
 		{
 			if (style.Shadows == null)
 			{
-				if ((t.flags & 0x4000) != 0) f.drawShadow(t.text, x, y, (int)Premultiplied(0x000000FF, fade));   // PORT: a fixed step, not the line's row's rounding
+				if ((t.flags & 0x4000) != 0) DrawDropShadow(f, t.text, x, y, (int)Premultiplied(0x000000FF, fade), t.flags);   // PORT: a fixed step, not the line's row's rounding
 			}
 			else
 			{

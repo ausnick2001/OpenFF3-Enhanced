@@ -24,6 +24,28 @@ namespace OpenFF.Client
 		/// <summary>Whether the menus' text and the other windows' have their drop shadow (FF3's option; FF4 always).</summary>
 		public static bool MenuShadow => GameProfile.IsFf4 || Qol.S.MenuShadow;
 
+		/// <summary>The dialogue's shadow: 0 off, 1 light, 2 medium, 3 heavy (FF4: light).</summary>
+		public static int DialogueShadowLevel => GameProfile.IsFf4 ? 1 : !Qol.S.DialogueShadow ? 0 : Math.Clamp(Qol.S.DialogueShadowStrength, 1, 3);
+		/// <summary>The menus' shadow: 0 off, 1 light, 2 medium, 3 heavy (FF4: light).</summary>
+		public static int MenuShadowLevel => GameProfile.IsFf4 ? 1 : !Qol.S.MenuShadow ? 0 : Math.Clamp(Qol.S.MenuShadowStrength, 1, 3);
+
+		private static bool InBattleNow
+		{
+			get
+			{
+				try { return (GlobalScope.GAMEPART)GlobalScope.sys.FF3PartSys.getCurrentPart() == GlobalScope.GAMEPART.GAMEPART_BATTLE; }
+				catch (Exception) { return false; }
+			}
+		}
+
+		/// <summary>The strength of one text's drop shadow (1 light, 2 medium, 3 heavy) from its draw flags: 0x8000 marks a dialogue box's lines, 0x10000 a story line (the prologue's, a cutscene's centred words), which keep the light one. A battle's text is always light.</summary>
+		public static int ShadowLevelOf(uint flags)
+		{
+			if (GameProfile.IsFf4 || (flags & 0x10000) != 0 || InBattleNow) return 1;
+			int level = (flags & 0x8000) != 0 ? DialogueShadowLevel : MenuShadowLevel;
+			return level < 1 ? 1 : level;
+		}
+
 		/// <summary>The window, its text and its name together: 0.6 to 1.</summary>
 		public static float Box => (float)Clamp(Qol.S.DialogueSize, BoxMin, BoxMax);
 		/// <summary>The said lines on top of the box: 0.7 to 1.3.</summary>

@@ -540,8 +540,8 @@ namespace OpenFF.Client
 				case 0: q.DialogueSize = Math.Round(Math.Clamp(DialogueSizing.Box + 0.05 * by, DialogueSizing.BoxMin, DialogueSizing.BoxMax), 2); Qol.Changed("dialogue box size " + Percent(DialogueSizing.Box)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
 				case 1: q.DialogueTextSize = Math.Round(Math.Clamp(DialogueSizing.Text + 0.05 * by, DialogueSizing.TextMin, DialogueSizing.TextMax), 2); Qol.Changed("dialogue text size " + Percent(DialogueSizing.Text)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
 				case 2: q.NameSize = Math.Round(Math.Clamp(DialogueSizing.Name + 0.05 * by, DialogueSizing.TextMin, DialogueSizing.TextMax), 2); Qol.Changed("speaker name size " + Percent(DialogueSizing.Name)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
-				case 3: q.DialogueShadow = !q.DialogueShadow; Qol.Changed("dialogue shadow " + (q.DialogueShadow ? "on" : "off")); break;
-				case 4: q.MenuShadow = !q.MenuShadow; Qol.Changed("menu text shadow " + (q.MenuShadow ? "on" : "off")); break;
+				case 3: { int s = ShadowStep(q.DialogueShadow, q.DialogueShadowStrength, by, confirm); q.DialogueShadow = s > 0; if (s > 0) q.DialogueShadowStrength = s; Qol.Changed("dialogue shadow " + ShadowName(q.DialogueShadow, q.DialogueShadowStrength)); break; }
+				case 4: { int s = ShadowStep(q.MenuShadow, q.MenuShadowStrength, by, confirm); q.MenuShadow = s > 0; if (s > 0) q.MenuShadowStrength = s; Qol.Changed("menu text shadow " + ShadowName(q.MenuShadow, q.MenuShadowStrength)); break; }
 				case 5:
 					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
 					return;
@@ -549,18 +549,20 @@ namespace OpenFF.Client
 			_note = TextNote(row);
 		}
 
-		private static string TextNote(int row)
+		/// <summary>A shadow setting as one of Off, Light, Medium, Heavy.</summary>
+		private static string ShadowName(bool on, int strength) => !on ? "Off" : strength >= 3 ? "Heavy" : strength == 2 ? "Medium" : "Light";
+
+		/// <summary>The next shadow setting (0 off, 1 light, 2 medium, 3 heavy) a step to the left or right; confirm goes round from heavy to off.</summary>
+		private static int ShadowStep(bool on, int strength, int by, bool confirm)
 		{
-			switch (row)
-			{
-				case 0: return "The dialogue window with its text and name, together. 100% is the game's. Shows from the next line spoken";
-				case 1: return "The said lines, larger or smaller than the box sets them";
-				case 2: return "The speaker's name. The prologue's and cutscenes' text is not changed";
-				case 3: return "The dark shadow behind the dialogue's lines. Off draws them plain";
-				case 4: return "The dark shadow behind the menus' text and other windows'. Off draws them plain";
-				default: return "";
-			}
+			int now = !on ? 0 : Math.Clamp(strength, 1, 3);
+			int next = now + by;
+			if (next > 3) next = confirm ? 0 : 3;
+			return Math.Max(next, 0);
 		}
+
+		// The Font / Dialogue page has no notes: its rows explain themselves.
+		private static string TextNote(int row) => "";
 
 		/// <summary>The main page's row: what is changed, in a few words.</summary>
 		private static string TextSummary()
@@ -804,8 +806,8 @@ namespace OpenFF.Client
 						case 0: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
 						case 1: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
-						case 3: icon = UiTheme.Icon.Window; on = Qol.S.DialogueShadow; return Kind.Switch;
-						case 4: icon = UiTheme.Icon.Window; on = Qol.S.MenuShadow; return Kind.Switch;
+						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Map:
@@ -978,7 +980,7 @@ namespace OpenFF.Client
 					: _page == Page.Buttons ? "Pick one, then press its pad button."
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
 					: _page == Page.Map ? "A corner map for dungeons."
-					: _page == Page.Text ? "How big the dialogue is. Cutscene text is left alone."
+					: _page == Page.Text ? ""
 					: _leave == "forget" ? "Deletes all map data on this save. This cannot be reversed."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
@@ -1186,8 +1188,8 @@ namespace OpenFF.Client
 						case 0: label = "Dialogue box size"; value = Percent(DialogueSizing.Box); return;
 						case 1: label = "Dialogue text size"; value = Percent(DialogueSizing.Text); return;
 						case 2: label = "Speaker name size"; value = Percent(DialogueSizing.Name); return;
-						case 3: label = "Dialogue shadow"; value = Qol.S.DialogueShadow ? "On" : "Off"; return;
-						case 4: label = "Menu text shadow"; value = Qol.S.MenuShadow ? "On" : "Off"; return;
+						case 3: label = "Dialogue shadow"; value = ShadowName(Qol.S.DialogueShadow, Qol.S.DialogueShadowStrength); return;
+						case 4: label = "Menu text shadow"; value = ShadowName(Qol.S.MenuShadow, Qol.S.MenuShadowStrength); return;
 						default: label = "Back"; return;
 					}
 				}

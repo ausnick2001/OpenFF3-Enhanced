@@ -11739,7 +11739,7 @@ internal static partial class GlobalScope
 									if ((tEXT_DATA.flags & 0x4000) != 0)
 									{
 										if (font[tEXT_DATA.size] == null) font[tEXT_DATA.size] = new Font(tEXT_DATA.size);
-										font[tEXT_DATA.size].drawShadow(tEXT_DATA.text, num15, num16, tEXT_DATA.alpha == 255 ? 255 : alphaOf);   // PORT: a fixed step down and right, the same on every line
+										DrawDropShadow(font[tEXT_DATA.size], tEXT_DATA.text, num15, num16, tEXT_DATA.alpha == 255 ? 255 : alphaOf, tEXT_DATA.flags);   // PORT: a fixed step down and right, the same on every line
 									}
 									drawString(tEXT_DATA.text, num15, num16, (int)num11, tEXT_DATA.size);
 								}

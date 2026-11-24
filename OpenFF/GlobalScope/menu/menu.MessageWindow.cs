@@ -401,7 +401,7 @@ internal static partial class GlobalScope
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
 				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);   // PORT: FF4's scene bar shows its line whole (EventConteManager::createMessage draws the text at once)
-				dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
+				dGSMessage.Dialogue = m_MessageStyle != MESSAGE_STYLE.MESSAGE_STYLE_CENTER; dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
 				dGSMessage.Narrative = true;
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
@@ -463,7 +463,7 @@ internal static partial class GlobalScope
 				}
 				dGSMessage.setPosition(vector.vx, vector.vy, erase: true);
 				dGSMessage.setDisplaySpeed(m_Bar ? byte.MaxValue : mwDEFAULT_DISPLAY_SPEED);
-				dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
+				dGSMessage.Dialogue = m_MessageStyle != MESSAGE_STYLE.MESSAGE_STYLE_CENTER; dGSMessage.setShadow(m_MessageShadow && !m_Bar && (OpenFF.Client.DialogueSizing.DialogueShadow || m_MessageStyle == MESSAGE_STYLE.MESSAGE_STYLE_CENTER));   // PORT: the Steam bar's line has no shadow; the option may take it off
 				dGSMessage.Narrative = true;
 				mwNoteLine(dGSMessage, vector);
 				mwPlaceAligned(dGSMessage, vector);
