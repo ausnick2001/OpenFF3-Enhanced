@@ -38,6 +38,8 @@ internal static partial class GlobalScope
 		{
 			if (bSetup_)
 			{
+				OpenFF.Client.EngineHost.ApplySuspend();   // PORT: the mods' chunks and the ladders' state are the autosave's again
+				OpenFF.Client.ProgressionLayer.OnLoad(-1);
 				SuspendSaveData_.sdReflect();
 				OpenFF.Client.Minimap.ApplySuspend();   // PORT: the autosave's dungeon maps
 			}

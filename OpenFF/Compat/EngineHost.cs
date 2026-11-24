@@ -356,7 +356,46 @@ namespace OpenFF.Client
 			{
 				OpenFF.Game.Events.Publish(new OpenFF.Events.SaveRead { Offset = offset, Length = length });
 			}
-			if (slotData) Minimap.Read(offset);
+			if (slotData)
+			{
+				Minimap.Read(offset);
+				_lastReadOffset = offset;
+				_readLength[offset] = length;
+			}
+		}
+
+		// The game reads every slot (and the suspend save) at the title and applies one of them only when it is chosen. The mods' chunks
+		// are handed over as each read happens, so after the title it is the LAST slot read that the mods hold, not the chosen one.
+		// So what each read was is kept, and the chosen slot's chunks are handed over again when the game applies it.
+		private static int _lastReadOffset = -1;
+		private static readonly Dictionary<int, int> _readLength = new Dictionary<int, int>();
+		private static readonly Dictionary<int, int> _offsetOfSlot = new Dictionary<int, int>();
+
+		/// <summary>The game loaded save slot <paramref name="num"/>: the read that just happened was that slot's.</summary>
+		public static void BindSlot(int num)
+		{
+			if (_lastReadOffset >= 0) _offsetOfSlot[num] = _lastReadOffset;
+		}
+
+		/// <summary>The game applies save slot <paramref name="num"/>: the mods get that slot's chunks again.</summary>
+		public static void ApplySlot(int num)
+		{
+			if (_offsetOfSlot.TryGetValue(num, out int offset)) ApplyRead(offset);
+		}
+
+		/// <summary>The game applies the suspend save (the autosave): the mods get its chunks again.</summary>
+		public static void ApplySuspend() => ApplyRead(Minimap.SuspendOffset);
+
+		private static void ApplyRead(int offset)
+		{
+			if (!_attached || GameProfile.IsFf4 || !_readLength.TryGetValue(offset, out int length)) return;   // FF4's party rides its own slots
+			Gambits.Reset();
+			Minimap.Reset();
+			if (OpenFF.Game.Saves.ReadSlot(offset, length))
+			{
+				OpenFF.Game.Events.Publish(new OpenFF.Events.SaveRead { Offset = offset, Length = length });
+			}
+			Log.Write(LogChannel.General, "save: chunks of the data at " + offset + " handed over again - it is the one in play");
 		}
 
 		/// <summary>The game is closing.</summary>

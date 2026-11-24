@@ -1215,6 +1215,12 @@ internal static partial class GlobalScope
 
 			public bool sdReflect()
 			{
+				// PORT: the title read every slot; the one applied now is this one - the mods' chunks and the ladders' state are its own again.
+				if (m_MapNum != -2)
+				{
+					OpenFF.Client.EngineHost.ApplySlot(m_MapNum);
+					OpenFF.Client.ProgressionLayer.OnLoad(m_MapNum);
+				}
 				composit.sdoReflect();
 				// PORT: the loaded party is in place; mastery heroes' commands follow their ladders.
 				OpenFF.Client.ProgressionLayer.OnLoaded();
@@ -1236,6 +1242,7 @@ internal static partial class GlobalScope
 				int buf = ((!sub) ? (-1) : ((Manager.GetInstance().GetCurrentBuffer() == 0) ? 1 : 0));
 				Manager.GetInstance().StartLoad((sbyte[])GetDataStartHeader(), GetDataSize(), num, buf);
 				OpenFF.Client.Minimap.Bind(num);   // PORT: the maps this read brought are this slot's
+				OpenFF.Client.EngineHost.BindSlot(num);   // PORT: and so is the data the mods' chunks were handed
 				m_MapNum = num;
 				fromRaw();
 				// PORT: the mods' progression state from beside the slot.

@@ -336,6 +336,11 @@ internal static partial class GlobalScope
 				{
 					return false;
 				}
+				// PORT: a row of the Job list: Down on its last row / Up on its first scrolls the list (more jobs than rows).
+				if (M?.parentNode()?.behavior()?.queryInterface(MBJobParamList.classIdentifier()) is MBJobParamList jobList && jobList.TryScroll(M))
+				{
+					return true;
+				}
 				return MenuManager.getSingleton().MoveCursor(M, PlaySe: true);
 			}
 

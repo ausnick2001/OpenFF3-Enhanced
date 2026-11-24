@@ -322,6 +322,7 @@ internal static partial class GlobalScope
 									menu.MBJobParamList mBJobParamList = null;
 									if ((medget = menu.MenuManager.getSingleton().root().getNodeByID(TRANSCODE("job_item_list"))) != null && (mBJobParamList = (menu.MBJobParamList)medget.behavior()?.queryInterface(menu.MBJobParamList.classIdentifier())) != null)
 									{
+										mBJobParamList.ResetScroll();
 										mBJobParamList.updataJobList();
 										mBJobParamList.releaseItemMessage();
 										mBJobParamList.createItemMessage();

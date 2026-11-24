@@ -31,6 +31,7 @@ internal static partial class GlobalScope
 
 			public override void bmInitialize(Medget M)
 			{
+				scrollOffset = 0;
 				reset();
 				updataJobList();
 				createItemMessage();
@@ -113,6 +114,11 @@ internal static partial class GlobalScope
 
 			public override bool bmDirection(Medget M, int key)
 			{
+				// PORT: more jobs than the list has rows (22 jobs, 16 rows on this screen): Down on the last row or Up on the first scrolls the list.
+				if (TryScroll(M))
+				{
+					return true;
+				}
 				return MenuManager.getSingleton().MoveCursor(M, PlaySe: true);
 			}
 
@@ -207,27 +213,68 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>The first job shown: the list scrolls over the jobs the hero can change to, a row (a line of columns) at a time.</summary>
+			private int scrollOffset;
+
+			/// <summary>Every job the hero can change to now, in the menu's order: opened, and not the one it has.</summary>
+			private readonly List<int> eligibleJobs = new List<int>();
+
+			/// <summary>Back to the top of the list (another hero's jobs).</summary>
+			public void ResetScroll()
+			{
+				scrollOffset = 0;
+			}
+
 			public void updataJobList()
 			{
+				FillJobList(resetCursor: true);
+			}
+
+			private void FillJobList(bool resetCursor)
+			{
 				evt.CEventManager.getInstance().FlagMng().set(0u, (uint)evt.EVENT_JOB_FLAG[(int)job_menu_itemu_priority[0]]);
-				int num = 0;
-				int num2 = 0;
-				Medget medget = ownerMedget.childNode();
-				while (medget != null && num < 23)
+				pl.JOB_TYPE now = (pl.JOB_TYPE)pl.PlayerParty.instance().player((byte)MenuManager.getSingleton().GetTargetCharNo()).jobManager().nowJob();
+				eligibleJobs.Clear();
+				for (int i = 0; i < 23; i++)
 				{
-					while ((job_menu_itemu_priority[num] == (pl.JOB_TYPE)pl.PlayerParty.instance().player((byte)MenuManager.getSingleton().GetTargetCharNo()).jobManager()
-						.nowJob() || evt.CEventManager.getInstance().FlagMng().get(0u, (uint)evt.EVENT_JOB_FLAG[(int)job_menu_itemu_priority[num]]) == 0) && ++num < 23)
+					if (job_menu_itemu_priority[i] != now && evt.CEventManager.getInstance().FlagMng().get(0u, (uint)evt.EVENT_JOB_FLAG[(int)job_menu_itemu_priority[i]]) != 0)
 					{
+						eligibleJobs.Add(static_cast<int>(job_menu_itemu_priority[i]));
 					}
-					if (23 > num)
-					{
-						SET_JOB_NUMBER(medget, static_cast<int>(job_menu_itemu_priority[num]));
-						num2++;
-					}
-					num++;
-					medget = medget.nextSibling();
 				}
-				if (num2 == 0)
+				int rows = RowCount();
+				int columns = ColumnCount();
+				// Never past the last row that has a job, and always a whole row.
+				int last = Math.Max(0, eligibleJobs.Count - rows);
+				int most = (last + columns - 1) / columns * columns;
+				if (scrollOffset > most)
+				{
+					scrollOffset = most;
+				}
+				if (scrollOffset < 0)
+				{
+					scrollOffset = 0;
+				}
+				int shown = 0;
+				int slot = 0;
+				for (Medget medget = ownerMedget.childNode(); medget != null; medget = medget.nextSibling())
+				{
+					int index = scrollOffset + slot++;
+					if (index < eligibleJobs.Count)
+					{
+						SET_JOB_NUMBER(medget, eligibleJobs[index]);
+						shown++;
+					}
+					else
+					{
+						SET_JOB_NUMBER(medget, -1);
+					}
+				}
+				if (!resetCursor)
+				{
+					return;
+				}
+				if (shown == 0)
 				{
 					MenuManager.getSingleton().GetCursor2d().SetShow(show: false);
 				}
@@ -235,6 +282,110 @@ internal static partial class GlobalScope
 				{
 					MenuManager.getSingleton().SetTargetItemNo(0);
 				}
+			}
+
+			/// <summary>How many rows (child medgets) the list has.</summary>
+			private int RowCount()
+			{
+				int count = 0;
+				for (Medget medget = ownerMedget.childNode(); medget != null; medget = medget.nextSibling())
+				{
+					count++;
+				}
+				return count;
+			}
+
+			/// <summary>How many columns the rows are laid out in: the rows that start level with the first.</summary>
+			private int ColumnCount()
+			{
+				Medget first = ownerMedget.childNode();
+				if (first == null)
+				{
+					return 1;
+				}
+				int columns = 0;
+				for (Medget medget = first; medget != null; medget = medget.nextSibling())
+				{
+					if (medget.y() == first.y())
+					{
+						columns++;
+					}
+				}
+				return Math.Max(1, columns);
+			}
+
+			private Medget RowAt(int slot)
+			{
+				int at = 0;
+				for (Medget medget = ownerMedget.childNode(); medget != null; medget = medget.nextSibling())
+				{
+					if (at++ == slot)
+					{
+						return medget;
+					}
+				}
+				return null;
+			}
+
+			/// <summary>Down on the last row, or Up on the first, with more jobs beyond: the list moves a row and the cursor stays where it is.</summary>
+			public bool TryScroll(Medget M)
+			{
+				int pad = (int)ds.g_Pad.repeat();
+				bool up = (pad & 0x40) != 0;
+				bool down = !up && (pad & 0x80) != 0;
+				if (!up && !down)
+				{
+					return false;
+				}
+				int rows = RowCount();
+				int columns = ColumnCount();
+				int slot = -1;
+				int at = 0;
+				for (Medget medget = ownerMedget.childNode(); medget != null; medget = medget.nextSibling())
+				{
+					if (medget == M)
+					{
+						slot = at;
+						break;
+					}
+					at++;
+				}
+				if (slot < 0)
+				{
+					return false;
+				}
+				if (down && slot >= rows - columns && scrollOffset + rows < eligibleJobs.Count)
+				{
+					scrollOffset += columns;
+				}
+				else if (up && slot < columns && scrollOffset > 0)
+				{
+					scrollOffset = Math.Max(0, scrollOffset - columns);
+				}
+				else
+				{
+					return false;
+				}
+				MenuManager.getSingleton().SetScrollType(MenuManager.SCROLL_TYPE.TYPE_WAIT);
+				releaseItemMessage();
+				for (Medget medget = ownerMedget.childNode(); medget != null; medget = medget.nextSibling())
+				{
+					MenuManager.getSingleton().leaveFocusList(medget);
+				}
+				FillJobList(resetCursor: false);
+				createItemMessage();
+				// The cursor stays on its row; where that row has no job (the last, part-filled line), on the nearest one before it that has.
+				Medget target = RowAt(slot);
+				while (target != null && GET_JOB_NUMBER(target) < 0 && slot > 0)
+				{
+					target = RowAt(--slot);
+				}
+				if (target != null)
+				{
+					MenuManager.getSingleton().initFocus(target.myTag());
+				}
+				MenuManager.getSingleton().playSEMoveCursor();
+				return true;
 			}
 
 			public void changeJobColor()

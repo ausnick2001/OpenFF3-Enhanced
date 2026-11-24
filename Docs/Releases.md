@@ -3,6 +3,14 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.6 - OpenFF3 Enhanced (2026-11-24)
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.5, the game offers this update itself; your saves and settings in `userdata` are kept.
+
+**Fixed**
+- The Job menu now scrolls. With more jobs open than the list has rows (the list shows 16), pressing Down on the bottom row or Up on the top row moves the list, so every job after Black Belt can be chosen.
+- Loading a save with a mod's data (a mod's own chests, a hero's job progress) now brings back the data of the slot you chose. The game reads every slot at the title screen, and a mod could be left holding the last slot read rather than the one picked.
+
 ## 0.9.5 - OpenFF3 Enhanced (2026-11-23)
 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.4, the game offers this update itself; your saves and settings in `userdata` are kept.
