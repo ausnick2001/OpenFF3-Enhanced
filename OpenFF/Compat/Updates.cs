@@ -98,7 +98,7 @@ namespace OpenFF.Client
 			lock (_sync)
 			{
 				if (Now == Stage.Checking || Now == Stage.Downloading || Now == Stage.Verifying || Now == Stage.Unpacking || Now == Stage.Installing) return;
-				if (!Possible) { Asked = asked; Error = "only an installed release updates itself, not a source build"; Now = asked ? Stage.Failed : Stage.Idle; return; }
+				if (!Possible) { Asked = asked; Error = Options.Get("no-update") != null ? "updates come from your launcher, which keeps the game up to date" : "only an installed release updates itself, not a source build"; Now = asked ? Stage.Failed : Stage.Idle; return; }
 				Asked = asked;
 				Now = Stage.Checking;
 				Error = null;
