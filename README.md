@@ -128,7 +128,7 @@ Open the menu with **Esc** (**Start** on a pad) and choose **Font / Dialogue**. 
 - **Dialogue box size** (60% to 100%): a smaller box takes up less of the screen. The text moves with it.
 - **Dialogue text size** (70% to 130%): the size of the words said.
 - **Speaker name size** (70% to 130%): the size of the name above them.
-- **Dialogue shadow** and **Menu text shadow**: turn the dark shadow behind the text on or off.
+- **Dialogue shadow** and **Menu text shadow**: how dark the shadow behind the text is: Off, Light, Medium (the default) or Heavy. Each is set on its own. Battle text and the story scenes keep their own look.
 
 Prologue and cutscene text isn't affected by these, so the story scenes always look as they were meant to.
 

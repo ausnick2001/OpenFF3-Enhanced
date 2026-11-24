@@ -3,6 +3,17 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.9 - OpenFF3 Enhanced (2026-11-24)
+
+**Added**
+- Dialogue shadow and Menu text shadow (Esc or Start, then Font / Dialogue) now have four levels each: Off, Light, Medium and Heavy. Each is set on its own, and both start on Medium. Battle text and the story scenes (the prologue, the crystal's words) keep their own look whatever you choose.
+
+**Changed**
+- The spell, item and song lists in battle open at once. The magic list used to grow open slowly, like a dialogue box, and the commands and party bars blinked off for a moment before any of the lists came in.
+- The Font / Dialogue page no longer has its description lines, which ran off the page.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.8 - OpenFF3 Enhanced (2026-11-24)
 
 **Fixed**
