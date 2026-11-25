@@ -169,8 +169,44 @@ internal static partial class GlobalScope
 				setPosition(type, CommandCursorPosition(line));
 			}
 
+			/// <summary>PORT: the name hands that are kept hidden (Reduce clutter in battle, aimed at a foe, whose own hand is the pointer).</summary>
+			private readonly bool[] quiet_ = new bool[29];
+
+			/// <summary>PORT: the foe's name in the help bar at the top (Reduce clutter in battle), in place of a name list.</summary>
+			/// <summary>PORT: how wide the name bar is (screen units at the game's size): wide enough for any foe's name, and well clear of the buttons along the top.</summary>
+			private const int NameBarWidth = 220;
+
+			private static void showTargetName(int nameId)
+			{
+				HelpWindow help = Battle2DManager.instance().helpWindow();
+				if (help.messageId() == nameId && help.isActive()) return;
+				if (help.isActive())
+				{
+					if (help.isCreate()) help.updateMessage(nameId, 0);   // else the window is still opening: the next frame
+				}
+				else
+				{
+					help.setMsdHandle(0);
+					help.createNameWindow(nameId, NameBarWidth);
+				}
+			}
+
+			private static void clearTargetName()
+			{
+				HelpWindow help = Battle2DManager.instance().helpWindow();
+				if (help.isActive()) help.releaseHelpWindow();
+			}
+
 			public void setPositionTargetMonster(int type, BattleMonster monster)
 			{
+				if (OpenFF.Client.Qol.BattleDeclutter)
+				{
+					quiet_[type] = true;
+					cursor_[type].SetShow(false);
+					if (type == 15) showTargetName(monster.monster().nameId());
+					return;
+				}
+				quiet_[type] = false;
 				sys2d.Window window = monster.targetWindow();
 				NNSG2dFVec2 pos = new NNSG2dFVec2(4096 * NameHandX(type, window.GetPositionUL().vx), 4096 * window.GetPositionCC().vy);
 				setPosition(type, pos);
@@ -179,6 +215,17 @@ internal static partial class GlobalScope
 			public void setPositionTargetPlayer(int type, BaseBattleCharacter player)
 			{
 				BattlePlayer battlePlayer = static_cast<BattlePlayer>(player);
+				quiet_[type] = false;
+				if (OpenFF.Client.Qol.BattleDeclutter)
+				{
+					// No list of names: the hand stands on the hero's line of the party menu.
+					if (type == 15) clearTargetName();
+					int back = OpenFF.Client.SteamLayout.Active ? OpenFF.Client.SteamCells.CellRight(cursor_[type], STOP_CURSOR, 8) + OpenFF.Client.SteamLayout.MENU_GAP : 0;
+					(int px, int py) = OpenFF.Client.BattleHud.PartyHand(battlePlayer.battleCharacterId(), back);
+					setPosition(type, px, py);
+					cursor_[type].SetShow(true);
+					return;
+				}
 				sys2d.Window window = battlePlayer.targetWindow();
 				NNSG2dFVec2 pos = new NNSG2dFVec2(4096 * NameHandX(type, window.GetPositionUL().vx), 4096 * window.GetPositionCC().vy);
 				setPosition(type, pos);
@@ -191,20 +238,26 @@ internal static partial class GlobalScope
 			{
 				if (!OpenFF.Client.SteamLayout.Active)
 				{
-					return windowLeft + 8;
+					return windowLeft + OpenFF.Client.BattleSizing.TargetTextX;
 				}
-				return windowLeft + 8 - OpenFF.Client.SteamCells.CellRight(cursor_[type], STOP_CURSOR, 8) - OpenFF.Client.SteamLayout.MENU_GAP;
+				return windowLeft + OpenFF.Client.BattleSizing.TargetTextX - OpenFF.Client.SteamCells.CellRight(cursor_[type], STOP_CURSOR, 8) - OpenFF.Client.SteamLayout.MENU_GAP;
 			}
 
 			public void setPositionTargetAll(int type)
 			{
-				setPosition(type, 328, 16);
+				if (OpenFF.Client.Qol.BattleDeclutter && type == 15) clearTargetName();
+				(int ax, int ay) = OpenFF.Client.BattleSizing.TargetCornerHand(320);
+				setPosition(type, ax, ay);
 			}
 
 			public void setPositionTargetGroup(int type)
 			{
-				setPosition(type, 248, 16);
+				(int gx, int gy) = OpenFF.Client.BattleSizing.TargetCornerHand(240);
+				setPosition(type, gx, gy);
 			}
+
+			/// <summary>PORT: how far left (screen units) the hand stands from a foe when there is no name list, so it is not over the foe.</summary>
+			private const int FoeHandShift = 14;
 
 			public void setPositionMonster(int type, BattleMonster monster)
 			{
@@ -218,7 +271,7 @@ internal static partial class GlobalScope
 				vecFx.z = 4096 * mon.MonsterManager.instance().offset(monster.monsterId()).cursorPosition()
 					.z;
 				VEC_Add(vecFx2, vecFx, vecFx2);
-				setPosition3Dto2D(type, vecFx2);
+				setPosition3Dto2D(type, vecFx2, OpenFF.Client.Qol.BattleDeclutter ? FoeHandShift : 0);
 			}
 
 			public void setPositionPlayer(int type, BaseBattleCharacter player)
@@ -366,7 +419,7 @@ internal static partial class GlobalScope
 
 			public void setShow(int type, bool show)
 			{
-				cursor_[type].SetShow(show);
+				cursor_[type].SetShow(show && !quiet_[type]);
 			}
 
 			public bool isShow(int type)

@@ -48,7 +48,9 @@ namespace OpenFF.Client
 				}
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
-				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 30, 27, true);
+				// Nine rows now (Battle menus joined Damage popups): a little closer so the note under them still clears the hints.
+				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 28, 25, true);
+				case Page.BattleMenus: return new Layout(new Rectangle(142, 50, 516, 390), 114, 34, 30, true);
 				case Page.Popups: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
@@ -62,7 +64,7 @@ namespace OpenFF.Client
 		/// <summary>The game stands still while the menu is open: its last frame stays under the menu.</summary>
 		public static bool HoldsGame => IsOpen;
 
-		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Text, Popups, Quit }
+		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Text, Popups, BattleMenus, Quit }
 		private Page _page = Page.Closed;
 		private int _selected;
 		private string _binding;            // the DS button being rebound, while a press is awaited
@@ -301,7 +303,7 @@ namespace OpenFF.Client
 					if (cancel) { Close(); return; }
 					if (confirm)
 					{
-						// Resume, [Abilities,] Settings, Quality of life, Exit game.
+						// Resume, [Abilities,] Settings, Quality of Life, Exit game.
 						string[] rows = MainRows();
 						string id = rows[Math.Clamp(_selected, 0, rows.Length - 1)];
 						if (id == "abilities") { Close(); AbilitiesMenu.Open(); return; }
@@ -329,6 +331,11 @@ namespace OpenFF.Client
 					if (cancel) { _page = Page.Text; _selected = 6; _note = ""; DisplaySettings.Current.Save(); return; }
 					if (up || downKey) _note = PopupNote(_selected);
 					if (left || right || confirm) ChangePopups(_selected, left ? -1 : 1, confirm);
+					break;
+				case Page.BattleMenus:
+					if (cancel) { _page = Page.Text; _selected = 7; _note = ""; DisplaySettings.Current.Save(); return; }
+					if (up || downKey) _note = BattleNote(_selected);
+					if (left || right || confirm) ChangeBattle(_selected, left ? -1 : 1, confirm);
 					break;
 				case Page.Map:
 					if (cancel) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); return; }
@@ -388,6 +395,7 @@ namespace OpenFF.Client
 				case Page.Map: return MapRows;
 				case Page.Text: return TextRows;
 				case Page.Popups: return PopupRows;
+				case Page.BattleMenus: return 5;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -534,8 +542,8 @@ namespace OpenFF.Client
 
 		// ---- font / dialogue ----
 
-		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Battle descriptions, Damage popups (a page), Back.
-		private const int TextRows = 8;
+		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Battle descriptions, Damage popups (a page), Battle menus (a page), Back.
+		private const int TextRows = 9;
 
 		private static string Percent(float v) => Math.Round(v * 100) + "%";
 
@@ -556,6 +564,9 @@ namespace OpenFF.Client
 					case 5: canLeft = q.BattleDescriptions > 0; canRight = q.BattleDescriptions < 2; break;
 				}
 			}
+			else if (_page == Page.BattleMenus && row == 0) { canLeft = BattleSizing.Box > BattleSizing.BoxMin + 0.001; canRight = BattleSizing.Box < BattleSizing.BoxMax - 0.001; }
+			else if (_page == Page.BattleMenus && row == 1) { canLeft = BattleSizing.PartyBox > BattleSizing.BoxMin + 0.001; canRight = BattleSizing.PartyBox < BattleSizing.BoxMax - 0.001; }
+			else if (_page == Page.BattleMenus && row == 2) { canLeft = BattleSizing.Text > BattleSizing.TextMin + 0.001; canRight = BattleSizing.Text < BattleSizing.TextMax - 0.001; }
 			else if (_page == Page.Popups && row == 3) ShadowEnds(q.DamagePopupShadow > 0, q.DamagePopupShadow, out canLeft, out canRight);
 			else if (_page == Page.Map && row == 3) { canLeft = q.MinimapZoom > 0; canRight = q.MinimapZoom < MapZooms.Length - 1; }
 			else if (_page == Page.Map && row == 4) { canLeft = q.MinimapSee > 0; canRight = q.MinimapSee < MapAreas.Length - 1; }
@@ -582,10 +593,34 @@ namespace OpenFF.Client
 					if (confirm) { _page = Page.Popups; _selected = 0; _note = PopupNote(0); }
 					return;
 				case 7:
+					if (confirm) { _page = Page.BattleMenus; _selected = 0; _note = BattleNote(0); }
+					return;
+				case 8:
 					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
 					return;
 			}
 			_note = TextNote(row);
+		}
+
+		// ---- battle menus ----
+
+		// Menu size, Party menu size, Text size, Back. The note under them is always the one warning: the windows are made as a battle begins.
+		private static string BattleNote(int row) => row == 3 ? "No name lists when choosing a target: the hand points at them instead" : "Changing size mid-battle will lead to visual glitches until the next battle";
+
+		private void ChangeBattle(int row, int by, bool confirm)
+		{
+			DisplaySettings.QolSettings q = Qol.S;
+			switch (row)
+			{
+				case 0: q.BattleBoxSize = Math.Round(Math.Clamp(BattleSizing.Box + 0.05 * by, BattleSizing.BoxMin, BattleSizing.BoxMax), 2); Qol.Changed("battle menu size " + Percent(BattleSizing.Box)); break;
+				case 1: q.BattlePartySize = Math.Round(Math.Clamp(BattleSizing.PartyBox + 0.05 * by, BattleSizing.BoxMin, BattleSizing.BoxMax), 2); Qol.Changed("battle party size " + Percent(BattleSizing.PartyBox)); break;
+				case 2: q.BattleTextSize = Math.Round(Math.Clamp(BattleSizing.Text + 0.05 * by, BattleSizing.TextMin, BattleSizing.TextMax), 2); Qol.Changed("battle text size " + Percent(BattleSizing.Text)); break;
+				case 3: q.BattleDeclutter = !q.BattleDeclutter; Qol.Changed("reduce clutter in battle " + (q.BattleDeclutter ? "on" : "off")); break;
+				case 4:
+					if (confirm) { _page = Page.Text; _selected = 7; _note = ""; DisplaySettings.Current.Save(); }
+					return;
+			}
+			_note = BattleNote(row);
 		}
 
 		/// <summary>A shadow setting as one of Off, Light, Medium, Heavy.</summary>
@@ -897,6 +932,16 @@ namespace OpenFF.Client
 						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 5: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 6: icon = UiTheme.Icon.Quality; return Kind.Page;
+						case 7: icon = UiTheme.Icon.WindowSize; return Kind.Page;
+						default: icon = UiTheme.Icon.Back; return Kind.None;
+					}
+				case Page.BattleMenus:
+					switch (row)
+					{
+						case 0: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 1: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.Indicator; on = Qol.S.BattleDeclutter; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Popups:
@@ -949,7 +994,7 @@ namespace OpenFF.Client
 			}
 		}
 
-		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
+		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups || _page == Page.BattleMenus ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
 
 		public override void Draw(GameTime gameTime)
 		{
@@ -1066,7 +1111,7 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _page == Page.Text ? "Font / Dialogue / Damage popups" : _page == Page.Popups ? "Damage popups" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of Life" : _page == Page.Map ? "Minimap" : _page == Page.Text ? "Text and Menus" : _page == Page.Popups ? "Damage popups" : _page == Page.BattleMenus ? "Battle menus" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				// The main page's title is in the names font (fonts\names), when there is one; it is smaller by its scale, so drawn a size up.
 					OpenFF.Content.MenuText nameStyle = _page == Page.Main ? NameFace.Style : null;
 					int shownTitleSize = nameStyle != null ? titleSize + 4 : titleSize;
@@ -1079,7 +1124,7 @@ namespace OpenFF.Client
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
 					: _page == Page.Map ? "A corner map for dungeons."
 					: _page == Page.Text ? ""
-					: _page == Page.Popups ? ""
+					: _page == Page.Popups || _page == Page.BattleMenus ? ""
 					: _leave == "forget" ? "Deletes all map data on this save. This cannot be reversed."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
@@ -1172,7 +1217,7 @@ namespace OpenFF.Client
 
 		private (Ui.PadButton, string)[] Hints()
 		{
-			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
+			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups || _page == Page.BattleMenus) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
 			if (_page == Page.Buttons) return new[] { (Ui.PadButton.A, _binding == null ? "Bind" : "Press a button"), (Ui.PadButton.B, "Back") };
 			return new[] { (Ui.PadButton.A, "Select"), (Ui.PadButton.B, "Back") };
 		}
@@ -1255,7 +1300,7 @@ namespace OpenFF.Client
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
 					if (id == "abilities") { label = "Abilities"; value = "job ladders, free slots"; return; }
 					if (id == "skip") { label = "Skip scene"; value = "runs through to its end"; return; }
-					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "text" ? "Font / Dialogue / Damage popups" : id == "report" ? "Report a bug / Request a feature" : id == "reset" ? "Reset" : "Exit game";
+					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of Life" : id == "map" ? "Minimap" : id == "text" ? "Text and Menus" : id == "report" ? "Report a Bug / Request a Feature" : id == "reset" ? "Reset" : "Exit game";
 					if (id == "qol") value = QolSummary();
 					else if (id == "map") value = MapSummary();
 					else if (id == "text") value = TextSummary();
@@ -1303,6 +1348,18 @@ namespace OpenFF.Client
 						case 4: label = "Menu text shadow"; value = ShadowName(Qol.S.MenuShadow, Qol.S.MenuShadowStrength); return;
 						case 5: label = "Battle descriptions"; value = DescriptionNames[Math.Clamp(Qol.S.BattleDescriptions, 0, 2)]; return;
 						case 6: label = "Damage popups"; value = PopupStyleNames[PopupStyle(Qol.S)]; return;
+						case 7: label = "Battle menus"; value = Percent(BattleSizing.Box); return;
+						default: label = "Back"; return;
+					}
+				}
+				case Page.BattleMenus:
+				{
+					switch (row)
+					{
+						case 0: label = "Menu size"; value = Percent(BattleSizing.Box); return;
+						case 1: label = "Party menu size"; value = Percent(BattleSizing.PartyBox); return;
+						case 2: label = "Text size"; value = Percent(BattleSizing.Text); return;
+						case 3: label = "Reduce clutter in battle"; value = Qol.S.BattleDeclutter ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}

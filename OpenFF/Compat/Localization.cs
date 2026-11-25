@@ -35,6 +35,7 @@ namespace OpenFF.Client
 			public const string TitleNewGame = "title.new-game";
 			public const string TitleLoadGame = "title.load-game";
 			public const string TitleMods = "title.mods";
+			public const string TitleOpening = "title.opening";
 			public const string TitlePrompt = "title.prompt";
 		}
 
@@ -45,6 +46,7 @@ namespace OpenFF.Client
 			[Keys.TitleLoadGame] = Words("LOAD GAME", fr: "CHARGER PARTIE", de: "SPIEL LADEN", it: "CARICA PARTITA", es: "CARGAR PARTIDA"),
 			// The client's own entry; no build of the game has one to copy, and "mods" reads the same in all of them.
 			[Keys.TitleMods] = Words("MODS"),
+			[Keys.TitleOpening] = Words("PLAY OPENING FMV"),
 			// The start prompt, drawn as text in the title's face like the commands (the pictures hold it as one low-resolution strip).
 			[Keys.TitlePrompt] = Words("Press ANY BUTTON to START"),
 		};

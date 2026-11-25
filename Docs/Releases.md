@@ -3,18 +3,35 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.11 - OpenFF3 Enhanced (2026-11-25)
+
+**Added**
+- A "Play opening FMV" entry on the title screen, above Mods, plays the game's opening movie from your install, and New Game now asks whether you would like to watch it first. Press any key or button to skip the movie. Both only appear if the movie file is found in your game folder.
+- Battle menu size (Text and Menus > Battle menus): shrink the command list and help bar in battle down to 75% in 5% steps, resize the party's names and health on their own, and set the text size (also down to 75%) on top. The text follows the size of the menus. The target boxes (foe names, Back, Player/Enemy, All, Group) follow the size too, and so do the spell list, the item list and the equipment screens (the hands and weapons, and the weapons-in-hand screen): their windows shrink toward the middle of the screen with the text, icons, numbers, scroll arrows and hand. "Reduce clutter in battle" (same page) takes away the target name lists: the hand stands on the foe, with its name in the help bar at the top, or on the hero's line of the party menu. On by default; switch it off to get the name lists back.
+
+**Changed**
+- The battle item list now has four rows in the room of its three, like the magic list, so more items show at once. Its scroll arrows are smaller and sit inside the box (the top one used to float above it), and the hand stands on the item's icon, not over its name.
+- The Back button in battle is a fifth smaller.
+- The battle equipment screen and the weapons-in-hand screen (R. Hand / L. Hand) are tidied: everything is moved right so the hand no longer covers the names, and the weapon list's lines line up with its rows, with the centre line running the full height.
+
+**Fixed**
+- Fixed the cursor in the battle magic list: scrolling up from the top wrapped to the last page but left the hand on that page's first row instead of its last. The list now has four rows in the same space as its three, so the last page ends on level 8 (it stopped at level 7 before, with level 8 never on show).
+- Fixed scrolling up in the battle item list opening an empty equipment screen when the hero has nothing in hand.
+- Fixed the game opening behind Steam Big Picture mode when it is added to Steam as a non-Steam game, so you had to Alt+Tab to it. The game now comes to the front when it starts, and a black console window no longer opens before it.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.10 - OpenFF3 Enhanced (2026-11-25)
 
 **Added**
-- Damage popups (Font / Dialogue / Damage popups > Damage popups), contributed by zerafidev. Battle damage, healing, hit counts, critical hits and misses are drawn as outlined text in the style of the NES and FF6 games, each with its own animation. Style has three choices: Original (upscaled), the default, which moves the same way as the game's own numbers but in our sharper font; Bouncy, with each digit hopping in turn; and Original, the game's own numbers. Except for Original, you can choose the number colour (red, white or gold), the size (small, medium or large) and the shadow (off, light, medium or heavy).
-- Battle descriptions (Font / Dialogue / Damage popups > Battle descriptions): choose Off, Minimal or On for the descriptions shown at the top of the battle screen for commands, spells, songs and items. Minimal skips the obvious commands (Attack, Guard, Magic, Steal, Summon and so on) and keeps the rest. On by default.
+- Damage popups (Text and Menus > Damage popups), contributed by zerafidev. Battle damage, healing, hit counts, critical hits and misses are drawn as outlined text in the style of the NES and FF6 games, each with its own animation. Style has three choices: Original (upscaled), the default, which moves the same way as the game's own numbers but in our sharper font; Bouncy, with each digit hopping in turn; and Original, the game's own numbers. Except for Original, you can choose the number colour (red, white or gold), the size (small, medium or large) and the shadow (off, light, medium or heavy).
+- Battle descriptions (Text and Menus > Battle descriptions): choose Off, Minimal or On for the descriptions shown at the top of the battle screen for commands, spells, songs and items. Minimal skips the obvious commands (Attack, Guard, Magic, Steal, Summon and so on) and keeps the rest. On by default.
 
 **Fixed**
 - Fixed multi-language support: The game was supposed to match the language of your vanilla FF3 3D install but it wasn't. To change the language, right click on FF3 3D in Steam and then click properties and select a language. Steam will then download the language files. OpenFF3 can then use them to display in that language. Unfortunately this only applies to in-game menus and dialogue. The OpenFF3 menus will still be in English. Players wishing to play in Japanese, Chinese or Korean may need to provide their own fonts to display correctly
 - Fixed Sort in the Item menu and the Magic menu tabs not being reachable with a gamepad.
 - Fixed the hand pointer in battle sitting slightly too far to the right of party members. It now points at the character.
 - Fixed backing out of choosing a target for a spell, song or item taking you back to the main battle menu. It now takes you back to the list you chose from, with the cursor on the spell, song or item you picked.
-- Fixed the game opening behind Steam Big Picture mode, so you had to Alt+Tab to it. The game now asks for the front when it starts, and a black console window no longer opens before it.
 
 **Changed**
 - In the pause menu, the left or right arrow of a setting is greyed out when there is no further value that way (for example the shadow at Heavy, or the dialogue box size at its limit).
@@ -81,7 +98,7 @@ repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. 
 - The Speed setting no longer speeds up the title menu. It now applies only once you start a new game or load a save.
 
 **Added**
-- Quality of life: **Critical hit flash**. Switch it off to stop the white screen flash on critical hits (on by default, as the game plays).
+- Quality of Life: **Critical hit flash**. Switch it off to stop the white screen flash on critical hits (on by default, as the game plays).
 - Debug overlay (F1) in an FF3 battle: the status test keys (Insert chooses a status, Home a party member, End inflicts it, Delete clears it) for seeing how each status looks, and a new PageUp that makes the party's hits always critical. They only work while the overlay is up and never run in a normal game.
 
 ## 0.9.3 - OpenFF3 Enhanced (2026-11-23)
@@ -128,7 +145,7 @@ Saves, settings and achievements live in a `userdata` folder beside the exe, so 
 
 **Added**
 - Turn-based battles: An FFX style battle system where each combatant acts one by one at their turn in speed order. The camera stays on the command view. Enabled through the quality of life options menu. Can be enabled and disabled at any time.
-- Customisable Dungeon Minimap (Quality of life > Minimap): a toggleable minimap in the top right corner of the screen. Can be turned on or off. Can alter the size and zoom. Can set whether to display unopened chests. Can be set to an FF4 3D style "Fog of War" map that you need to uncover as you walk, or a pre-completed map. You can also set how much of the map your character will uncover as they walk if you are finding it too narrow. Be wary though that higher settings (and minimap use in general) may spoil the location of hidden passages.
+- Customisable Dungeon Minimap (Quality of Life > Minimap): a toggleable minimap in the top right corner of the screen. Can be turned on or off. Can alter the size and zoom. Can set whether to display unopened chests. Can be set to an FF4 3D style "Fog of War" map that you need to uncover as you walk, or a pre-completed map. You can also set how much of the map your character will uncover as they walk if you are finding it too narrow. Be wary though that higher settings (and minimap use in general) may spoil the location of hidden passages.
 - Faster battles: the game is faster to display spoils at the end of battle. End of battle notifications can be skipped through more quickly by pressing cross/B/A.
 - Battle windows and OpenFF start menu redesigned to be more aesthetically pleasing and coherent with the in-game menu.
 - The OpenFF3 Enhanced menu - brought up by pressing esc on keyboard or start on the controller. Pauses the game in the background while open.
@@ -139,7 +156,7 @@ Saves, settings and achievements live in a `userdata` folder beside the exe, so 
 - the company logos are skipped. The launch argument `--show-logos` restores them.
 - Indicator that displays what cheats/modifiers you are currently using in the top left corner now has an additional option to just display the game speed and encounter rate when they are above or below the default setting (most frequent modifier players are likely to want to see constantly). Options are now: Off, Speed and encounters, All.
 - Option to change controller icons in the OpenFF3 Enhanced menu (Auto, PS, Xbox, Switch, Keyboard).
-- "Report a bug / Request a feature" in the OpenFF3 Enhanced menu: opens the project's GitHub page, where bug reports and feature requests have their own forms.
+- "Report a Bug / Request a Feature" in the OpenFF3 Enhanced menu: opens the project's GitHub page, where bug reports and feature requests have their own forms.
 - Option to reset the game back to the opening menu in the Open FF3 Enhanced menu. Useful for if you want to load a save (attempts to create a "load save" option from the Open FF3 Enhanced menu have led to lots of bugs).
 - Better PlayStation icons
 - Fonts: fonts have been divided into 4 categories  `menus`, `dialogue`, `names` and `title`. A `fonts` folder now appears in the games main directory beside the .exe with these 4 folders - drop a font in and it is used. If dialogue is too big or too small, put a text file called scale.txt in the dialogue folder with a number from 0.5 to 1.5: 0.88 is the default.
@@ -162,4 +179,4 @@ Saves, settings and achievements live in a `userdata` folder beside the exe, so 
 - Select on the gamepad now changes the party leader on the field, as on the DS. The game's code for it was never connected.
 - Controller configuration (was "Pad buttons", Settings menu): lists every function with its button (Start, Select, Y for the map, auto battle, speed up...) so you can see what is assigned and rebind it. Auto battle (R3) was missing from it.
 - The Equipment menu on a gamepad: Previously it was impossible to select "unequip" from the equipment menu on a controller as pressing circle would back you out into the main menu. Pressing circle now backs up to the command menu above where "Remove" and "Remove all" can now be selected.
-- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.
+- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.

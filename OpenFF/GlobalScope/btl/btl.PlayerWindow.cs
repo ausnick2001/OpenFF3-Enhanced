@@ -195,7 +195,7 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplaySpeed(byte.MaxValue);
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
-						if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.NameFace.Style;   // PORT: the heroes' names in the speaker-name face
+						if (!OpenFF.Client.GameProfile.IsFf4) dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyWith(OpenFF.Client.NameFace.Style);   // PORT: the heroes' names in the speaker-name face, at the size the options chose
 					}
 				}
 			}
@@ -235,12 +235,13 @@ internal static partial class GlobalScope
 						sprintf(out after, "%s", after);
 						ushort num = 0;
 						sprintf(out arg, "%s", after);
-						num = (ushort)(-getStringWidth(after, 12));
+						num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.PartyLetters));
 						HpMngId_[i] = dgs.msg.CMessageSys.getInstance().Main().createMessage(arg, (ushort)(PlayerHpPosition(i).vx + num), (ushort)PlayerHpPosition(i).vy, dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 						dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(HpMngId_[i]);
 						dGSMessage.setDisplaySpeed(byte.MaxValue);
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
+						dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
 					}
 				}
 			}
@@ -279,12 +280,13 @@ internal static partial class GlobalScope
 					sprintf(out after, "%s", after);
 					ushort num = 0;
 					sprintf(out arg, "%s", after);
-					num = (ushort)(-getStringWidth(after, 12));
+					num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.PartyLetters));
 					HpMngId_[i] = dgs.msg.CMessageSys.getInstance().Main().createMessage(arg, (ushort)(PlayerHpPosition(i).vx + num), (ushort)PlayerHpPosition(i).vy, dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 					dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(HpMngId_[i]);
 					dGSMessage.setDisplaySpeed(byte.MaxValue);
 					dGSMessage.setDisplayWait(0);
 					dGSMessage.setShadow(b: true);
+					dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
 					changeColor(i);
 				}
 			}
@@ -306,6 +308,7 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
 						dGSMessage.setStyle(520u);
+						dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
 					}
 				}
 			}

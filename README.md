@@ -44,7 +44,7 @@ I wanted to keep the changes as modular and adjustable as possible with the emph
 
 
 
-- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Switch it on or off at any time in OpenFF3s Quality of life menu (start on the controller or esc on keyboard).
+- **Turn-based battles.** An FFX-style system: each character acts one at a time, in speed order, with the camera staying on the command view. No more having to put the entire party's commands in at once to act. Enabled through the quality of life options menu. Switch it on or off at any time in OpenFF3s Quality of Life menu (start on the controller or esc on keyboard).
 - **Faster battles.** The spoils and exp messages appear sooner, and can be skipped quickly with Cross/B/A.
 - **Encounter rate modifier.** 0x (none), 0.5x, 1x, 2x or 4x. Too many random battles? Halve them and double the EXP and job points.
 - **More aesthetic menu design** The battle menu and OpenFF3 Enhanced menu have been redesigned to be more cohesive with the style of the party menu and dialogue boxes.
@@ -58,9 +58,9 @@ I wanted to keep the changes as modular and adjustable as possible with the emph
 
 ![Before and after](Docs/Images/shot-status-screen.jpg)
 
-- **The OpenFF3 Enhanced menu.** Press **Esc** (or **Start** on a controller). It pauses the game, and has Settings, Quality of life, Minimap, Report a bug / Request a feature (opens GitHub), Reset (back to the title screen) and Exit.
+- **The OpenFF3 Enhanced menu.** Press **Esc** (or **Start** on a controller). It pauses the game, and has Settings, Quality of Life, Minimap, Report a Bug / Request a Feature (opens GitHub), Reset (back to the title screen) and Exit.
 - **Aesthetic consistency** The menu and battle windows are restyled to match FF3's own party menu, hand cursor and all.
-- **Quality of life options** Game speed, random encounter multipliers, battle EXP and job EXP multipliers, save anywhere, no job change penalty, and an indicator in the top-left corner showing which of these are on.
+- **Quality of Life options** Game speed, random encounter multipliers, battle EXP and job EXP multipliers, save anywhere, no job change penalty, and an indicator in the top-left corner showing which of these are on.
 - **Party and status screens** now show each hero's job level, and how many job points are left until the next level.
 - **Controller icons** for PlayStation, Xbox, Switch or keyboard (Start/Esc > Settings > Button icons). Game ships with enhanced playstation icons.
 
@@ -123,19 +123,22 @@ The `fonts` folder next to `OpenFF3 Enhanced.exe` has a folder for each kind of 
 
 ### Dialogue and text size
 
-Open the menu with **Esc** (**Start** on a pad) and choose **Font / Dialogue**. There you can change, and see the result straight away:
+Open the menu with **Esc** (**Start** on a pad) and choose **Text and Menus**. There you can change, and see the result straight away:
 
 - **Dialogue box size** (60% to 100%): a smaller box takes up less of the screen. The text moves with it.
 - **Dialogue text size** (70% to 130%): the size of the words said.
 - **Speaker name size** (70% to 130%): the size of the name above them.
 - **Dialogue shadow** and **Menu text shadow**: how dark the shadow behind the text is: Off, Light, Medium (the default) or Heavy. Each is set on its own. Battle text and the story scenes keep their own look.
+- **Battle menus**: shrink the battle command list and help bar (**Menu size**), the party's names and health (**Party menu size**) and the text in them (**Text size**), each down to 75% in 5% steps. Changing these during a battle looks wrong until the next battle starts. The boxes for choosing a target, the spell and item lists and the equipment screens shrink with them. **Reduce clutter in battle** takes away the lists of names when choosing a target: the hand stands on the enemy (its name shows in the bar at the top) or on the hero's line of the party menu. It is on by default; switch it off to get the lists back.
+- **Battle descriptions**: Off, Minimal or On (the default). These are the descriptions at the top of the battle screen for commands, spells, songs and items. Minimal skips the obvious commands (Attack, Guard, Magic and so on) and keeps the rest.
+- **Damage popups**: opens a page for how damage, healing, hit counts, critical hits and misses appear in battle. **Style** is Original (the game's own numbers), Original (upscaled), the default, which moves the same way in a sharper font, or Bouncy, with each digit hopping in turn. For the other styles you can also pick the colour (red, white or gold), the size (small, medium or large) and the shadow (off, light, medium or heavy).
 
 Prologue and cutscene text isn't affected by these, so the story scenes always look as they were meant to.
 
 
 ## Controls
 
-Arrow keys move, **Enter** confirms, **Backspace** cancels, **Esc** opens the OpenFF3 Enhanced menu. Holding **Tab** fast-forwards. The Quality of life menu also has a game speed option, and **F8** / **Shift+F8** change it while you play.
+Arrow keys move, **Enter** confirms, **Backspace** cancels, **Esc** opens the OpenFF3 Enhanced menu. Holding **Tab** fast-forwards. The Quality of Life menu also has a game speed option, and **F8** / **Shift+F8** change it while you play.
 Gamepads work too, with rebindable buttons (Settings > Controller configuration). L3 toggles the turbo, R3 toggles autobattle, Y (or **M** on the keyboard) opens the world map on the overworld, and Select changes the party leader. Pressing start brings up the OpenFF3 Enhanced menu where you can rebind the controls to your liking. The full list is in [Controls](Docs/Controls.md).
 
 

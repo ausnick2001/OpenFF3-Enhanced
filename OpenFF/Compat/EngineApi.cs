@@ -68,6 +68,7 @@ namespace OpenFF.Client
 			if (GameProfile.IsFf4) OpenFF.Game.Services.Register(new Ff4Ride());
 			// FF4's logos and title are parts of the game's loop; what they show is drawn here (Ff4Title).
 			if (GameProfile.IsFf4) OpenFF.Game.Services.Register(new Ff4Title.Screen());
+			else OpenFF.Game.Services.Register(new OpeningMovie());
 			if (GameProfile.IsFf4) OpenFF.Game.Services.Register(new Ff4Dialogue());   // before the skip question, which draws over it
 			if (GameProfile.IsFf4) OpenFF.Game.Services.Register(new SceneSkip());
 			// ... and the OpenFF battle for FF4 (Ff4Battle), on the unified party and monsters.

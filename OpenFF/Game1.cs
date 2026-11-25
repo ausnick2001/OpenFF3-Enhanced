@@ -94,6 +94,7 @@ public class Game1 : Game
 		// the rest of the game listens to. See Compat/DesktopInput.cs.
 		// Started from Steam's Big Picture mode the game can be left behind it: ask for the front for a few seconds.
 		OpenFF.Client.WindowFocus.Update(this);
+		OpenFF.Client.TestBard.Update();
 
 		if (!Guide.IsVisible)
 		{

@@ -54,6 +54,8 @@ namespace OpenFF.Content
 		public float LetterSpacing;
 		/// <summary>PORT: the glyph size relative to the text's own (1 = as asked); not a style-sheet property.</summary>
 		public float Scale = 1f;
+		/// <summary>PORT: a centred or right-aligned text is placed by its width at this Scale, not at the face's own (the battle menus' sized text).</summary>
+		public bool AlignScaled;
 		/// <summary>Menu units from one line to the next, or a factor of the size (LineFactor); null for the game's own.</summary>
 		public float? LineHeight;
 		public bool LineFactor;

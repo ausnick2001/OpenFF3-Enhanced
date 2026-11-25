@@ -573,8 +573,12 @@ internal static partial class GlobalScope
 				SetAlpha((byte)m_Alpha);
 			}
 
-			public void SetBar(int type)
+			/// <summary>PORT: how many rows the bar's lines are laid for (three in Steam's windows; the battle magic list has four in the same room).</summary>
+			private int m_BarRows = 3;
+
+			public void SetBar(int type, int rows = 3)
 			{
+				m_BarRows = rows;
 				if (m_pBar == null)
 				{
 					m_pBar = new sys2d.Sprite3d();
@@ -606,10 +610,13 @@ internal static partial class GlobalScope
 				{
 					return;
 				}
-				m_pBar.SetScaleF(FX32_CONST((float)size.w / 480f), FX32_CONST((float)size.h / 144f));
+				// Four rows in the room of three: the lines come closer, 24 apart in the 96 of the magic list's window (the picture's lines are 48 apart, 16 below its middle).
+				// For any number of rows: the lines are one row's height apart, the first at the end of the first row.
+				float rows = Math.Max(1, m_BarRows);
+				m_pBar.SetScaleF(FX32_CONST((float)size.w / 480f), FX32_CONST((float)size.h / (48f * rows)));
 				NNSG2dFVec2 position = new NNSG2dFVec2();
 				position.x = FX32_CONST((float)ul.vx + (float)size.w * 0.5f);
-				position.y = FX32_CONST((float)ul.vy + (float)size.h * 2f / 9f);
+				position.y = FX32_CONST((float)ul.vy + (float)size.h * 2f / (3f * rows));
 				m_pBar.SetPosition(position);
 			}
 

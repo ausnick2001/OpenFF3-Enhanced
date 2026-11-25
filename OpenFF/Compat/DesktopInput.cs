@@ -459,7 +459,7 @@ namespace OpenFF.Client
 
 		/// <summary>True while something other than the game owns input: a text field, the mod list, a mod that captured it (Game.Input.Capture), or the debug overlay's free camera flying.</summary>
 		private static bool IsTyping =>
-			(TextEntry.Instance != null && TextEntry.Instance.IsActive) || ModListScreen.IsOpen || PauseMenu.IsOpen || AbilitiesMenu.IsOpen || UpdateScreen.IsOpen || GameFilesScreen.IsOpen || TexturesScreen.IsOpen || EngineInput.Captured || FreeCamera.Active || SceneSkip.PromptOpen;
+			(TextEntry.Instance != null && TextEntry.Instance.IsActive) || ModListScreen.IsOpen || PauseMenu.IsOpen || AbilitiesMenu.IsOpen || UpdateScreen.IsOpen || GameFilesScreen.IsOpen || TexturesScreen.IsOpen || EngineInput.Captured || FreeCamera.Active || SceneSkip.PromptOpen || OpeningMovie.Hiding;
 
 		private static void UpdateMouse()
 		{

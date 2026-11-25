@@ -119,6 +119,14 @@ namespace OpenFF.Client
 			[JsonPropertyName("dialogueSize")] public double DialogueSize { get; set; } = 1;
 			/// <summary>The said lines' size on top of the window's: 0.7 to 1.3, 1 as set.</summary>
 			[JsonPropertyName("dialogueTextSize")] public double DialogueTextSize { get; set; } = 1;
+			/// <summary>The battle menus (command list, Run Away, party lines, help bar) with their text, together (BattleSizing): 0.8 to 1.2, 1 as the game draws them.</summary>
+			[JsonPropertyName("battleBoxSize")] public double BattleBoxSize { get; set; } = 1;
+			/// <summary>The battle menus' text size on top of the boxes': 0.85 to 1.15, 1 as set.</summary>
+			[JsonPropertyName("battleTextSize")] public double BattleTextSize { get; set; } = 1;
+			/// <summary>The party's lines (names, HP, bands) on their own: 0.75 to 1, 1 as the game draws them. Its text follows it, with the text size on top.</summary>
+			[JsonPropertyName("battlePartySize")] public double BattlePartySize { get; set; } = 1;
+			/// <summary>Reduce clutter in battle: choosing a target has no list of names: the hand stands on the foe (its name in the help bar at the top) or on the hero's line of the party menu. On by default (switch it off to get the game's name lists back).</summary>
+			[JsonPropertyName("battleDeclutter")] public bool BattleDeclutter { get; set; } = true;
 			/// <summary>The speaker's name size on top of the window's: 0.7 to 1.3, 1 as set. The prologue's and cutscenes' centred lines are not touched by any of these.</summary>
 			[JsonPropertyName("nameSize")] public double NameSize { get; set; } = 1;
 			/// <summary>The drop shadow behind the dialogue's lines (FF3); false draws them plain. Where the game's own script turns a message's shadow off it stays off.</summary>

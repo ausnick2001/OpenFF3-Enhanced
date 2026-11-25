@@ -99,9 +99,38 @@ namespace OpenFF.Client
 		// ---- what the game's code asks ----
 
 		/// <summary>Command row i (0..2), or the Run Away window (3).</summary>
-		public static Rect CommandRow(int i) => i < CmdRows
+		public static Rect CommandRow(int i) => BattleSizing.List(RawRow(i));
+
+		/// <summary>A row as the layout has it: the cmd rows, and Run Away's window as the last (Steam's list has five rows).</summary>
+		private static Rect RawRow(int i) => i < CmdRows
 			? Frame("cmd" + i, GlobalScope.BATTLE_COMMAND_X(), GlobalScope.BATTLE_COMMAND_Y() + (i + 1) * 40, 128, 40)
 			: Frame("run_away", 400, 0, 80, 40);
+
+		/// <summary>The list's bottom-left corner in the layout's own numbers: where BattleSizing scales its rows about.</summary>
+		public static (float X, float Bottom) ListAnchor()
+		{
+			int left = int.MaxValue, bottom = int.MinValue;
+			for (int i = 0; i <= CmdRows; i++)
+			{
+				Rect r = RawRow(i);
+				left = Math.Min(left, r.X);
+				bottom = Math.Max(bottom, r.Y + r.Height);
+			}
+			return (left, bottom);
+		}
+
+		/// <summary>The party's bottom-right corner in the layout's own numbers: where its lines scale about.</summary>
+		public static (float Right, float Bottom) PartyAnchor()
+		{
+			int right = int.MinValue, bottom = int.MinValue;
+			for (int i = 0; i < 4; i++)
+			{
+				Rect r = Frame("player" + i + "/gauge", 282, GlobalScope.BATTLE_PLAYER_Y() - 2 + i * 16, 194, 16);
+				right = Math.Max(right, r.X + r.Width);
+				bottom = Math.Max(bottom, r.Y + r.Height);
+			}
+			return (right, bottom);
+		}
 
 		/// <summary>How many of the list's windows are 'cmd' rows: the last is Run Away's (Steam's list has five rows, the phone's four windows).</summary>
 		private static int CmdRows => GlobalScope.pl.BATTLE_COMMAND_MAX - 1;
@@ -109,46 +138,61 @@ namespace OpenFF.Client
 		/// <summary>Where a row's name sits, relative to the row.</summary>
 		public static (int X, int Y) CommandTextOffset(int i)
 		{
-			Rect row = CommandRow(i);
+			// The offset in the game's own numbers, scaled with the row and kept level with its middle as the face changes size.
+			Rect row = RawRow(i);
 			Rect text = Frame((i < CmdRows ? "cmd" + i : "run_away") + "/text");
-			return text.Found ? (text.X - row.X, text.Y - row.Y) : (8, 14);
+			(int ox, int oy) = text.Found ? (text.X - row.X, text.Y - row.Y) : (8, 14);
+			return ((int)Math.Round(ox * BattleSizing.Box), (int)Math.Round(oy * BattleSizing.Box) - BattleSizing.Level);
 		}
 
 		/// <summary>Where the hand points in a row, absolute.</summary>
 		public static (int X, int Y) CommandCursor(int i)
 		{
-			Rect row = CommandRow(i);
+			Rect row = RawRow(i);
 			Rect cursor = Frame((i < CmdRows ? "cmd" + i : "run_away") + "/cursor");
-			if (cursor.Found) return (cursor.X, cursor.Y);
-			return i < CmdRows ? (row.X + 8, row.Y + 20) : (408, 20);
+			(int cx, int cy) = cursor.Found ? (cursor.X, cursor.Y) : i < CmdRows ? (row.X + 8, row.Y + 20) : (408, 20);
+			// The hand does not shrink with the row, so it sits further left the smaller the list is, clear of the name.
+			(int hx, int hy) = BattleSizing.ListPoint(cx, cy);
+			return (hx - BattleSizing.HandBack, hy);
 		}
 
 		/// <summary>The scroll triangle: 0 the up one, 1 the down one.</summary>
 		public static (int X, int Y) Arrow(int i)
 		{
 			Rect a = Frame(i == 0 ? "arrow_up" : "arrow_down", GlobalScope.BATTLE_COMMAND_X() + 128, GlobalScope.BATTLE_COMMAND_Y() + (i == 0 ? 38 : 98), 16, 16);
-			return (a.X, a.Y);
+			return BattleSizing.ListPoint(a.X, a.Y);
 		}
 
 		/// <summary>A party line's name position.</summary>
 		public static (int X, int Y) PlayerName(int i)
 		{
 			Rect r = Frame("player" + i + "/name", 284, GlobalScope.BATTLE_PLAYER_Y() + i * 16, 136, 16);
-			return (r.X, r.Y);
+			return BattleSizing.PartyPoint(r.X, r.Y);
+		}
+
+		/// <summary>Where the hand stands to point at a hero's line of the party menu: its fingertip a gap before the name, level with the line's middle. back is how far the hand's picture reaches left of its point.</summary>
+		public static (int X, int Y) PartyHand(int i, int back)
+		{
+			Rect r = BattleSizing.Party(Frame("player" + i + "/name", 284, GlobalScope.BATTLE_PLAYER_Y() + i * 16, 136, 16));
+			// The letters are 12 units high from the line's top, their middle 6 down (less as the line shrinks), and the hand's fingertip rides about 2 units
+			// below the point it is given at any size (the hand does not shrink): so the point is the letters' middle less 2.
+			return (r.X - back, r.Y + (int)Math.Round(6f * BattleSizing.PartyBox - 2f));
 		}
 
 		/// <summary>A party line's HP position (the game right-aligns the number to it).</summary>
 		public static (int X, int Y) PlayerHp(int i)
 		{
 			Rect r = Frame("player" + i + "/hp", 424, GlobalScope.BATTLE_PLAYER_Y() + i * 16, 52, 16);
-			return (r.X, r.Y);
+			return BattleSizing.PartyPoint(r.X, r.Y);
 		}
 
 		/// <summary>The help line's window: centre and size, the wide or the small one.</summary>
-		public static (int CX, int CY, int W, int H) Help(bool small)
+		public static (int CX, int CY, int W, int H) Help(bool small, int width = 0)
 		{
 			Rect r = small ? Frame("help_small", 84, 4, 392, 24) : Frame("help", 4, 4, 472, 24);
-			return (r.X + r.Width / 2, r.Y + r.Height / 2, r.Width, r.Height);
+			// A set width is a short bar in the middle of the screen (a foe's name), clear of the buttons along the top.
+			if (width > 0) return BattleSizing.Help((240, r.Y + r.Height / 2, width, r.Height));
+			return BattleSizing.Help((r.X + r.Width / 2, r.Y + r.Height / 2, r.Width, r.Height));
 		}
 
 		// ---- the field's windows (field_hud in WorldDefine.xbn) ----
@@ -196,7 +240,7 @@ namespace OpenFF.Client
 		/// <summary>A party line's bar: corner 0 the top-left, 1 the bottom-right.</summary>
 		public static (int X, int Y) PlayerGauge(int i, int corner)
 		{
-			Rect r = Frame("player" + i + "/gauge", 282, GlobalScope.BATTLE_PLAYER_Y() - 2 + i * 16, 194, 16);
+			Rect r = BattleSizing.Party(Frame("player" + i + "/gauge", 282, GlobalScope.BATTLE_PLAYER_Y() - 2 + i * 16, 194, 16));
 			return corner == 0 ? (r.X, r.Y) : (r.X + r.Width, r.Y + r.Height);
 		}
 	}

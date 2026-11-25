@@ -218,6 +218,7 @@ internal static partial class GlobalScope
 				dGSMessage.setDisplayWait(0);
 				dGSMessage.setStyle(520u);
 				dGSMessage.setMessageColor(dgs.TXT_COLOR.TXT_COLOR_WHITE);
+				dGSMessage.Lettering = OpenFF.Client.BattleSizing.Lettering();   // PORT: at the size the options chose
 			}
 
 			public void releaseCommandMessage(int i)

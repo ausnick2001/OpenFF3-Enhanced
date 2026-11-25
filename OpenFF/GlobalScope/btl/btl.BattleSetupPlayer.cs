@@ -270,8 +270,10 @@ internal static partial class GlobalScope
 				targetWindow_ = B.targetWindow();
 				for (int i = 0; i < 4; i++)
 				{
-					ds.Vector2<short> position = new ds.Vector2<short>((short)BATTLE_TARGET_X(), (short)(BATTLE_TARGET_Y() + i * 40));
-					ds.Vector2<short> size = new ds.Vector2<short>(144, 40);
+					(short tx, short ty, short tw, short th) = OpenFF.Client.BattleSizing.TargetRow((short)BATTLE_TARGET_X(), (short)(BATTLE_TARGET_Y() + i * 40), 144, 40);   // PORT: at the size the options give
+					ds.Vector2<short> position = new ds.Vector2<short>(tx, ty);
+					ds.Vector2<short> size = new ds.Vector2<short>(tw, th);
+					targetWindow_[i].Names = true;
 					targetWindow_[i].createTargetWindow(position, size);
 				}
 				ds.Vector2<short>[] array = new ds.Vector2<short>[4]
@@ -282,11 +284,19 @@ internal static partial class GlobalScope
 					new ds.Vector2<short>(240, 0)
 				};
 				ds.Vector2<short> size2 = new ds.Vector2<short>(80, 40);
+				ds.Vector2<short> backSize = size2;   // PORT: Back is a little smaller than the others
+				for (int c = 0; c < array.Length; c++)
+				{
+					(short cx, short cy, short cw, short ch) = OpenFF.Client.BattleSizing.TargetCorner(array[c].vx, array[c].vy, 80, 40);
+					array[c] = new ds.Vector2<short>(cx, cy);
+					if (c == 0) backSize = new ds.Vector2<short>(cw, ch); else size2 = new ds.Vector2<short>(cw, ch);
+				}
+				for (int b = 4; b < 8; b++) targetWindow_[b].Button = true;
 				cancelWindow_ = targetWindow_[4];
 				changeWindow_ = targetWindow_[5];
 				allWindow_ = targetWindow_[6];
 				groupWindow_ = targetWindow_[7];
-				cancelWindow_.createTargetWindow(array[0], size2);
+				cancelWindow_.createTargetWindow(array[0], backSize);
 				changeWindow_.createTargetWindow(array[1], size2);
 				allWindow_.createTargetWindow(array[2], size2);
 				groupWindow_.createTargetWindow(array[3], size2);
@@ -1698,7 +1708,7 @@ internal static partial class GlobalScope
 							Battle2DManager.instance().helpWindow().createHelpWindow(magicParameter.captionId(), 0, 1);
 						}
 						Battle2DManager.instance().helpWindow().setMsdHandle(1);
-						menu.MenuManager.getSingleton().GetMenuWindowObj()[windowId_].GetWindowHandle().SetBar(2);
+						menu.MenuManager.getSingleton().GetMenuWindowObj()[windowId_].GetWindowHandle().SetBar(2, OpenFF.Client.BattleMagicRows.Active ? 4 : 3);
 						windowState_ = WINDOW_STATE.WINDOW_CREATE;
 					}
 					break;

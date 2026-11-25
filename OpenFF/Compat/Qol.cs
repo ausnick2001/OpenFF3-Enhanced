@@ -62,6 +62,9 @@ namespace OpenFF.Client
 		/// <summary>The battle descriptions at the top of the screen: 0 off, 1 minimal, 2 on.</summary>
 		public static int BattleDescriptions => S.BattleDescriptions;
 
+		/// <summary>Reduce clutter in battle: no target name lists, the hand points at the foe or at the hero's line of the party menu.</summary>
+		public static bool BattleDeclutter => S.BattleDeclutter;
+
 		/// <summary>Whether battle damage, hit, critical and miss popups use the FF3-NES / FF6-style staggered bounce.</summary>
 		public static bool BouncyDamagePopups => S.BouncyDamagePopups;
 

@@ -11,6 +11,7 @@ choice in `%LocalAppData%\OpenFF\launch.json`. These switches change that for on
 | `--content=<dir>` | Use an install that is not where Steam or GOG usually puts it |
 | `--map=<id> --pos=x,y,z --rot=<deg>` | Start on any map of either game, skipping the title (`d01_05`, `t01_00`, `f00`, `e01_00`) |
 | `--party=4:10 --gil=500 --load=<slot>` | FF4 test starts: members by type and level, gil, a saved slot |
+| `--test-bard` | FF3 test start: once the world is up, the first hero becomes a Bard with a harp in hand, to try the battle's Song list (use with `--save-dir`) |
 | `--drive=<file>` | Play a scripted key drive from inside the game (see [Drives](Drives/)) |
 | `--nomods` | Load no mod code |
 | `--no-achievements` | Leave Steam alone for this run: no achievements, and Steam doesn't show you in the game (`"achievements": false` in settings.json turns them off for good) |

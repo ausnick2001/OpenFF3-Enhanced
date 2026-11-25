@@ -230,11 +230,11 @@ internal static partial class GlobalScope
 							int num5 = 0;
 							if (medget.height() > 0)
 							{
-								num5 = (medget.height() - 12) / 2;
+								num5 = LineLift(medget);
 							}
 							if (MenuManager.getSingleton().battleMode())
 							{
-								pMsg[num4].setPosition((short)(medget.x() + BattleNameInset), (short)(medget.y() + num5), erase: true);
+								pMsg[num4].setPosition((short)(medget.x() + (int)Math.Round(BattleNameInset * RowK)), (short)(medget.y() + num5), erase: true);
 							}
 							else
 							{
@@ -242,6 +242,7 @@ internal static partial class GlobalScope
 							}
 							pMsg[num4].setDisplaySpeed(byte.MaxValue);
 							pMsg[num4].setDisplayWait(0);
+							Letter(pMsg[num4]);
 							CreateItemTypeIcon(dGSMessageManager, msfHandle, medget.x(), medget.y() + num5 + -2, num3, num4);
 							SET_MSG_IDX(medget, num4);
 							CreateItemNumMessage(num2, medget, num4);
@@ -535,6 +536,25 @@ internal static partial class GlobalScope
 				UpdateMsgColor(0);
 			}
 
+			/// <summary>PORT: the battle item list's four rows in the room of three: its letters and icons a quarter smaller (1 elsewhere).</summary>
+			private float RowK
+			{
+				get
+				{
+					if (!(OpenFF.Client.BattleMagicRows.ItemActive || OpenFF.Client.BattleMagicRows.EquipActive) || !OpenFF.Client.SteamCells.SteamFf3 || ownerMedget == null || !MenuManager.getSingleton().battleMode()) return 1f;
+					int cells = 0;
+					for (Medget m = ownerMedget.childNode(); m != null; m = m.nextSibling()) cells++;
+					return cells == 8 ? OpenFF.Client.BattleMagicRows.K : (cells == 4 && OpenFF.Client.BattleMagicRows.EquipActive) ? OpenFF.Client.BattleMagicRows.ListLetters : 1f;
+				}
+			}
+
+			private int LineLift(Medget m) => (int)((m.height() - 12f * RowK) / 2f);
+
+			private void Letter(dgs.DGSMessage m)
+			{
+				if (m != null && RowK != 1f) m.Lettering = OpenFF.Client.BattleSizing.Scaled(RowK);
+			}
+
 			public int CheckEnableMessageNo()
 			{
 				for (int i = 0; i < 32; i++)
@@ -682,6 +702,13 @@ internal static partial class GlobalScope
 				}
 				if (MenuManager.getSingleton().battleMode())
 				{
+					if (RowK != 1f)
+					{
+						NNSG2dFVec2 sc = mIType[indexNo].mgIcon3d.GetScale();
+						mIType[indexNo].mgIcon3d.SetScaleF((int)(sc.x * RowK), (int)(sc.y * RowK));
+						mIType[indexNo].mgIcon3d.SetPositionI(mIType[indexNo].pos.vx - 3, mIType[indexNo].pos.vy - 1);
+					}
+					else
 					mIType[indexNo].mgIcon3d.SetPositionI(mIType[indexNo].pos.vx - 4, mIType[indexNo].pos.vy);
 				}
 				else
@@ -702,13 +729,14 @@ internal static partial class GlobalScope
 				int num = 0;
 				if (pMy.height() > 0)
 				{
-					num = (pMy.height() - 12) / 2;
+					num = LineLift(pMy);
 				}
 				ds.Vector2<short> vector = new ds.Vector2<short>();
 				pMsgItemNum[enableNo].getTextSize(vector);
 				if (MenuManager.getSingleton().battleMode())
 				{
-					pMsgItemNum[enableNo].setPosition((short)(pMy.x() + 12 + 160 - vector.vx), (short)(pMy.y() + num), erase: true);
+					pMsgItemNum[enableNo].setPosition((short)(pMy.x() + (RowK != 1f ? OpenFF.Client.BattleMagicRows.Sized(172) : 172) - (int)Math.Round(vector.vx * RowK)), (short)(pMy.y() + num), erase: true);
+					Letter(pMsgItemNum[enableNo]);
 				}
 				else
 				{
@@ -733,6 +761,7 @@ internal static partial class GlobalScope
 					if (num != 0)
 					{
 						sb.sbCreate();
+						if (RowK != 1f) sb.sbSetScale(OpenFF.Client.BattleMagicRows.ItemActive ? OpenFF.Client.BattleMagicRows.ArrowK : OpenFF.Client.BattleMagicRows.ListBox, OpenFF.Client.BattleMagicRows.Sized(OpenFF.Client.BattleMagicRows.ArrowInset));
 						sb.sbSetPosition((short)(M.x() + M.width() - (ScrollBar.PARTS_W >> 12) - SCROLL_BAR_MARGIN), M.y());
 						sb.sbSetHeight(M.height());
 						sb.sbPartsSetPriority(1);
@@ -824,11 +853,11 @@ internal static partial class GlobalScope
 								int num4 = 0;
 								if (medget.height() > 0)
 								{
-									num4 = (medget.height() - 12) / 2;
+									num4 = LineLift(medget);
 								}
 								if (MenuManager.getSingleton().battleMode())
 								{
-									pMsg[num3].setPosition((short)(medget.x() + BattleNameInset), (short)(medget.y() + num4), erase: true);
+									pMsg[num3].setPosition((short)(medget.x() + (int)Math.Round(BattleNameInset * RowK)), (short)(medget.y() + num4), erase: true);
 								}
 								else
 								{
@@ -836,6 +865,7 @@ internal static partial class GlobalScope
 								}
 								pMsg[num3].setDisplaySpeed(byte.MaxValue);
 								pMsg[num3].setDisplayWait(0);
+								Letter(pMsg[num3]);
 								SET_MSG_IDX(medget, num3);
 								CreateItemTypeIcon(dGSMessageManager, mSF_HANDLE_KIND, medget.x(), medget.y() + num4 + -2, num2, num3);
 								CreateItemNumMessage(num - 1, medget, num3);
@@ -1140,11 +1170,11 @@ internal static partial class GlobalScope
 								int num4 = 0;
 								if (medget.height() > 0)
 								{
-									num4 = (medget.height() - 12) / 2;
+									num4 = LineLift(medget);
 								}
 								if (MenuManager.getSingleton().battleMode())
 								{
-									pMsg[num3].setPosition((short)(medget.x() + BattleNameInset), (short)(medget.y() + num4), erase: true);
+									pMsg[num3].setPosition((short)(medget.x() + (int)Math.Round(BattleNameInset * RowK)), (short)(medget.y() + num4), erase: true);
 								}
 								else
 								{
@@ -1152,6 +1182,7 @@ internal static partial class GlobalScope
 								}
 								pMsg[num3].setDisplaySpeed(byte.MaxValue);
 								pMsg[num3].setDisplayWait(0);
+								Letter(pMsg[num3]);
 								CreateItemTypeIcon(dGSMessageManager, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8, medget.x(), medget.y() + num4 + -2, num2, num3);
 								SET_MSG_IDX(medget, num3);
 								CreateItemNumMessage(num, medget, num3);
@@ -1291,11 +1322,11 @@ internal static partial class GlobalScope
 							int num3 = 0;
 							if (medget2.height() > 0)
 							{
-								num3 = (medget2.height() - 12) / 2;
+								num3 = LineLift(medget2);
 							}
 							if (MenuManager.getSingleton().battleMode())
 							{
-								pMsg[num2].setPosition((short)(medget2.x() + BattleNameInset), (short)(medget2.y() + num3), erase: true);
+								pMsg[num2].setPosition((short)(medget2.x() + (int)Math.Round(BattleNameInset * RowK)), (short)(medget2.y() + num3), erase: true);
 							}
 							else
 							{
@@ -1303,6 +1334,7 @@ internal static partial class GlobalScope
 							}
 							pMsg[num2].setDisplaySpeed(byte.MaxValue);
 							pMsg[num2].setDisplayWait(0);
+							Letter(pMsg[num2]);
 							SET_MSG_IDX(medget2, num2);
 							CreateItemTypeIcon(dGSMessageManager, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8, medget2.x(), medget2.y() + num3 + -2, num, num2);
 							CreateItemNumMessage(GET_ITEM_NUMBER(medget2), medget2, num2);

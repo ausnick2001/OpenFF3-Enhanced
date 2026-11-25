@@ -144,6 +144,7 @@ internal static partial class GlobalScope
 				firstFocuse = 0;
 				int no = (currentPlayer = MenuManager.getSingleton().GetTargetCharNo());
 				maxLv = 7;
+				rowK = 1f;
 				if (MenuManager.getSingleton().GetUsingMenuType() == 0)
 				{
 					CreateBattleMessage(dGSMessageManager, msfHandle, M, ref no);
@@ -199,7 +200,7 @@ internal static partial class GlobalScope
 					int num3 = (int)medget.work();
 					num3 += num2;
 					SET_LEVEL(medget, num3);
-					int num4 = (medget.height() - 12) / 2;
+					int num4 = LineLift(medget);
 					if (++num == 3)
 					{
 						CreateLvMessage(dGSMessageManager, msfHandle, MenuManager.getSingleton().getFocuseMedget().parentNode(), (int)medget.work(), medget.y() + num4);
@@ -226,6 +227,33 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: how many rows of spells the list really has on show (three cells a row): the game assumes four, but the Steam layout's panel holds three.</summary>
+			/// <summary>PORT: 0.75 when the battle list has four rows in the room of three (its letters and icons a quarter smaller); 1 as the game draws it.</summary>
+			private float rowK = 1f;
+
+			private int LineLift(Medget m) => (int)((m.height() - 12f * rowK) / 2f);
+
+			private static int ListRows(Medget list)
+			{
+				int cells = 0;
+				for (Medget c = list.childNode(); c != null; c = c.nextSibling()) cells++;
+				return cells / 3;
+			}
+
+			/// <summary>PORT: the first line the last page starts at: all the levels less the rows on show. The game's own 4 is for four rows; with three it stopped a level short (LV5-7), so LV8 could never be seen.</summary>
+			private int LastScroll(Medget list)
+			{
+				int rows = ListRows(list);
+				return rows >= 1 && rows < 4 ? maxLv + 1 - rows : 4;
+			}
+
+			/// <summary>PORT: how far the focus jumps when the list wraps from its top to its bottom (or back): from the first row to the last, three cells a row. The game's own 9 is for four rows on show; with three it landed back on the same row.</summary>
+			private static int WrapStep(Medget list)
+			{
+				int rows = ListRows(list);
+				return rows >= 2 && rows < 4 ? 3 * (rows - 1) : 9;
+			}
+
 			public override void bmBehave(Medget M)
 			{
 				if (M.display() == 0)
@@ -245,8 +273,8 @@ internal static partial class GlobalScope
 						{
 							if ((int)M.childNode().work() <= 0)
 							{
-								sb.sbFixedMove(4);
-								int focusedCursor = MenuManager.getSingleton().getFocuseMedget().myTag() + 9;
+								sb.sbFixedMove((short)LastScroll(M));
+								int focusedCursor = MenuManager.getSingleton().getFocuseMedget().myTag() + WrapStep(M);
 								MenuManager.getSingleton().initFocus(focusedCursor);
 							}
 							else
@@ -256,10 +284,10 @@ internal static partial class GlobalScope
 						}
 						else if (MenuManager.getSingleton().GetScrollType() == MenuManager.SCROLL_TYPE.TYPE_DOWN)
 						{
-							if ((int)M.childNode().work() == 4)
+							if ((int)M.childNode().work() == LastScroll(M))
 							{
-								sb.sbFixedMove(-4);
-								int focusedCursor2 = MenuManager.getSingleton().getFocuseMedget().myTag() - 9;
+								sb.sbFixedMove((short)-LastScroll(M));
+								int focusedCursor2 = MenuManager.getSingleton().getFocuseMedget().myTag() - WrapStep(M);
 								MenuManager.getSingleton().initFocus(focusedCursor2);
 							}
 							else
@@ -571,6 +599,7 @@ internal static partial class GlobalScope
 
 			public void CreateBattleMessage(dgs.DGSMessageManager pm, dgs.msg.CMessageMng.MSF_HANDLE_KIND _msfHandle, Medget pParent, ref int no)
 			{
+				rowK = OpenFF.Client.SteamCells.SteamFf3 && ListRows(pParent) == 4 ? OpenFF.Client.BattleMagicRows.K : 1f;
 				string[] array = new string[16]
 				{
 					"one_thr", "two_thr", "thr_thr", "", "", "", "", "", "", "",
@@ -597,7 +626,7 @@ internal static partial class GlobalScope
 							.equipMagic((pl.MAGIC_LEVEL)num)
 							.magicId(medget.work1<sbyte>());
 						SET_LEVEL(medget, num);
-						int num4 = (medget.height() - 12) / 2;
+						int num4 = LineLift(medget);
 						num2++;
 						if (num2 == 3)
 						{
@@ -682,7 +711,8 @@ internal static partial class GlobalScope
 				{
 					return;
 				}
-				pMsg[num].setPosition((short)(x + 16), (short)y, erase: true);
+				pMsg[num].setPosition((short)(x + (int)Math.Round(16f * rowK)), (short)y, erase: true);
+				if (rowK != 1f) pMsg[num].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
 				pMsg[num].setDisplaySpeed(byte.MaxValue);
 				pMsg[num].setDisplayWait(0);
 				if (pl.PlayerParty.instance().player((byte)currentPlayer).condition()
@@ -737,7 +767,7 @@ internal static partial class GlobalScope
 					}
 				}
 				SET_MSG_IDX(pTarget, num);
-				CreateMagicTypeIcon(pm, msfHandle, x, y + -2, magicId, pTarget, num);
+				CreateMagicTypeIcon(pm, msfHandle, x, y + (rowK != 1f ? -1 : -2), magicId, pTarget, num);
 			}
 
 			public void CreateMagicTypeIcon(dgs.DGSMessageManager pm, dgs.msg.CMessageMng.MSF_HANDLE_KIND _msfHandle, int x, int y, int magicNo, Medget pMedget, int indexNo)
@@ -754,7 +784,7 @@ internal static partial class GlobalScope
 				mIType[indexNo].pos.vy = (short)y;
 				// PORT: Steam's school icons are drawn 19 wide (the phone's cell over Steam's sheet) and the name starts
 				// 16 in: at three quarters the icon sits in its place beside the name instead of over its first letter.
-				int iconScale = OpenFF.Client.SteamCells.SteamFf3 ? FX32_CONST(0.75f) : ds.S32toFX32(1);
+				int iconScale = OpenFF.Client.SteamCells.SteamFf3 ? FX32_CONST(0.75f * rowK) : ds.S32toFX32(1);
 				if (MenuManager.getSingleton().GetUsingMenuType() == 1)
 				{
 					mIType[indexNo].mgIcon.copy(MenuManager.getSingleton().GetSmallIcon2d());
@@ -807,8 +837,13 @@ internal static partial class GlobalScope
 				{
 					pMsgLv[lvCount] = pm.createMessage((uint)msg_number, dgs.INVALID_MSDHANDLE, (int)_msfHandle);
 					pMsgLvNo[lvCount] = pm.createMessage(after, (int)_msfHandle);
-					pMsgLv[lvCount].setPosition(16, (short)y, erase: true);
-					pMsgLvNo[lvCount].setPosition(48, (short)y, erase: true);
+					pMsgLv[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(16f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListBox), (short)y, erase: true);
+					pMsgLvNo[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(48f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListBox), (short)y, erase: true);
+					if (rowK != 1f)
+					{
+						pMsgLv[lvCount].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
+						pMsgLvNo[lvCount].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
+					}
 				}
 				else
 				{
@@ -839,7 +874,8 @@ internal static partial class GlobalScope
 				}
 				else
 				{
-					pMsgUse[useCount].setPosition((short)(104 - vector.vx), (short)y, erase: true);
+					pMsgUse[useCount].setPosition((short)((rowK != 1f ? OpenFF.Client.BattleMagicRows.PanelX(76) : 104) - (int)Math.Round(vector.vx * rowK)), (short)y, erase: true);
+					if (rowK != 1f) pMsgUse[useCount].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
 				}
 				pMsgUse[useCount].setDisplaySpeed(byte.MaxValue);
 				pMsgUse[useCount].setDisplayWait(0);
@@ -868,12 +904,15 @@ internal static partial class GlobalScope
 				if (num != 0)
 				{
 					sb.sbCreate();
+					if (OpenFF.Client.SteamCells.SteamFf3 && ListRows(pT) == 4) sb.sbSetScale(OpenFF.Client.BattleMagicRows.ArrowK, OpenFF.Client.BattleMagicRows.Sized(OpenFF.Client.BattleMagicRows.ArrowInset));
 					sb.sbSetPosition((short)(pT.x() + pT.width() - (ScrollBar.PARTS_W >> 12) - SCROLL_BAR_MARGIN), (short)(pT.y() + SCROLL_BAR_MARGIN));
 					sb.sbSetHeight((short)(pT.height() - SCROLL_BAR_MARGIN * 2));
 					sb.sbPartsSetPriority(1);
 					if (MenuManager.getSingleton().GetUsingMenuType() == 0)
 					{
 						num2 = ((maxLv > 3) ? 4 : maxLv);
+						int shown = ListRows(pT);
+						if (shown >= 1 && shown < 4) num2 = shown;   // PORT: the rows the panel really holds
 						sb.sbSetCapacity((short)num2, (short)(maxLv + 1));
 					}
 					else
@@ -1069,7 +1108,8 @@ internal static partial class GlobalScope
 					pMsgUse[num] = dGSMessageManager.createMessage(after, (int)font);
 					ds.Vector2<short> vector = new ds.Vector2<short>();
 					pMsgUse[num].getTextSize(vector);
-					pMsgUse[num].setPosition((short)(104 - vector.vx), (short)(pCurrent.y() + num2), erase: true);
+					pMsgUse[num].setPosition((short)((rowK != 1f ? OpenFF.Client.BattleMagicRows.PanelX(76) : 104) - (int)Math.Round(vector.vx * rowK)), (short)(pCurrent.y() + num2), erase: true);
+					if (rowK != 1f) pMsgUse[num].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
 					pMsgUse[num].setDisplaySpeed(byte.MaxValue);
 					pMsgUse[num].setDisplayWait(0);
 				}

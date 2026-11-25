@@ -70,6 +70,16 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: a short bar in the middle of the screen (its width in screen units, before the menu size) in place of the full one; used for the window made next.</summary>
+			private int nameWidth_;
+
+			public void createNameWindow(int _id, int width)
+			{
+				nameWidth_ = width;
+				createHelpWindow(_id, 0, 0);
+				nameWidth_ = 0;
+			}
+
 			public void createHelpWindow(int _id, int page, int small)
 			{
 				// PORT: the lists' descriptions (the small bar) can be switched off; the battle's announcements (the other bar) stay.
@@ -77,7 +87,7 @@ internal static partial class GlobalScope
 				if (!isCreate_ && helpWindow_.GetState() == sys2d.Window.WINDOW_STATE.wsCLOSED)
 				{
 					messageId_ = _id;
-					{ (int hcx, int hcy, int hw, int hh) = OpenFF.Client.BattleHud.Help(small != 0); helpWindow_.bwCreateCC(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, new ds.Vector2<short>((short)hcx, (short)hcy), new ds.Vector2<short>((short)hw, (short)hh), 3); }   // PORT: from the battle_hud layout
+					{ (int hcx, int hcy, int hw, int hh) = OpenFF.Client.BattleHud.Help(small != 0, nameWidth_); helpWindow_.bwCreateCC(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, new ds.Vector2<short>((short)hcx, (short)hcy), new ds.Vector2<short>((short)hw, (short)hh), 3); }   // PORT: from the battle_hud layout
 					if (page != 0)
 					{
 						pageIcon_.SetShow(show: true);
@@ -94,7 +104,7 @@ internal static partial class GlobalScope
 				if (!isCreate_ && helpWindow_.GetState() == sys2d.Window.WINDOW_STATE.wsCLOSED)
 				{
 					strcpy(out message_, str);
-					{ (int hcx, int hcy, int hw, int hh) = OpenFF.Client.BattleHud.Help(small != 0); helpWindow_.bwCreateCC(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, new ds.Vector2<short>((short)hcx, (short)hcy), new ds.Vector2<short>((short)hw, (short)hh), 3); }   // PORT: from the battle_hud layout
+					{ (int hcx, int hcy, int hw, int hh) = OpenFF.Client.BattleHud.Help(small != 0, nameWidth_); helpWindow_.bwCreateCC(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, new ds.Vector2<short>((short)hcx, (short)hcy), new ds.Vector2<short>((short)hw, (short)hh), 3); }   // PORT: from the battle_hud layout
 					if (page != 0)
 					{
 						pageIcon_.SetShow(show: true);
@@ -135,6 +145,7 @@ internal static partial class GlobalScope
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
 				dGSMessage.setDisplayWait(0);
 				dGSMessage.setStyle(1170u);
+				dGSMessage.Lettering = OpenFF.Client.BattleSizing.HelpLettering();   // PORT: at the size the options chose
 			}
 
 			public void releaseHelpMessage()

@@ -407,7 +407,7 @@ namespace OpenFF.Client
 		private const float TextSpaceWidth = 800f;
 		private const float TextSpaceHeight = 480f;
 		// Where Steam's hint stands, in the game's 480 x 320 units: the words end over the party lines' right end.
-		private const float RightX = 440f, MiddleY = 243f, CapSize = 16f, Gap = 3f;
+		private const float RightX = 440f, MiddleY = 243f, CapSize = 16f, Gap = 3f;   // at full size
 		private const int TextSize = 10;
 
 		private SpriteBatch _batch;
@@ -464,10 +464,16 @@ namespace OpenFF.Client
 			(string chip, string psName, string otherName) = BoundButton();
 			bool padOn = DesktopInput.PadConnected && !string.IsNullOrEmpty(psName);
 			string key = padOn ? (Ui.PlayStationPad ? psName : otherName) : "F";
+			// The hint belongs to the party's menu: it shrinks and moves with it about the menu's bottom right corner.
+			float k = BattleSizing.PartyBox;
+			(float anchorX, float anchorY) = BattleHud.PartyAnchor();
+			float rightX = anchorX + (RightX - anchorX) * k, middleY = anchorY + (MiddleY - anchorY) * k;
+			float CapSize = AutoBattleHint.CapSize * k, Gap = AutoBattleHint.Gap * k;
+			int TextSize = Math.Max(6, (int)Math.Round(AutoBattleHint.TextSize * BattleSizing.PartyLetters));
 			float wordsWidth = TrueTypeText.Width(words, TextSize) / TextSpaceWidth * 480f;
-			float wordsX = RightX - wordsWidth;
+			float wordsX = rightX - wordsWidth;
 			float capX = wordsX - Gap - CapSize;
-			float capY = MiddleY - CapSize / 2f;
+			float capY = middleY - CapSize / 2f;
 
 			Viewport view = GraphicsDevice.Viewport;
 			float sx = view.Width / 480f, sy = view.Height / 320f;
@@ -503,7 +509,7 @@ namespace OpenFF.Client
 			{
 				float kw = TrueTypeText.Width(key, TextSize) / TextSpaceWidth * 480f;
 				graphics.SetColor(chipInk.R, chipInk.G, chipInk.B, 255);
-				if (!picture) graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f) / 320f * TextSpaceHeight, TextSize - (pad ? 1 : 0));
+				if (!picture) graphics.DrawString(key, (capX + (CapSize - kw) / 2f) / 480f * TextSpaceWidth, (capY + 2f * k) / 320f * TextSpaceHeight, TextSize - (pad ? 1 : 0));
 			}
 			finally
 			{
@@ -511,7 +517,7 @@ namespace OpenFF.Client
 			}
 			if (AutoBattle.On) graphics.SetColor(255, 214, 90, 255);
 			else graphics.SetColor(255, 255, 255, 255);
-			graphics.DrawString(words, wordsX / 480f * TextSpaceWidth, (MiddleY - 6f) / 320f * TextSpaceHeight, TextSize);
+			graphics.DrawString(words, wordsX / 480f * TextSpaceWidth, (middleY - 6f * k) / 320f * TextSpaceHeight, TextSize);
 			graphics.DrawStringEnd();
 		}
 

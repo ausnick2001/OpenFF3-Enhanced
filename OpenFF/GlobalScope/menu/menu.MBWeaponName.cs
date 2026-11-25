@@ -67,9 +67,10 @@ internal static partial class GlobalScope
 				{
 					int msg_number = itm.ItemManager.instance().itemParameter((short)num).nameId();
 					pMsgRightHandName = dGSMessageManager.createMessage((uint)msg_number, MenuManager.getSingleton().GetItemDataTextNo(), 1);
-					pMsgRightHandName.setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					pMsgRightHandName.setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					pMsgRightHandName.setDisplaySpeed(byte.MaxValue);
 					pMsgRightHandName.setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(pMsgRightHandName);
 					if (num3 > 0)
 					{
 						string after = "";
@@ -77,9 +78,10 @@ internal static partial class GlobalScope
 						rightWeaponNumber_ = dGSMessageManager.createMessage(after, 1);
 						ds.Vector2<short> vector = new ds.Vector2<short>();
 						rightWeaponNumber_.getTextSize(vector);
-						rightWeaponNumber_.setPosition((short)(medget.x() + 160 - vector.vx), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+						rightWeaponNumber_.setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(160) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 						rightWeaponNumber_.setDisplaySpeed(byte.MaxValue);
 						rightWeaponNumber_.setDisplayWait(0);
+						OpenFF.Client.BattleMagicRows.Letter(rightWeaponNumber_);
 					}
 					medget.setWork(num);
 				}
@@ -88,9 +90,10 @@ internal static partial class GlobalScope
 				{
 					int msg_number2 = itm.ItemManager.instance().itemParameter((short)num2).nameId();
 					pMsgLeftHandName = dGSMessageManager.createMessage((uint)msg_number2, MenuManager.getSingleton().GetItemDataTextNo(), 1);
-					pMsgLeftHandName.setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					pMsgLeftHandName.setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					pMsgLeftHandName.setDisplaySpeed(byte.MaxValue);
 					pMsgLeftHandName.setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(pMsgLeftHandName);
 					if (num4 > 0)
 					{
 						string after2 = "";
@@ -98,9 +101,10 @@ internal static partial class GlobalScope
 						leftWeaponNumber_ = dGSMessageManager.createMessage(after2, 1);
 						ds.Vector2<short> vector2 = new ds.Vector2<short>();
 						leftWeaponNumber_.getTextSize(vector2);
-						leftWeaponNumber_.setPosition((short)(medget.x() + 160 - vector2.vx), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+						leftWeaponNumber_.setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(160) - (int)System.Math.Round(vector2.vx * OpenFF.Client.BattleMagicRows.ScreenK)), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 						leftWeaponNumber_.setDisplaySpeed(byte.MaxValue);
 						leftWeaponNumber_.setDisplayWait(0);
+						OpenFF.Client.BattleMagicRows.Letter(leftWeaponNumber_);
 					}
 					medget.setWork(num2);
 				}

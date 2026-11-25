@@ -164,18 +164,20 @@ internal static partial class GlobalScope
 					itm.ItemBaseParameter itemBaseParameter = itm.ItemManager.instance().itemParameter((short)num);
 					int msg_number = itemBaseParameter.nameId();
 					message_[5] = pm.createMessage((uint)msg_number, MenuManager.getSingleton().GetItemDataTextNo(), 1);
-					message_[5].setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					message_[5].setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					message_[5].setDisplaySpeed(byte.MaxValue);
 					message_[5].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[5]);
 					dgs.msg.CMessageSys.getInstance().changeValueFont(num2, out after);
 					if (num != 1000)
 					{
 						message_[7] = pm.createMessage(after, 1);
 						ds.Vector2<short> vector = new ds.Vector2<short>();
 						message_[7].getTextSize(vector);
-						message_[7].setPosition((short)(medget.x() + 160 - vector.vx), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+						message_[7].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(160) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 						message_[7].setDisplaySpeed(byte.MaxValue);
 						message_[7].setDisplayWait(0);
+						OpenFF.Client.BattleMagicRows.Letter(message_[7]);
 					}
 					medget.setWork1(num);
 					medget.setWork2(num2);
@@ -184,9 +186,10 @@ internal static partial class GlobalScope
 				{
 					int msg_number2 = 50402;
 					message_[5] = pm.createMessage((uint)msg_number2, MenuManager.getSingleton().GetMenuDataTextNo(), 1);
-					message_[5].setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					message_[5].setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					message_[5].setDisplaySpeed(byte.MaxValue);
 					message_[5].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[5]);
 					medget.setWork1(-1);
 					medget.setWork2(0);
 				}
@@ -203,18 +206,20 @@ internal static partial class GlobalScope
 					itm.ItemBaseParameter itemBaseParameter2 = itm.ItemManager.instance().itemParameter((short)num3);
 					int msg_number3 = itemBaseParameter2.nameId();
 					message_[4] = pm.createMessage((uint)msg_number3, MenuManager.getSingleton().GetItemDataTextNo(), 1);
-					message_[4].setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					message_[4].setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					message_[4].setDisplaySpeed(byte.MaxValue);
 					message_[4].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[4]);
 					dgs.msg.CMessageSys.getInstance().changeValueFont(num4, out after);
 					if (num3 != 1000)
 					{
 						message_[6] = pm.createMessage(after, 1);
 						ds.Vector2<short> vector2 = new ds.Vector2<short>();
 						message_[6].getTextSize(vector2);
-						message_[6].setPosition((short)(medget.x() + 160 - vector2.vx), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+						message_[6].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(160) - (int)System.Math.Round(vector2.vx * OpenFF.Client.BattleMagicRows.ScreenK)), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 						message_[6].setDisplaySpeed(byte.MaxValue);
 						message_[6].setDisplayWait(0);
+						OpenFF.Client.BattleMagicRows.Letter(message_[6]);
 					}
 					medget.setWork1(num3);
 					medget.setWork2(num4);
@@ -223,9 +228,10 @@ internal static partial class GlobalScope
 				{
 					int msg_number4 = 50403;
 					message_[4] = pm.createMessage((uint)msg_number4, MenuManager.getSingleton().GetMenuDataTextNo(), 1);
-					message_[4].setPosition(medget.x(), (short)(medget.y() + (medget.height() - 12) / 2), erase: true);
+					message_[4].setPosition(medget.x(), (short)(medget.y() + OpenFF.Client.BattleMagicRows.ScreenLift(medget.height())), erase: true);
 					message_[4].setDisplaySpeed(byte.MaxValue);
 					message_[4].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[4]);
 					medget.setWork1(-1);
 					medget.setWork2(0);
 				}
@@ -245,9 +251,10 @@ internal static partial class GlobalScope
 				message_[0] = pm.createMessage(after2, 1);
 				ds.Vector2<short> vector3 = new ds.Vector2<short>();
 				message_[0].getTextSize(vector3);
-				message_[0].setPosition((short)(medget.x() + 24 - vector3.vx), medget.y(), erase: true);
+				message_[0].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector3.vx * OpenFF.Client.BattleMagicRows.ScreenK)), medget.y(), erase: true);
 				message_[0].setDisplaySpeed(byte.MaxValue);
 				message_[0].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[0]);
 				medget = medget.nextSibling();
 				int num6 = pl.PlayerParty.instance().player((byte)charNo).physicsDefense()
 					.phylacticPower()
@@ -261,29 +268,34 @@ internal static partial class GlobalScope
 				dgs.msg.CMessageSys.getInstance().changeValueFont(num6, out after2);
 				message_[1] = pm.createMessage(after2, 1);
 				message_[1].getTextSize(vector3);
-				message_[1].setPosition((short)(medget.x() + 24 - vector3.vx), medget.y(), erase: true);
+				message_[1].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector3.vx * OpenFF.Client.BattleMagicRows.ScreenK)), medget.y(), erase: true);
 				message_[1].setDisplaySpeed(byte.MaxValue);
 				message_[1].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[1]);
 				medget = medget.nextSibling();
 				int value = num5;
 				dgs.msg.CMessageSys.getInstance().changeValueFont(value, out after2);
 				message_[2] = pm.createMessage(after2, 1);
 				message_[2].getTextSize(vector3);
-				message_[2].setPosition((short)(medget.x() + 24 - vector3.vx), medget.y(), erase: true);
+				message_[2].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector3.vx * OpenFF.Client.BattleMagicRows.ScreenK)), medget.y(), erase: true);
 				message_[2].setDisplaySpeed(byte.MaxValue);
 				message_[2].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[2]);
 				medget = medget.nextSibling();
 				int value2 = num6;
 				dgs.msg.CMessageSys.getInstance().changeValueFont(value2, out after2);
 				message_[3] = pm.createMessage(after2, 1);
 				message_[3].getTextSize(vector3);
-				message_[3].setPosition((short)(medget.x() + 24 - vector3.vx), medget.y(), erase: true);
+				message_[3].setPosition((short)(medget.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector3.vx * OpenFF.Client.BattleMagicRows.ScreenK)), medget.y(), erase: true);
 				message_[3].setDisplaySpeed(byte.MaxValue);
 				message_[3].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[3]);
 				medget = medget.nextSibling();
 				attackCell.SetPositionI(medget.x(), medget.y());
+				attackCell.SetScaleF((int)System.Math.Round(4096f * OpenFF.Client.BattleMagicRows.ScreenK), (int)System.Math.Round(4096f * OpenFF.Client.BattleMagicRows.ScreenK));
 				medget = medget.nextSibling();
 				protectCell.SetPositionI(medget.x(), medget.y());
+				protectCell.SetScaleF((int)System.Math.Round(4096f * OpenFF.Client.BattleMagicRows.ScreenK), (int)System.Math.Round(4096f * OpenFF.Client.BattleMagicRows.ScreenK));
 			}
 
 			public void updateUpDownTriangle(Medget M, dgs.DGSMessageManager pm, int points, short item_id)
@@ -444,17 +456,19 @@ internal static partial class GlobalScope
 					dgs.msg.CMessageSys.getInstance().changeValueFont(num, out after);
 					message_[2] = pm.createMessage(after, 1);
 					message_[2].getTextSize(vector);
-					message_[2].setPosition((short)(nodeByIDFromChildren.x() + 24 - vector.vx), nodeByIDFromChildren.y(), erase: true);
+					message_[2].setPosition((short)(nodeByIDFromChildren.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), nodeByIDFromChildren.y(), erase: true);
 					message_[2].setDisplaySpeed(byte.MaxValue);
 					message_[2].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[2]);
 					message_[3].release();
 					message_[3] = null;
 					dgs.msg.CMessageSys.getInstance().changeValueFont(num2, out after);
 					message_[3] = pm.createMessage(after, 1);
 					message_[3].getTextSize(vector);
-					message_[3].setPosition((short)(nodeByIDFromChildren2.x() + 24 - vector.vx), nodeByIDFromChildren2.y(), erase: true);
+					message_[3].setPosition((short)(nodeByIDFromChildren2.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), nodeByIDFromChildren2.y(), erase: true);
 					message_[3].setDisplaySpeed(byte.MaxValue);
 					message_[3].setDisplayWait(0);
+					OpenFF.Client.BattleMagicRows.Letter(message_[3]);
 					attackCell.SetShow(show: false);
 					protectCell.SetShow(show: false);
 					return;
@@ -464,17 +478,19 @@ internal static partial class GlobalScope
 				dgs.msg.CMessageSys.getInstance().changeValueFont(num3, out after);
 				message_[2] = pm.createMessage(after, 1);
 				message_[2].getTextSize(vector);
-				message_[2].setPosition((short)(nodeByIDFromChildren.x() + 24 - vector.vx), nodeByIDFromChildren.y(), erase: true);
+				message_[2].setPosition((short)(nodeByIDFromChildren.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), nodeByIDFromChildren.y(), erase: true);
 				message_[2].setDisplaySpeed(byte.MaxValue);
 				message_[2].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[2]);
 				message_[3].release();
 				message_[3] = null;
 				dgs.msg.CMessageSys.getInstance().changeValueFont(num4, out after);
 				message_[3] = pm.createMessage(after, 1);
 				message_[3].getTextSize(vector);
-				message_[3].setPosition((short)(nodeByIDFromChildren2.x() + 24 - vector.vx), nodeByIDFromChildren2.y(), erase: true);
+				message_[3].setPosition((short)(nodeByIDFromChildren2.x() + OpenFF.Client.BattleMagicRows.ScreenSized(24) - (int)System.Math.Round(vector.vx * OpenFF.Client.BattleMagicRows.ScreenK)), nodeByIDFromChildren2.y(), erase: true);
 				message_[3].setDisplaySpeed(byte.MaxValue);
 				message_[3].setDisplayWait(0);
+				OpenFF.Client.BattleMagicRows.Letter(message_[3]);
 				if (num < num3)
 				{
 					attackCell.SetCell(11);

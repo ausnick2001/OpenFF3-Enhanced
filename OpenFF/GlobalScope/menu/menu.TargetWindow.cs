@@ -35,6 +35,14 @@ internal static partial class GlobalScope
 
 			private int pushState_;
 
+			/// <summary>PORT: one of the foes' / heroes' name boxes (not a button along the top): these are not drawn, nor their names, when OpenFF's Reduce clutter in battle is on (they still take a touch).</summary>
+			public bool Names;
+
+			/// <summary>PORT: one of the buttons along the top (Back, Player / Enemy, All, Group): its words go in the middle once the menus are scaled down.</summary>
+			public bool Button;
+
+			private bool Hidden => Names && OpenFF.Client.Qol.BattleDeclutter;
+
 			public TargetWindow()
 			{
 				Initialize();
@@ -77,26 +85,32 @@ internal static partial class GlobalScope
 			public void createTargetMessage(int _id)
 			{
 				releaseTargetMessage();
+				if (Hidden) return;
 				ds.Vector2<short> positionUL = commandWindow_.GetPositionUL();
 				ds.Vector2<short> size = commandWindow_.GetSize();
-				messageId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage((uint)_id, (ushort)(positionUL.vx + 8), (ushort)(positionUL.vy + (size.vy - 12) / 2), dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
+				bool middle = Button && OpenFF.Client.BattleSizing.CentreTargetButtons;
+				messageId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage((uint)_id, (ushort)(middle ? positionUL.vx + size.vx / 2 : positionUL.vx + OpenFF.Client.BattleSizing.TargetTextX), (ushort)(middle ? positionUL.vy + size.vy / 2 - 2 : positionUL.vy + OpenFF.Client.BattleSizing.TargetTextY(size.vy)), dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageId_);
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
 				dGSMessage.setDisplayWait(0);
-				dGSMessage.setStyle(520u);
+				dGSMessage.setStyle(Button && OpenFF.Client.BattleSizing.CentreTargetButtons ? 1170u : 520u);
+				dGSMessage.Lettering = OpenFF.Client.BattleSizing.Lettering();   // PORT: at the size the options give
 				dGSMessage.setMessageColor(dgs.TXT_COLOR.TXT_COLOR_WHITE);
 			}
 
 			public void createTargetMessage(string str)
 			{
 				releaseTargetMessage();
+				if (Hidden) return;
 				ds.Vector2<short> positionUL = commandWindow_.GetPositionUL();
 				ds.Vector2<short> size = commandWindow_.GetSize();
-				messageId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage(str, (ushort)(positionUL.vx + 8), (ushort)(positionUL.vy + (size.vy - 12) / 2), dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
+				bool middle = Button && OpenFF.Client.BattleSizing.CentreTargetButtons;
+				messageId_ = dgs.msg.CMessageSys.getInstance().Main().createMessage(str, (ushort)(middle ? positionUL.vx + size.vx / 2 : positionUL.vx + OpenFF.Client.BattleSizing.TargetTextX), (ushort)(middle ? positionUL.vy + size.vy / 2 - 2 : positionUL.vy + OpenFF.Client.BattleSizing.TargetTextY(size.vy)), dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageId_);
 				dGSMessage.setDisplaySpeed(byte.MaxValue);
 				dGSMessage.setDisplayWait(0);
-				dGSMessage.setStyle(520u);
+				dGSMessage.setStyle(Button && OpenFF.Client.BattleSizing.CentreTargetButtons ? 1170u : 520u);
+				dGSMessage.Lettering = OpenFF.Client.BattleSizing.Lettering();   // PORT: at the size the options give
 				dGSMessage.setMessageColor(dgs.TXT_COLOR.TXT_COLOR_WHITE);
 			}
 
@@ -112,7 +126,7 @@ internal static partial class GlobalScope
 			public void setShowTarget(bool show)
 			{
 				base.SetShow(show, user: true);
-				commandWindow_.SetShow(show, user: true);
+				commandWindow_.SetShow(show && !Hidden, user: true);
 				if (!show)
 				{
 					releaseTargetMessage();
@@ -121,6 +135,7 @@ internal static partial class GlobalScope
 
 			public void setMessageColor(int color)
 			{
+				if (messageId_ < 0) return;   // PORT: no name drawn (Reduce clutter in battle)
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageId_);
 				if (color == 0)
 				{
@@ -134,6 +149,7 @@ internal static partial class GlobalScope
 
 			public int getMessageColor()
 			{
+				if (messageId_ < 0) return 0;
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageId_);
 				if (dGSMessage.getMessageColor() != 1)
 				{
@@ -144,6 +160,7 @@ internal static partial class GlobalScope
 
 			public void moveMessage()
 			{
+				if (messageId_ < 0) return;
 				dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(messageId_);
 				short x;
 				short y;

@@ -63,5 +63,11 @@ namespace OpenFF.Client
 		}
 
 		public static void Left() => Showing = false;
+
+		/// <summary>Whether the title has the client's own "Play opening FMV" row (above Mods): FF3's, with the movie in the install.</summary>
+		public static bool OpeningRow => !GameProfile.IsFf4 && OpeningMovie.Exists;
+
+		/// <summary>How many of the mods' entries the title shows: the rows it has room for, less the one the opening takes.</summary>
+		public static int ModRows => MaxShown - (OpeningRow ? 1 : 0);
 	}
 }

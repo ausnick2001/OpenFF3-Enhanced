@@ -269,8 +269,32 @@ internal static partial class GlobalScope
 			sbSetPosition(pos.vx, pos.vy);
 		}
 
+		/// <summary>PORT: the arrows drawn smaller (1 = the game's 24 units), tucked into the corners of the list they belong to.</summary>
+		private float sbScale = 1f;
+
+		private int sbInset;
+
+		public void sbSetScale(float scale, int inset)
+		{
+			sbScale = scale;
+			sbInset = inset;
+			int fx = (int)Math.Round(4096f * scale);
+			for (int i = 0; i < 2; i++)
+			{
+				if (parts[i] != null) parts[i].SetScaleF(fx, fx);
+			}
+		}
+
+		/// <summary>How far the arrows' left edge moves right so a smaller arrow keeps the right edge of the game's.</summary>
+		private int sbShiftX => (int)Math.Round((PARTS_W >> 12) * (1f - sbScale));
+
 		public void sbSetPosition(short x, short y)
 		{
+			if (sbScale != 1f)
+			{
+				x = (short)(x + sbShiftX);
+				y = (short)(y + sbInset);
+			}
 			NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
 			NNSG2dFVec2 position = parts[0].GetPosition();
 			nNSG2dFVec.x = (x << 12) - position.x;
@@ -295,6 +319,11 @@ internal static partial class GlobalScope
 				{
 					NNSG2dFVec2 position = parts[1].GetPosition();
 					position.y = (sbY << 12) + (sbHeight << 12) - PARTS_W;
+					if (sbScale != 1f)
+					{
+						// sbY already carries the inset; the arrow's own height shrinks with the scale
+						position.y = ((sbY - sbInset) << 12) + (sbHeight << 12) - (int)Math.Round(PARTS_W * sbScale) - (sbInset << 12);
+					}
 					parts[1].SetPosition(position);
 				}
 			}

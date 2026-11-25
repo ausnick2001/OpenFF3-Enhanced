@@ -347,6 +347,10 @@ namespace OpenFF.Client
 			}
 			if (!_open)
 			{
+				if (OpeningMovie.Hiding)
+				{
+					return;
+				}
 				if (TitleEntries.Showing && !TextEntry.Instance?.IsActive == true)
 				{
 					DrawTitleLabel(graphics);

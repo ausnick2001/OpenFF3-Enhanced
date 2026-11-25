@@ -208,7 +208,7 @@ internal static partial class GlobalScope
 			public int cursorX()
 			{
 				if (cursorFrame() is Medget at) return at.x_;
-				return x_ + ((behavior_ != null) ? behavior_.bmGetCursorX(this) : 0);
+				return x_ + ((behavior_ != null) ? behavior_.bmGetCursorX(this) : 0) + OpenFF.Client.BattleMagicRows.HandShiftX(this);
 			}
 
 			/// <summary>PORT: whether a press at (px, py) is on the frame: inside it, or inside a frame of it (not the hand's own &lt;cursor/&gt; mark).</summary>
@@ -467,7 +467,7 @@ internal static partial class GlobalScope
 			{
 				if (cursorFrame() is Medget at) return at.y_;
 				// PORT: on Steam's layouts the hand is lifted to the text's middle (SteamLayout).
-				return y_ + height_ / 2 + OpenFF.Client.SteamLayout.CursorLift;
+				return y_ + height_ / 2 + OpenFF.Client.SteamLayout.CursorLift + OpenFF.Client.BattleMagicRows.HandShiftY(this);
 			}
 		}
 	}

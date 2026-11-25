@@ -251,6 +251,7 @@ internal static partial class GlobalScope
 					message.setVSpace(4);
 					message.setDisplaySpeed(byte.MaxValue);
 					message.setDisplayWait(0);
+					if (OpenFF.Client.BattleMagicRows.LabelScreen) OpenFF.Client.BattleMagicRows.Letter(message);
 					mbtSetAlignment();
 				}
 			}
@@ -437,6 +438,7 @@ internal static partial class GlobalScope
 					message.setVSpace(4);
 					message.setDisplaySpeed(byte.MaxValue);
 					message.setDisplayWait(0);
+					if (OpenFF.Client.BattleMagicRows.LabelScreen) OpenFF.Client.BattleMagicRows.Letter(message);
 					mbtSetAlignment();
 					if (xbnNodeList.size() > 4)
 					{

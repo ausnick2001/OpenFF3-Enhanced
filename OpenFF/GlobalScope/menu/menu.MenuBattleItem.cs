@@ -144,15 +144,17 @@ internal static partial class GlobalScope
 				{
 					MenuManager.getSingleton().buildMenu("battle_item");
 					MenuManager.getSingleton().GetCursor3d().SetShow(show: true);
-					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(3);
+					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(3, OpenFF.Client.BattleMagicRows.ItemActive ? 4 : 3);
 				}
 				else if (b_menu_type == USING_TYPE.USING_WEAPON)
 				{
 					MenuManager.getSingleton().release();
 					AddWindowItemEquip();
+					OpenFF.Client.BattleMagicRows.LabelScreen = true;
 					MenuManager.getSingleton().buildMenu("battle_equip");
+					OpenFF.Client.BattleMagicRows.LabelScreen = false;
 					MenuManager.getSingleton().SetTouchPanelState(val: false);
-					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(4);
+					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(OpenFF.Client.BattleMagicRows.EquipActive ? 3 : 4, OpenFF.Client.BattleMagicRows.EquipActive ? 2 : 3);   // PORT: Steam's two-row weapon list gets the item list's lines (a vertical one the whole way, central) laid on its two rows
 					if (opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY)
 					{
 						MenuManager.getSingleton().initFocus(MenuManager.getSingleton().saveBattleEquipHand(MenuManager.getSingleton().GetTargetCharNo()));
@@ -174,18 +176,39 @@ internal static partial class GlobalScope
 						triangle_[i].SetShow(array2[i]);
 						triangle_[i].SetPosition(array3[i]);
 						triangle_[i].SetScaleF(4096, 4096);
+						if (OpenFF.Client.BattleMagicRows.ItemActive && OpenFF.Client.SteamCells.SteamFf3)
+						{
+							// PORT: the arrows small and in the box's corners (the phone's top one stood above its window; Steam's is at the screen's foot)
+							int side = (int)Math.Round(24f * OpenFF.Client.BattleMagicRows.ArrowK);
+							int inset = OpenFF.Client.BattleMagicRows.Sized(OpenFF.Client.BattleMagicRows.ArrowInset);
+							int fx = (int)Math.Round(4096f * OpenFF.Client.BattleMagicRows.ArrowK);
+							int right = OpenFF.Client.BattleMagicRows.Sized(480) - 4;   // the panel's right edge less the margin the scroll bar keeps
+							int top = 320 - OpenFF.Client.BattleMagicRows.Sized(96);
+							triangle_[i].SetScaleF(fx, fx);
+							triangle_[i].SetPositionI(right - side, i == 0 ? top + inset : 320 - inset - side);
+						}
 						sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(triangle_[i]);
 					}
-					if (MenuManager.getSingleton().GetItemListPatern() == 5)
+					if (MenuManager.getSingleton().GetItemListPatern() == 5 || !HasHandWeapon())
 					{
 						triangle_[0].SetShow(show: false);
 					}
-					else if (b_menu_type == USING_TYPE.USING_ITEM && opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY && MenuManager.getSingleton().saveBattleUseItem(MenuManager.getSingleton().GetTargetCharNo()) > 0)
+					if (MenuManager.getSingleton().GetItemListPatern() == 5)
+					{
+					}
+					else if (b_menu_type == USING_TYPE.USING_ITEM && HasHandWeapon() && opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY && MenuManager.getSingleton().saveBattleUseItem(MenuManager.getSingleton().GetTargetCharNo()) > 0)
 					{
 						userContact = 1;
 						changeEquipItem();
 					}
 				}
+			}
+
+			/// <summary>PORT: the item list's way to the equipped weapons (the arrow above it) leads only to something when a hand holds one; bare hands left an empty screen.</summary>
+			private bool HasHandWeapon()
+			{
+				pl.Player player = pl.PlayerParty.instance().player((byte)MenuManager.getSingleton().GetTargetCharNo());
+				return player.equipParameter().equipHand(pl.HAND_TYPE.RIGHT_HAND).itemId() > 0 || player.equipParameter().equipHand(pl.HAND_TYPE.LEFT_HAND).itemId() > 0;
 			}
 
 			public void ReleaseBItemStatus()
@@ -252,6 +275,10 @@ internal static partial class GlobalScope
 					{
 						changeWindow_ = true;
 					}
+					if (changeWindow_ && !HasHandWeapon())
+					{
+						changeWindow_ = false;   // PORT: nothing in the hands to use
+					}
 					if (changeWindow_)
 					{
 						MenuManager.getSingleton().saveBattleUseItem_set(MenuManager.getSingleton().GetTargetCharNo(), 1);
@@ -271,9 +298,9 @@ internal static partial class GlobalScope
 					MenuManager.getSingleton().buildMenu("battle_item");
 					MenuManager.getSingleton().SetImposibleScrollFlag(val: false);
 					u_LocalType = USING_ITEM_TYPE.U_LOCAL_NORMAL;
-					triangle_[0].SetShow(show: true);
+					triangle_[0].SetShow(HasHandWeapon());
 					triangle_[1].SetShow(show: false);
-					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(3);
+					MenuManager.getSingleton().GetMenuWindowObj()[windowNo[0]].GetWindowHandle().SetBar(3, OpenFF.Client.BattleMagicRows.ItemActive ? 4 : 3);
 				}
 			}
 
@@ -502,7 +529,9 @@ internal static partial class GlobalScope
 			public void changeEquipItem()
 			{
 				MenuManager.getSingleton().release();
+				OpenFF.Client.BattleMagicRows.LabelScreen = true;
 				MenuManager.getSingleton().buildMenu("battle_use_weapon");
+				OpenFF.Client.BattleMagicRows.LabelScreen = false;
 				MenuManager.getSingleton().SetImposibleScrollFlag(val: true);
 				MenuManager.getSingleton().initFocus(0);
 				u_LocalType = USING_ITEM_TYPE.U_LOCAL_WEAPON;

@@ -672,6 +672,7 @@ internal static partial class GlobalScope
 
             private sys2d.Cell about = new sys2d.Cell();
 
+            private bool cursorHeldBack;
             private ds.Vector<TITLE_COMMAND, ds.FastErasePolicy<TITLE_COMMAND>> titleCommands = new ds.Vector<TITLE_COMMAND, ds.FastErasePolicy<TITLE_COMMAND>>(8);   // OpenFF: room for the mods' entries (TitleEntries)
 
             private sys2d.Sprite3d[] logoSprite = new sys2d.Sprite3d[2]
@@ -786,6 +787,18 @@ internal static partial class GlobalScope
                 setting.SetPriority(0);
                 setting.SetPositionI(8, 268);
                 sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(setting);
+                // OpenFF: "Play opening FMV" above Mods when the install has the movie (next_part 200; its text is drawn like the mods' entries).
+                if (OpenFF.Client.TitleEntries.OpeningRow)
+                {
+                    tITLE_COMMAND = new TITLE_COMMAND();
+                    tITLE_COMMAND.next_part = 200;
+                    tITLE_COMMAND.cell.copy(touch);
+                    tITLE_COMMAND.cell.SetCell(4);
+                    tITLE_COMMAND.cell.SetShow(show: false);
+                    tITLE_COMMAND.cell.SetPriority(0);
+                    titleCommands.push_back(tITLE_COMMAND);
+                    sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(titleCommands[titleCommands.size() - 1].cell);
+                }
                 // PORT: the phone's fourth entry (network / achievements). On this client it
                 // opens the mod list (OpenFF.Client.ModListScreen), which draws its own "MODS" label at
                 // the entry's position; so the entry exists whenever the list is available,
@@ -807,7 +820,7 @@ internal static partial class GlobalScope
                 }
                 // OpenFF: the mods' entries (Game.Title.AddEntry) in rows under the title's own, as text -
                 // a command with an empty cell (the bank's cell 4 paints nothing) and next_part 100 + index.
-                for (int e = 0; e < OpenFF.Client.TitleEntries.Entries.Count && e < OpenFF.Client.TitleEntries.MaxShown; e++)
+                for (int e = 0; e < OpenFF.Client.TitleEntries.Entries.Count && e < OpenFF.Client.TitleEntries.ModRows; e++)
                 {
                     tITLE_COMMAND = new TITLE_COMMAND();
                     tITLE_COMMAND.next_part = 100 + e;
@@ -899,6 +912,25 @@ internal static partial class GlobalScope
                 {
                     return false;
                 }
+                // OpenFF: the opening movie's question or the movie is up; what it settles for a new game is taken here.
+                if (OpenFF.Client.OpeningMovie.Busy)
+                {
+                    // The title's hand steps aside: the question draws its own over the box.
+                    cursor.SetShow(show: false);
+                    cursorHeldBack = true;
+                    return false;
+                }
+                if (cursorHeldBack)
+                {
+                    cursorHeldBack = false;
+                    cursor.SetShow(show: true);
+                }
+                if (OpenFF.Client.OpeningMovie.TakeNewGame())
+                {
+                    OpenFF.Client.SaveFiles.Profile = null;
+                    cIndexNo = 0;
+                    return true;
+                }
                 if ((ds.g_Pad.repeat() & 0x40) != 0 || (ds.g_Pad.repeat() & 0x20) != 0)
                 {
                     if (--cIndexNo < 0)
@@ -923,6 +955,17 @@ internal static partial class GlobalScope
                     }
                     if ((ds.g_Pad.edge() & 9) != 0)
                     {
+                        if (titleCommands[cIndexNo].next_part == 200)
+                        {
+                            MatrixSound.MtxSENDS_Play(0, 1, 192, 127);
+                            OpenFF.Client.OpeningMovie.Open(false);
+                            return false;
+                        }
+                        if (titleCommands[cIndexNo].next_part == 0 && OpenFF.Client.OpeningMovie.Ask())
+                        {
+                            MatrixSound.MtxSENDS_Play(0, 1, 192, 127);
+                            return false;
+                        }
                         if (titleCommands[cIndexNo].next_part >= 100)
                         {
                             // OpenFF: a mod's entry - its action runs; a new game it orders follows the New Game path.
@@ -1070,6 +1113,18 @@ internal static partial class GlobalScope
                             return false;
                         }
                         PlaceCursor(i);
+                        if (titleCommands[i].next_part == 200)
+                        {
+                            MatrixSound.MtxSENDS_Play(0, 1, 192, 127);
+                            PlaceCursor(i);
+                            OpenFF.Client.OpeningMovie.Open(false);
+                            return false;
+                        }
+                        if (titleCommands[i].next_part == 0 && OpenFF.Client.OpeningMovie.Ask())
+                        {
+                            MatrixSound.MtxSENDS_Play(0, 1, 192, 127);
+                            return false;
+                        }
                         if (titleCommands[i].next_part >= 100)
                         {
                             MatrixSound.MtxSENDS_Play(0, 1, 192, 127);
@@ -1157,6 +1212,10 @@ internal static partial class GlobalScope
             /// <summary>OpenFF: the words a command is drawn with as text, or null for its picture.</summary>
             private static string LabelOf(TITLE_COMMAND command, bool gameText)
             {
+                if (command.next_part == 200)
+                {
+                    return OpenFF.Client.Localization.Get(OpenFF.Client.Localization.Keys.TitleOpening);
+                }
                 if (command.next_part >= 100)
                 {
                     return OpenFF.Client.TitleEntries.Entries[command.next_part - 100].Label.ToUpperInvariant();

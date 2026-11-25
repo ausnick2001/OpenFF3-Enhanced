@@ -11558,6 +11558,13 @@ internal static partial class GlobalScope
 							OpenFF.Content.MenuText lettering = pTxn.style ?? pTxn.pFont?.style ?? MenuTextDefault;
 							if (lettering != null) txt = lettering.Cased(txt);
 							NNSG2dTextRect nNSG2dTextRect = NNS_G2dFontGetTextRect(pTxn.pFont, pTxn.hSpace, pTxn.vSpace, txt);
+							// PORT: the rect is the face's own; a lettering drawn at another size (the battle menus') centres by the size it is drawn at.
+							float alignScale = (lettering != null && lettering.AlignScaled) ? lettering.Scale / Math.Max(0.01f, (pTxn.pFont?.style ?? MenuTextDefault)?.Scale ?? 1f) : 1f;
+							if (alignScale != 1f)
+							{
+								nNSG2dTextRect.width = (int)Math.Round(nNSG2dTextRect.width * alignScale);
+								nNSG2dTextRect.height = (int)Math.Round(nNSG2dTextRect.height * alignScale);
+							}
 							if ((flags & 0x10) != 0)
 							{
 								x -= nNSG2dTextRect.width / 2;
@@ -11602,11 +11609,11 @@ internal static partial class GlobalScope
 									tEXT_DATA2.y = (short)y;
 									if ((flags & 0x400) != 0)
 									{
-										tEXT_DATA2.x += (short)((nNSG2dTextRect.width - NNS_G2dFontGetTextRect(pTxn.pFont, 0, 0, tEXT_DATA2.text).width) / 2);
+										tEXT_DATA2.x += (short)((nNSG2dTextRect.width - (int)Math.Round(NNS_G2dFontGetTextRect(pTxn.pFont, 0, 0, tEXT_DATA2.text).width * alignScale)) / 2);
 									}
 									if ((flags & 0x800) != 0)
 									{
-										tEXT_DATA2.x += (short)(nNSG2dTextRect.width - NNS_G2dFontGetTextRect(pTxn.pFont, 0, 0, tEXT_DATA2.text).width);
+										tEXT_DATA2.x += (short)(nNSG2dTextRect.width - (int)Math.Round(NNS_G2dFontGetTextRect(pTxn.pFont, 0, 0, tEXT_DATA2.text).width * alignScale));
 									}
 									tEXT_DATA2.color = cl;
 									tEXT_DATA2.lcd = (sbyte)pTxn.pCanvas.lcd;
