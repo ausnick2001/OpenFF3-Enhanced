@@ -1652,6 +1652,7 @@ internal static partial class GlobalScope
 					// What commandMagic / commandItem do when the command is picked: the list opens again (MP or the item is given back by rebornParameter above).
 					allSelectFlag_ = 1;
 					battleWindow_.nondisplay();
+					menu.MenuManager.getSingleton().KeepListCursor = true;
 					setCommandState(backTo);
 				}
 				else
@@ -2002,6 +2003,7 @@ internal static partial class GlobalScope
 
 			public bool releaseMagicWindow(BattleSystem B, BattlePlayer player)
 			{
+				menu.MenuManager.getSingleton().KeepListCursor = false;
 				menu.MenuManager.getSingleton().release();
 				menu.MenuManager.getSingleton().releaseWindow(windowId_);
 				menu.MenuManager.getSingleton().ClearBehaviorButton();
@@ -2269,6 +2271,7 @@ internal static partial class GlobalScope
 
 			public bool releaseItemWindow(BattleSystem B, BattlePlayer player)
 			{
+				menu.MenuManager.getSingleton().KeepListCursor = false;
 				menu.MenuBattleItem.getSingleton().ReleaseBItemStatus();
 				menu.MenuManager.getSingleton().release();
 				menu.MenuManager.getSingleton().ClearBehaviorButton();

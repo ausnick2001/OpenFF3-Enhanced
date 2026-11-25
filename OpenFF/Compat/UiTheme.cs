@@ -404,8 +404,11 @@ namespace OpenFF.Client
 			Part(new Rectangle(c, c, t - 2 * c, t - 2 * c), new Rectangle(o.X + m, o.Y + m, o.Width - 2 * m, o.Height - 2 * m));
 		}
 
-		/// <summary>A value's stepper: a dark inset box, an arrow cell at each end.</summary>
-		public static void Stepper(SpriteBatch b, Rectangle r, bool lit, Viewport v)
+		/// <summary>An arrow with nothing further that way.</summary>
+		private static readonly Color StepDim = new Color(84, 90, 118, 200);
+
+		/// <summary>A value's stepper: a dark inset box, an arrow cell at each end; an arrow with no further value that way is greyed.</summary>
+		public static void Stepper(SpriteBatch b, Rectangle r, bool lit, Viewport v, bool canLeft = true, bool canRight = true)
 		{
 			Rectangle p = Px(r.X, r.Y, r.Width, r.Height, v);
 			if (PartyStyle)
@@ -416,8 +419,8 @@ namespace OpenFF.Client
 				Color pl = new Color(110, 120, 168, 255);
 				Ui.Fill(b, Px(r.X + pc, r.Y + 1, 1, r.Height - 2, v), pl);
 				Ui.Fill(b, Px(r.Right - pc, r.Y + 1, 1, r.Height - 2, v), pl);
-				Ui.IconAt(b, Ui.Icon.Left, r.X + pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, Color.White, v);
-				Ui.IconAt(b, Ui.Icon.Right, r.Right - pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, Color.White, v);
+				Ui.IconAt(b, Ui.Icon.Left, r.X + pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, canLeft ? Color.White : StepDim, v);
+				Ui.IconAt(b, Ui.Icon.Right, r.Right - pc / 2, r.Y + r.Height / 2f, r.Height * 0.62f, canRight ? Color.White : StepDim, v);
 				return;
 			}
 			Ui.RoundPlate(b, p, lit ? new Color(150, 118, 52, 230) : InsetEdge, v);
@@ -427,8 +430,8 @@ namespace OpenFF.Client
 			Ui.Fill(b, Px(r.X + cell, r.Y + 1, 1, r.Height - 2, v), line);
 			Ui.Fill(b, Px(r.Right - cell, r.Y + 1, 1, r.Height - 2, v), line);
 			Color arrow = lit ? GoldBright : Ink;
-			Ui.IconAt(b, Ui.Icon.Left, r.X + cell / 2, r.Y + r.Height / 2f, r.Height * 0.62f, arrow, v);
-			Ui.IconAt(b, Ui.Icon.Right, r.Right - cell / 2, r.Y + r.Height / 2f, r.Height * 0.62f, arrow, v);
+			Ui.IconAt(b, Ui.Icon.Left, r.X + cell / 2, r.Y + r.Height / 2f, r.Height * 0.62f, canLeft ? arrow : StepDim, v);
+			Ui.IconAt(b, Ui.Icon.Right, r.Right - cell / 2, r.Y + r.Height / 2f, r.Height * 0.62f, canRight ? arrow : StepDim, v);
 		}
 
 		/// <summary>The stepper's middle, where its value is written.</summary>

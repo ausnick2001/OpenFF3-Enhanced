@@ -39,9 +39,21 @@ namespace OpenFF.Client
 			}
 		}
 
+		[System.Runtime.InteropServices.DllImport("kernel32.dll")]
+		private static extern bool AttachConsole(int processId);
+
+		// The program has no console of its own (so none opens beside the game), but started from a terminal it
+		// borrows that one, so --help and the log line still print there.
+		private static void UseParentConsole()
+		{
+			if (!OperatingSystem.IsWindows()) return;
+			try { AttachConsole(-1); } catch (Exception) { }
+		}
+
 		[STAThread]
 		private static void Main(string[] args)
 		{
+			UseParentConsole();
 			DeclareDpiAware();
 			Options.Parse(args);
 			if (Options.HelpRequested)

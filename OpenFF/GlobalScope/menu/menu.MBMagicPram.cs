@@ -157,7 +157,7 @@ internal static partial class GlobalScope
 				{
 					CreateExclusiveUseScrollBar(M);
 				}
-				if (opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY && MenuManager.getSingleton().battleMode())
+				if ((opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY || MenuManager.getSingleton().KeepListCursor) && MenuManager.getSingleton().battleMode())
 				{
 					vanishFlag_ = true;
 					MenuManager.getSingleton().SetTrialInitFocuseFlag(val: false);

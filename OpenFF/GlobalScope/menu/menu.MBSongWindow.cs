@@ -49,7 +49,7 @@ internal static partial class GlobalScope
 				dGSMessageManager = ((M.display() != 0) ? dgs.msg.CMessageSys.getInstance().Main() : dgs.msg.CMessageSys.getInstance().Sub());
 				dgs.msg.CMessageMng.MSF_HANDLE_KIND msfHandle = dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8;
 				createSongMessage(dGSMessageManager, msfHandle, M);
-				if (opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY && MenuManager.getSingleton().battleMode())
+				if ((opt.COptionManager.getSingleton().cursorOption().cursorPosition() == opt.CURSOR_POSITION.CURSOR_POSITION_MEMORY || MenuManager.getSingleton().KeepListCursor) && MenuManager.getSingleton().battleMode())
 				{
 					MenuManager.getSingleton().SetTrialInitFocuseFlag(val: false);
 					MenuManager.getSingleton().initFocus(MenuManager.getSingleton().saveSongTarget(pl.PlayerParty.instance().player((byte)MenuManager.getSingleton().GetTargetCharNo()).playerId()));

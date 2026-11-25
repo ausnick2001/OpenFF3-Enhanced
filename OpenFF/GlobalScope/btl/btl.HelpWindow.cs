@@ -72,6 +72,8 @@ internal static partial class GlobalScope
 
 			public void createHelpWindow(int _id, int page, int small)
 			{
+				// PORT: the lists' descriptions (the small bar) can be switched off; the battle's announcements (the other bar) stay.
+				if (small != 0 && OpenFF.Client.Qol.BattleDescriptions == 0) return;
 				if (!isCreate_ && helpWindow_.GetState() == sys2d.Window.WINDOW_STATE.wsCLOSED)
 				{
 					messageId_ = _id;

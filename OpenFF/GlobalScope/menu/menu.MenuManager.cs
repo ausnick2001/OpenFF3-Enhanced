@@ -2229,6 +2229,9 @@ internal static partial class GlobalScope
 				return saveCursor_[_id].saveBattleEquipHand_;
 			}
 
+			/// <summary>PORT: set while a spell, song or item list is reopened after backing out of its target, so it opens on the entry that was chosen (what the cursor-memory option does) whatever that option says.</summary>
+			public bool KeepListCursor;
+
 			public int saveBattleItemLine(int _id)
 			{
 				return saveCursor_[_id].saveBattleItemLine_;

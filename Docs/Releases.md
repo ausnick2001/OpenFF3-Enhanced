@@ -7,14 +7,17 @@ repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. 
 
 **Added**
 - Damage popups (Font / Dialogue / Damage popups > Damage popups), contributed by zerafidev. Battle damage, healing, hit counts, critical hits and misses are drawn as outlined text in the style of the NES and FF6 games, each with its own animation. Style has three choices: Original (upscaled), the default, which moves the same way as the game's own numbers but in our sharper font; Bouncy, with each digit hopping in turn; and Original, the game's own numbers. Except for Original, you can choose the number colour (red, white or gold), the size (small, medium or large) and the shadow (off, light, medium or heavy).
+- Battle descriptions (Font / Dialogue / Damage popups > Battle descriptions): choose Off, Minimal or On for the descriptions shown at the top of the battle screen for commands, spells, songs and items. Minimal skips the obvious commands (Attack, Guard, Magic, Steal, Summon and so on) and keeps the rest. On by default.
 
 **Fixed**
 - Fixed multi-language support: The game was supposed to match the language of your vanilla FF3 3D install but it wasn't. To change the language, right click on FF3 3D in Steam and then click properties and select a language. Steam will then download the language files. OpenFF3 can then use them to display in that language. Unfortunately this only applies to in-game menus and dialogue. The OpenFF3 menus will still be in English. Players wishing to play in Japanese, Chinese or Korean may need to provide their own fonts to display correctly
 - Fixed Sort in the Item menu and the Magic menu tabs not being reachable with a gamepad.
 - Fixed the hand pointer in battle sitting slightly too far to the right of party members. It now points at the character.
-- Fixed backing out of choosing a target for a spell, song or item taking you back to the main battle menu. It now takes you back to the list you chose from.
+- Fixed backing out of choosing a target for a spell, song or item taking you back to the main battle menu. It now takes you back to the list you chose from, with the cursor on the spell, song or item you picked.
+- Fixed the game opening behind Steam Big Picture mode, so you had to Alt+Tab to it. The game now asks for the front when it starts, and a black console window no longer opens before it.
 
 **Changed**
+- In the pause menu, the left or right arrow of a setting is greyed out when there is no further value that way (for example the shadow at Heavy, or the dialogue box size at its limit).
 - The game no longer checks its files against the release when it starts (it warned about a language installed through Steam, and about harmless changes). Settings > Check game files still does the check when you ask for it.
 
 **Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7, the game offers this update itself; your saves and settings in `userdata` are kept.

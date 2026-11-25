@@ -59,6 +59,9 @@ namespace OpenFF.Client
 		/// <summary>Whether a critical hit flashes the screen white, as the game does.</summary>
 		public static bool CriticalFlash => S.CriticalFlash;
 
+		/// <summary>The battle descriptions at the top of the screen: 0 off, 1 minimal, 2 on.</summary>
+		public static int BattleDescriptions => S.BattleDescriptions;
+
 		/// <summary>Whether battle damage, hit, critical and miss popups use the FF3-NES / FF6-style staggered bounce.</summary>
 		public static bool BouncyDamagePopups => S.BouncyDamagePopups;
 
@@ -279,6 +282,7 @@ namespace OpenFF.Client
 					if (!s.JobAdjustment) lines.Add("No job adjustment");
 					if (s.TurnBased) lines.Add("Turn-based battles");
 					if (!s.CriticalFlash) lines.Add("No critical hit flash");
+					if (s.BattleDescriptions == 0) lines.Add("No battle descriptions"); else if (s.BattleDescriptions == 1) lines.Add("Minimal battle descriptions");
 					if (welcome && s.Minimap) lines.Add("Minimap");
 				}
 			}

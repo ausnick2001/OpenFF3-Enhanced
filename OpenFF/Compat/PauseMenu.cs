@@ -48,7 +48,7 @@ namespace OpenFF.Client
 				}
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
-				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
+				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 30, 27, true);
 				case Page.Popups: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
@@ -326,7 +326,7 @@ namespace OpenFF.Client
 					if (left || right || confirm) ChangeText(_selected, left ? -1 : 1, confirm);
 					break;
 				case Page.Popups:
-					if (cancel) { _page = Page.Text; _selected = 5; _note = ""; DisplaySettings.Current.Save(); return; }
+					if (cancel) { _page = Page.Text; _selected = 6; _note = ""; DisplaySettings.Current.Save(); return; }
 					if (up || downKey) _note = PopupNote(_selected);
 					if (left || right || confirm) ChangePopups(_selected, left ? -1 : 1, confirm);
 					break;
@@ -534,10 +534,38 @@ namespace OpenFF.Client
 
 		// ---- font / dialogue ----
 
-		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Damage popups (a page), Back.
-		private const int TextRows = 7;
+		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Battle descriptions, Damage popups (a page), Back.
+		private const int TextRows = 8;
 
 		private static string Percent(float v) => Math.Round(v * 100) + "%";
+
+		/// <summary>Whether a stepper row has a further value to the left and to the right; the rows that go round (most do) always have.</summary>
+		private void StepEnds(int row, out bool canLeft, out bool canRight)
+		{
+			canLeft = canRight = true;
+			DisplaySettings.QolSettings q = Qol.S;
+			if (_page == Page.Text)
+			{
+				switch (row)
+				{
+					case 0: canLeft = DialogueSizing.Box > DialogueSizing.BoxMin + 0.001; canRight = DialogueSizing.Box < DialogueSizing.BoxMax - 0.001; break;
+					case 1: canLeft = DialogueSizing.Text > DialogueSizing.TextMin + 0.001; canRight = DialogueSizing.Text < DialogueSizing.TextMax - 0.001; break;
+					case 2: canLeft = DialogueSizing.Name > DialogueSizing.TextMin + 0.001; canRight = DialogueSizing.Name < DialogueSizing.TextMax - 0.001; break;
+					case 3: ShadowEnds(q.DialogueShadow, q.DialogueShadowStrength, out canLeft, out canRight); break;
+					case 4: ShadowEnds(q.MenuShadow, q.MenuShadowStrength, out canLeft, out canRight); break;
+					case 5: canLeft = q.BattleDescriptions > 0; canRight = q.BattleDescriptions < 2; break;
+				}
+			}
+			else if (_page == Page.Popups && row == 3) ShadowEnds(q.DamagePopupShadow > 0, q.DamagePopupShadow, out canLeft, out canRight);
+			else if (_page == Page.Map && row == 3) { canLeft = q.MinimapZoom > 0; canRight = q.MinimapZoom < MapZooms.Length - 1; }
+			else if (_page == Page.Map && row == 4) { canLeft = q.MinimapSee > 0; canRight = q.MinimapSee < MapAreas.Length - 1; }
+		}
+
+		private static void ShadowEnds(bool on, int strength, out bool canLeft, out bool canRight)
+		{
+			int now = !on ? 0 : Math.Clamp(strength, 1, 3);
+			canLeft = now > 0; canRight = now < 3;
+		}
 
 		private void ChangeText(int row, int by, bool confirm)
 		{
@@ -549,10 +577,11 @@ namespace OpenFF.Client
 				case 2: q.NameSize = Math.Round(Math.Clamp(DialogueSizing.Name + 0.05 * by, DialogueSizing.TextMin, DialogueSizing.TextMax), 2); Qol.Changed("speaker name size " + Percent(DialogueSizing.Name)); GlobalScope.wld.CMessageWindow.RefreshDefaultPosition(); break;
 				case 3: { int s = ShadowStep(q.DialogueShadow, q.DialogueShadowStrength, by, confirm); q.DialogueShadow = s > 0; if (s > 0) q.DialogueShadowStrength = s; Qol.Changed("dialogue shadow " + ShadowName(q.DialogueShadow, q.DialogueShadowStrength)); break; }
 				case 4: { int s = ShadowStep(q.MenuShadow, q.MenuShadowStrength, by, confirm); q.MenuShadow = s > 0; if (s > 0) q.MenuShadowStrength = s; Qol.Changed("menu text shadow " + ShadowName(q.MenuShadow, q.MenuShadowStrength)); break; }
-				case 5:
+				case 5: { int m = q.BattleDescriptions + by; if (m > 2) m = confirm ? 0 : 2; q.BattleDescriptions = Math.Clamp(m, 0, 2); Qol.Changed("battle descriptions " + DescriptionNames[q.BattleDescriptions].ToLowerInvariant()); break; }
+				case 6:
 					if (confirm) { _page = Page.Popups; _selected = 0; _note = PopupNote(0); }
 					return;
-				case 6:
+				case 7:
 					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -576,6 +605,7 @@ namespace OpenFF.Client
 		// Style, Colour, Size, Shadow, Back.
 		private const int PopupRows = 5;
 		private static readonly string[] PopupColours = { "Red", "White", "Gold" };
+		private static readonly string[] DescriptionNames = { "Off", "Minimal", "On" };
 		private static readonly string[] PopupStyleNames = { "Original (upscaled)", "Bouncy", "Original" };
 
 		/// <summary>The style row as an index into PopupStyleNames: 0 our font still, 1 our font bouncing, 2 the game's own sprites.</summary>
@@ -611,14 +641,14 @@ namespace OpenFF.Client
 					Qol.Changed("damage popup shadow " + ShadowName(q.DamagePopupShadow > 0, q.DamagePopupShadow).ToLowerInvariant());
 					break;
 				case 4:
-					if (confirm) { _page = Page.Text; _selected = 5; _note = ""; DisplaySettings.Current.Save(); }
+					if (confirm) { _page = Page.Text; _selected = 6; _note = ""; DisplaySettings.Current.Save(); }
 					return;
 			}
 			_note = PopupNote(row);
 		}
 
-		// The Font / Dialogue page has no notes: its rows explain themselves.
-		private static string TextNote(int row) => "";
+		// Only the battle descriptions row has a note; the others explain themselves.
+		private static string TextNote(int row) => row == 5 ? "Minimal skips the obvious commands, like Attack and Guard" : "";
 
 		/// <summary>The main page's row: what is changed, in a few words.</summary>
 		private static string TextSummary()
@@ -769,6 +799,7 @@ namespace OpenFF.Client
 			if (!q.JobAdjustment) on.Add("no adjustment");
 			if (!q.TurnBased) on.Add("classic battles");
 			if (!q.CriticalFlash) on.Add("no critical flash");
+			if (q.BattleDescriptions == 0) on.Add("no battle descriptions"); else if (q.BattleDescriptions == 1) on.Add("minimal battle descriptions");
 			if (on.Count == 0) return "as the game plays";
 			string all = string.Join(", ", on);
 			return all.Length > 40 ? on.Count + " on" : all;
@@ -864,7 +895,8 @@ namespace OpenFF.Client
 						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
-						case 5: icon = UiTheme.Icon.Quality; return Kind.Page;
+						case 5: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 6: icon = UiTheme.Icon.Quality; return Kind.Page;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Popups:
@@ -1014,7 +1046,7 @@ namespace OpenFF.Client
 				UiTheme.Row(_batch, r, lit, view, diamonds: lit && (_page == Page.Main || _page == Page.Quit));
 				Kind kind = RowKind(row, out UiTheme.Icon? icon, out bool on, out _);
 				if (lit) UiTheme.Hand(_batch, r, r.X + 40, view);
-				if (kind == Kind.Stepper) { if (!off) UiTheme.Stepper(_batch, valueBox[row], lit, view); }
+				if (kind == Kind.Stepper) { if (!off) { StepEnds(row, out bool canLeft, out bool canRight); UiTheme.Stepper(_batch, valueBox[row], lit, view, canLeft, canRight); } }
 				else if (kind == Kind.Switch) UiTheme.Switch(_batch, valueBox[row], on, lit, view);
 				else if (kind == Kind.Page) Ui.IconAt(_batch, Ui.Icon.Right, r.Right - 20, r.Y + r.Height / 2f, r.Height * 0.5f, lit ? UiTheme.LitInk : UiTheme.Ink, view);
 				else if (kind == Kind.Text && boundWidth[row] > 0)
@@ -1269,7 +1301,8 @@ namespace OpenFF.Client
 						case 2: label = "Speaker name size"; value = Percent(DialogueSizing.Name); return;
 						case 3: label = "Dialogue shadow"; value = ShadowName(Qol.S.DialogueShadow, Qol.S.DialogueShadowStrength); return;
 						case 4: label = "Menu text shadow"; value = ShadowName(Qol.S.MenuShadow, Qol.S.MenuShadowStrength); return;
-						case 5: label = "Damage popups"; value = PopupStyleNames[PopupStyle(Qol.S)]; return;
+						case 5: label = "Battle descriptions"; value = DescriptionNames[Math.Clamp(Qol.S.BattleDescriptions, 0, 2)]; return;
+						case 6: label = "Damage popups"; value = PopupStyleNames[PopupStyle(Qol.S)]; return;
 						default: label = "Back"; return;
 					}
 				}

@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- A windowed program: as a console one, Windows opens a black console window first, which in Steam
+         Big Picture ends up in front of the game. -->
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace></RootNamespace>
     <AssemblyName>OpenFF3 Enhanced</AssemblyName>

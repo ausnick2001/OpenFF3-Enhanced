@@ -30,20 +30,29 @@ namespace OpenFF.Client
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_OVERISSUE, "Attacks four random enemies four times." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_ROLL_UP, "Builds power for the next attack; backfires on a third use in a row." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PROVOCATION, "Taunts enemies into attacking you and lowers their defense." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_POISE, "Reduces physical damage taken, responds with powerful counterattacks." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_POISE, "Reduces physical damage taken, responds with powerful counterattack." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_DARK, "Sacrifices 20% of current HP to damage all enemies." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_CHECK, "Reveals a target's weaknesses and HP, and strips its positive effects." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_GEOGRAPHY, "Casts a random Terrain spell based on the surrounding area." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_PITCH, "Hurls a weapon from your inventory at an enemy; the weapon is lost." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_EQUIP, "Switches out currently-equipped weapons and shields." },
 			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_FRONT, "Move to the front row: hit harder, take more damage." },
-			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_BACK, "Move to the back row: take less damage, hit softer." },
+			{ (int)GlobalScope.pl.ABILITY_ID.ABILITY_BACK, "Move to the back row: take less damage, hit less hard." },
 		};
 
 		// The mods' own commands, by the name their ladder shows.
 		private static readonly Dictionary<string, string> OwnByName = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
 			{ "Zeninage", "Throws gil at every enemy: more gil, more damage. The party pays." },
+		};
+
+		// The commands everyone knows: the Minimal setting of Battle descriptions shows no line for these.
+		private static readonly HashSet<int> Obvious = new HashSet<int>
+		{
+			(int)GlobalScope.pl.ABILITY_ID.ABILITY_ATTACK, (int)GlobalScope.pl.ABILITY_ID.ABILITY_ESCAPE, (int)GlobalScope.pl.ABILITY_ID.ABILITY_GUARD,
+			(int)GlobalScope.pl.ABILITY_ID.ABILITY_ITEM, (int)GlobalScope.pl.ABILITY_ID.ABILITY_BLACK_MAGIC, (int)GlobalScope.pl.ABILITY_ID.ABILITY_WHITE_MAGIC,
+			(int)GlobalScope.pl.ABILITY_ID.ABILITY_MAGIC, (int)GlobalScope.pl.ABILITY_ID.ABILITY_STEAL, (int)GlobalScope.pl.ABILITY_ID.ABILITY_SUMMON,
+			(int)GlobalScope.pl.ABILITY_ID.ABILITY_EQUIP,
 		};
 
 		private static Dictionary<string, string> _byName;
@@ -91,6 +100,9 @@ namespace OpenFF.Client
 			{
 				GlobalScope.btl.HelpWindow help = GlobalScope.btl.Battle2DManager.instance().helpWindow();
 				if (_shown != null && !help.isActive()) _shown = null;
+				// Battle descriptions: off shows no line; minimal none for the obvious commands.
+				int mode = Qol.BattleDescriptions;
+				if (mode == 0 || (mode == 1 && Obvious.Contains(id))) { Release(); return; }
 				string text = Describe(id, name);
 				if (text == null) { Release(); return; }
 				if (text == _shown) return;

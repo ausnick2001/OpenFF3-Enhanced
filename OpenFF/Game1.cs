@@ -92,6 +92,9 @@ public class Game1 : Game
 		// single gesture. This is a Windows build, so input comes from the mouse and
 		// keyboard instead; OpenFF.Client.DesktopInput raises the same Android.onTouch* callbacks
 		// the rest of the game listens to. See Compat/DesktopInput.cs.
+		// Started from Steam's Big Picture mode the game can be left behind it: ask for the front for a few seconds.
+		OpenFF.Client.WindowFocus.Update(this);
+
 		if (!Guide.IsVisible)
 		{
 			OpenFF.Client.DesktopInput.Update();

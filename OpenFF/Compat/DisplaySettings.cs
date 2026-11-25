@@ -103,6 +103,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>The white screen flash on a critical hit; false skips it (for those it bothers).</summary>
 			[JsonPropertyName("criticalFlash")] public bool CriticalFlash { get; set; } = true;
+			/// <summary>The descriptions in the bar at the top of the battle screen (commands, spells, songs, items): 0 off, 1 minimal (the obvious commands, like Attack and Guard, show none), 2 on.</summary>
+			[JsonPropertyName("battleDescriptions")] public int BattleDescriptions { get; set; } = 2;
 			/// <summary>The damage, hit, critical and miss popups are drawn in our font (FF3-NES / FF6 style); false uses the game's own DS sprites.</summary>
 			[JsonPropertyName("bouncyDamagePopups")] public bool BouncyDamagePopups { get; set; } = true;
 			/// <summary>With our font: true uses the bouncy per-digit animation, false moves them as the game's own do ("Original (upscaled)", the default).</summary>
