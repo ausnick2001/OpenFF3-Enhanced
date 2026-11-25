@@ -49,9 +49,10 @@ namespace OpenFF.Client
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
+				case Page.Popups: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 32, 516, 444), 94, 26, 23.5f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -61,7 +62,7 @@ namespace OpenFF.Client
 		/// <summary>The game stands still while the menu is open: its last frame stays under the menu.</summary>
 		public static bool HoldsGame => IsOpen;
 
-		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Text, Quit }
+		private enum Page { Closed, Main, Settings, Buttons, Qol, Map, Text, Popups, Quit }
 		private Page _page = Page.Closed;
 		private int _selected;
 		private string _binding;            // the DS button being rebound, while a press is awaited
@@ -324,6 +325,11 @@ namespace OpenFF.Client
 					if (up || downKey) _note = TextNote(_selected);
 					if (left || right || confirm) ChangeText(_selected, left ? -1 : 1, confirm);
 					break;
+				case Page.Popups:
+					if (cancel) { _page = Page.Text; _selected = 5; _note = ""; DisplaySettings.Current.Save(); return; }
+					if (up || downKey) _note = PopupNote(_selected);
+					if (left || right || confirm) ChangePopups(_selected, left ? -1 : 1, confirm);
+					break;
 				case Page.Map:
 					if (cancel) { _page = Page.Main; _selected = MainRow("map"); DisplaySettings.Current.Save(); return; }
 					if (up || downKey) _note = MapNote(_selected);
@@ -370,7 +376,7 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>A row shown greyed and passed over: the window size while the window is borderless (it draws at the desktop's size).</summary>
-		private bool RowDisabled(int row) => _page == Page.Settings && row == 1 && DisplaySettings.Current.Mode == "borderless";
+		private bool RowDisabled(int row) => (_page == Page.Settings && row == 1 && DisplaySettings.Current.Mode == "borderless") || (_page == Page.Popups && row >= 1 && row <= 3 && !Qol.S.BouncyDamagePopups);
 
 		private int Rows()
 		{
@@ -381,6 +387,7 @@ namespace OpenFF.Client
 				case Page.Qol: return QolRows;
 				case Page.Map: return MapRows;
 				case Page.Text: return TextRows;
+				case Page.Popups: return PopupRows;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -527,8 +534,8 @@ namespace OpenFF.Client
 
 		// ---- font / dialogue ----
 
-		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Back.
-		private const int TextRows = 6;
+		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Damage popups (a page), Back.
+		private const int TextRows = 7;
 
 		private static string Percent(float v) => Math.Round(v * 100) + "%";
 
@@ -543,6 +550,9 @@ namespace OpenFF.Client
 				case 3: { int s = ShadowStep(q.DialogueShadow, q.DialogueShadowStrength, by, confirm); q.DialogueShadow = s > 0; if (s > 0) q.DialogueShadowStrength = s; Qol.Changed("dialogue shadow " + ShadowName(q.DialogueShadow, q.DialogueShadowStrength)); break; }
 				case 4: { int s = ShadowStep(q.MenuShadow, q.MenuShadowStrength, by, confirm); q.MenuShadow = s > 0; if (s > 0) q.MenuShadowStrength = s; Qol.Changed("menu text shadow " + ShadowName(q.MenuShadow, q.MenuShadowStrength)); break; }
 				case 5:
+					if (confirm) { _page = Page.Popups; _selected = 0; _note = PopupNote(0); }
+					return;
+				case 6:
 					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -559,6 +569,52 @@ namespace OpenFF.Client
 			int next = now + by;
 			if (next > 3) next = confirm ? 0 : 3;
 			return Math.Max(next, 0);
+		}
+
+		// ---- damage popups ----
+
+		// Style, Colour, Size, Shadow, Back.
+		private const int PopupRows = 5;
+		private static readonly string[] PopupColours = { "Red", "White", "Gold" };
+		private static readonly string[] PopupStyleNames = { "Original (upscaled)", "Bouncy", "Original" };
+
+		/// <summary>The style row as an index into PopupStyleNames: 0 our font still, 1 our font bouncing, 2 the game's own sprites.</summary>
+		private static int PopupStyle(DisplaySettings.QolSettings q) => !q.BouncyDamagePopups ? 2 : q.DamagePopupAnimated ? 1 : 0;
+
+		/// <summary>The page's note for a row: what Colour and Size change, else what Bouncy is, or that the game's own sprites cannot be changed.</summary>
+		private static string PopupNote(int row) => row == 1 ? "Changes the colour of the damage numbers" : row == 2 ? "Changes the size of the damage numbers" : !Qol.S.BouncyDamagePopups ? "Uses the game's native textures, cannot be customised" : Qol.S.DamagePopupAnimated ? "FF3 NES / FF6-style staggered bouncy damage, hit, critical and miss popups" : "";
+		private static readonly string[] PopupSizes = { "Small", "Medium", "Large" };
+
+		private void ChangePopups(int row, int by, bool confirm)
+		{
+			DisplaySettings.QolSettings q = Qol.S;
+			switch (row)
+			{
+				case 0:
+				{
+					int next = ((PopupStyle(q) + by) % 3 + 3) % 3;
+					q.BouncyDamagePopups = next != 2;
+					q.DamagePopupAnimated = next == 1;
+					Qol.Changed("damage popups " + PopupStyleNames[next].ToLowerInvariant());
+					break;
+				}
+				case 1:
+					q.DamagePopupColour = ((Math.Clamp(q.DamagePopupColour, 0, 2) + by) % 3 + 3) % 3;
+					Qol.Changed("damage popup colour " + PopupColours[q.DamagePopupColour].ToLowerInvariant());
+					break;
+				case 2:
+					q.DamagePopupSize = ((Math.Clamp(q.DamagePopupSize, 0, 2) + by) % 3 + 3) % 3;
+					Qol.Changed("damage popup size " + PopupSizes[q.DamagePopupSize].ToLowerInvariant());
+					break;
+				case 3:
+					q.DamagePopupShadow = ShadowStep(q.DamagePopupShadow > 0, q.DamagePopupShadow, by, confirm);
+					Qol.Changed("damage popup shadow " + ShadowName(q.DamagePopupShadow > 0, q.DamagePopupShadow).ToLowerInvariant());
+					break;
+				case 4:
+					if (confirm) { _page = Page.Text; _selected = 5; _note = ""; DisplaySettings.Current.Save(); }
+					return;
+			}
+			_note = PopupNote(row);
 		}
 
 		// The Font / Dialogue page has no notes: its rows explain themselves.
@@ -626,8 +682,8 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Bouncy damage popups, Indicator, Back.
-		private const int QolRows = 11;
+		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Back.
+		private const int QolRows = 10;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -669,17 +725,13 @@ namespace OpenFF.Client
 					Qol.Changed("critical hit flash " + (q.CriticalFlash ? "on" : "off"));
 					break;
 				case 8:
-					q.BouncyDamagePopups = !q.BouncyDamagePopups;
-					Qol.Changed("bouncy damage popups " + (q.BouncyDamagePopups ? "on" : "off"));
-					break;
-				case 9:
 					// Off, then speed and encounters only, then everything that is changed.
 					int level = !q.Indicator ? 0 : q.IndicatorSimple ? 1 : 2;
 					level = ((level + by) % 3 + 3) % 3;
 					q.Indicator = level != 0; q.IndicatorSimple = level == 1;
 					Qol.Changed("indicator " + (level == 0 ? "off" : level == 1 ? "speed and encounters" : "all"));
 					break;
-				case 10:
+				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -699,8 +751,7 @@ namespace OpenFF.Client
 				case 5: return "Off: no lowered stats after a job change. On: the game's default";
 				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
 				case 7: return "Off: no white screen flash when a hit is critical";
-				case 8: return "On: FF3 NES / FF6-style staggered bouncy damage, hit, critical and miss popups";
-				case 9: return "Text overlay in top-left corner indicating what features are on";
+				case 8: return "Text overlay in top-left corner indicating what features are on";
 				default: return "";
 			}
 		}
@@ -801,8 +852,7 @@ namespace OpenFF.Client
 						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Quality; on = q.CriticalFlash; return Kind.Switch;
-						case 8: icon = UiTheme.Icon.Quality; on = q.BouncyDamagePopups; return Kind.Switch;
-						case 9: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
+						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -814,6 +864,16 @@ namespace OpenFF.Client
 						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 4: icon = UiTheme.Icon.Window; return Kind.Stepper;
+						case 5: icon = UiTheme.Icon.Quality; return Kind.Page;
+						default: icon = UiTheme.Icon.Back; return Kind.None;
+					}
+				case Page.Popups:
+					switch (row)
+					{
+						case 0: icon = UiTheme.Icon.Quality; return Kind.Stepper;
+						case 1: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
+						case 2: icon = UiTheme.Icon.WindowSize; return Kind.Stepper;
+						case 3: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Map:
@@ -857,7 +917,7 @@ namespace OpenFF.Client
 			}
 		}
 
-		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
+		private UiTheme.Icon? TitleIcon() => _page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups ? UiTheme.Icon.Settings : _page == Page.Buttons ? UiTheme.Icon.Pad : _page == Page.Quit ? UiTheme.Icon.Exit : (UiTheme.Icon?)null;
 
 		public override void Draw(GameTime gameTime)
 		{
@@ -974,7 +1034,7 @@ namespace OpenFF.Client
 			TrueTypeText.TitleFace = false;   // the menu uses the same face as the rest of the game
 			try
 			{
-				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _page == Page.Text ? "Font / Dialogue" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
+				string title = _page == Page.Main ? "OpenFF3 Enhanced" : _page == Page.Settings ? "Settings" : _page == Page.Buttons ? "Controller configuration" : _page == Page.Qol ? "Quality of life" : _page == Page.Map ? "Minimap" : _page == Page.Text ? "Font / Dialogue / Damage popups" : _page == Page.Popups ? "Damage popups" : _leave == "forget" ? "Are you sure?" : _leave == "reset" ? "Reset?" : "Exit game?";
 				// The main page's title is in the names font (fonts\names), when there is one; it is smaller by its scale, so drawn a size up.
 					OpenFF.Content.MenuText nameStyle = _page == Page.Main ? NameFace.Style : null;
 					int shownTitleSize = nameStyle != null ? titleSize + 4 : titleSize;
@@ -987,6 +1047,7 @@ namespace OpenFF.Client
 					: _page == Page.Qol ? "Boosters, like the Pixel Remaster's."
 					: _page == Page.Map ? "A corner map for dungeons."
 					: _page == Page.Text ? ""
+					: _page == Page.Popups ? ""
 					: _leave == "forget" ? "Deletes all map data on this save. This cannot be reversed."
 					: "Anything not saved is lost.";
 				// Beside the title when it fits there (smaller if it must), else under it.
@@ -1079,7 +1140,7 @@ namespace OpenFF.Client
 
 		private (Ui.PadButton, string)[] Hints()
 		{
-			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
+			if (_page == Page.Settings || _page == Page.Qol || _page == Page.Map || _page == Page.Text || _page == Page.Popups) return new[] { (Ui.PadButton.A, "Confirm"), (Ui.PadButton.B, "Back") };
 			if (_page == Page.Buttons) return new[] { (Ui.PadButton.A, _binding == null ? "Bind" : "Press a button"), (Ui.PadButton.B, "Back") };
 			return new[] { (Ui.PadButton.A, "Select"), (Ui.PadButton.B, "Back") };
 		}
@@ -1162,7 +1223,7 @@ namespace OpenFF.Client
 					string id = rows[Math.Clamp(row, 0, rows.Length - 1)];
 					if (id == "abilities") { label = "Abilities"; value = "job ladders, free slots"; return; }
 					if (id == "skip") { label = "Skip scene"; value = "runs through to its end"; return; }
-					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "text" ? "Font / Dialogue" : id == "report" ? "Report a bug / Request a feature" : id == "reset" ? "Reset" : "Exit game";
+					label = id == "resume" ? "Resume" : id == "settings" ? "Settings" : id == "qol" ? "Quality of life" : id == "map" ? "Minimap" : id == "text" ? "Font / Dialogue / Damage popups" : id == "report" ? "Report a bug / Request a feature" : id == "reset" ? "Reset" : "Exit game";
 					if (id == "qol") value = QolSummary();
 					else if (id == "map") value = MapSummary();
 					else if (id == "text") value = TextSummary();
@@ -1183,8 +1244,19 @@ namespace OpenFF.Client
 						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
 						case 7: label = "Critical hit flash"; value = q.CriticalFlash ? "On" : "Off"; return;
-						case 8: label = "Bouncy damage popups"; value = q.BouncyDamagePopups ? "On" : "Off"; return;
-						case 9: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						default: label = "Back"; return;
+					}
+				}
+				case Page.Popups:
+				{
+					DisplaySettings.QolSettings q = Qol.S;
+					switch (row)
+					{
+						case 0: label = "Style"; value = PopupStyleNames[PopupStyle(q)]; return;
+						case 1: label = "Colour"; value = PopupColours[Math.Clamp(q.DamagePopupColour, 0, 2)]; return;
+						case 2: label = "Size"; value = PopupSizes[Math.Clamp(q.DamagePopupSize, 0, 2)]; return;
+						case 3: label = "Shadow"; value = ShadowName(q.DamagePopupShadow > 0, q.DamagePopupShadow); return;
 						default: label = "Back"; return;
 					}
 				}
@@ -1197,6 +1269,7 @@ namespace OpenFF.Client
 						case 2: label = "Speaker name size"; value = Percent(DialogueSizing.Name); return;
 						case 3: label = "Dialogue shadow"; value = ShadowName(Qol.S.DialogueShadow, Qol.S.DialogueShadowStrength); return;
 						case 4: label = "Menu text shadow"; value = ShadowName(Qol.S.MenuShadow, Qol.S.MenuShadowStrength); return;
+						case 5: label = "Damage popups"; value = PopupStyleNames[PopupStyle(Qol.S)]; return;
 						default: label = "Back"; return;
 					}
 				}

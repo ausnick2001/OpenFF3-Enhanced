@@ -1638,15 +1638,28 @@ internal static partial class GlobalScope
 
 			public void selectTargetCancel(BattlePlayer player)
 			{
+				// PORT: a target chosen from the spell, song or item list steps back to that list, not to the commands: prevCommandState_ is where the target state came from.
+				COMMAND_STATE backTo = prevCommandState_;
+				bool toList = backTo == COMMAND_STATE.SELECT_MAGIC || backTo == COMMAND_STATE.SELECT_ITEM || backTo == COMMAND_STATE.SELECT_SONG;
 				player.clearTargetType();
 				menu.MenuManager.getSingleton().playSECancel();
 				selectTargetState_ = 1;
 				selectState_ = SELECT_STATE.TOUCH_IDLE;
 				rebornParameter(player);
 				Battle2DManager.instance().cursor().nondisplayAll();
-				Battle2DManager.instance().cursor().active(0);
-				battleWindow_.setOff();
-				setCommandState(COMMAND_STATE.SELECT_COMMAND);
+				if (toList)
+				{
+					// What commandMagic / commandItem do when the command is picked: the list opens again (MP or the item is given back by rebornParameter above).
+					allSelectFlag_ = 1;
+					battleWindow_.nondisplay();
+					setCommandState(backTo);
+				}
+				else
+				{
+					Battle2DManager.instance().cursor().active(0);
+					battleWindow_.setOff();
+					setCommandState(COMMAND_STATE.SELECT_COMMAND);
+				}
 				Battle2DManager.instance().helpWindow().releaseHelpWindow();
 				for (int i = 0; i < 4; i++)
 				{
@@ -1655,7 +1668,10 @@ internal static partial class GlobalScope
 				allWindow_.setShowTarget(show: false);
 				changeWindow_.setShowTarget(show: false);
 				groupWindow_.setShowTarget(show: false);
-				settingCommand(player);
+				if (!toList)
+				{
+					settingCommand(player);
+				}
 				player.clearTargetId();
 			}
 

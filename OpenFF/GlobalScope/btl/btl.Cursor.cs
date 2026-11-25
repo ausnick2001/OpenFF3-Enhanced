@@ -150,9 +150,13 @@ internal static partial class GlobalScope
 				}
 			}
 
-			public void setPosition3Dto2D(int type, VecFx32 pos)
+			/// <summary>PORT: how far left (480-wide screen units) the hand stands from a party member's own spot, so its fingertip lands on the character instead of past them.</summary>
+			private const int PlayerHandShift = 10;
+
+			public void setPosition3Dto2D(int type, VecFx32 pos, int shiftX = 0)
 			{
 				NNS_G3dWorldPosToScrPos(pos, out var px, out var py);
+				px -= shiftX;
 				px = MATH_MAX(px, 240 - LCD_WIDTH / 2 + 16);
 				px = MATH_MIN(px, 240 + LCD_WIDTH / 2);
 				py = MATH_MAX(py, 160 - LCD_HEIGHT / 2 + 8);
@@ -222,7 +226,7 @@ internal static partial class GlobalScope
 				VecFx32 vecFx = new VecFx32();
 				characterMng.getPosition(player.characterMngId(), vecFx);
 				VEC_Add(vecFx, CursorOffset, vecFx);
-				setPosition3Dto2D(type, vecFx);
+				setPosition3Dto2D(type, vecFx, PlayerHandShift);
 			}
 
 			public void setPositionPlayerAll(BattleParty party, int recover)
@@ -246,7 +250,7 @@ internal static partial class GlobalScope
 						characterMng.getPosition(party.battlePlayer(i).characterMngId(), vecFx);
 						VEC_Add(vecFx, CursorOffset, vecFx);
 						int type = 2 + party.battlePlayer(i).battleCharacterId();
-						setPosition3Dto2D(type, vecFx);
+						setPosition3Dto2D(type, vecFx, PlayerHandShift);
 						plural(type);
 						type = 16 + party.battlePlayer(i).battleCharacterId();
 						setPositionTargetPlayer(type, party.battlePlayer(i));

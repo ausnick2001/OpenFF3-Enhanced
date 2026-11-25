@@ -5,9 +5,14 @@ repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. 
 
 ## 0.9.10 - OpenFF3 Enhanced (2026-11-25)
 
+**Added**
+- Damage popups (Font / Dialogue / Damage popups > Damage popups), contributed by zerafidev. Battle damage, healing, hit counts, critical hits and misses are drawn as outlined text in the style of the NES and FF6 games, each with its own animation. Style has three choices: Original (upscaled), the default, which moves the same way as the game's own numbers but in our sharper font; Bouncy, with each digit hopping in turn; and Original, the game's own numbers. Except for Original, you can choose the number colour (red, white or gold), the size (small, medium or large) and the shadow (off, light, medium or heavy).
+
 **Fixed**
 - Fixed multi-language support: The game was supposed to match the language of your vanilla FF3 3D install but it wasn't. To change the language, right click on FF3 3D in Steam and then click properties and select a language. Steam will then download the language files. OpenFF3 can then use them to display in that language. Unfortunately this only applies to in-game menus and dialogue. The OpenFF3 menus will still be in English. Players wishing to play in Japanese, Chinese or Korean may need to provide their own fonts to display correctly
 - Fixed Sort in the Item menu and the Magic menu tabs not being reachable with a gamepad.
+- Fixed the hand pointer in battle sitting slightly too far to the right of party members. It now points at the character.
+- Fixed backing out of choosing a target for a spell, song or item taking you back to the main battle menu. It now takes you back to the list you chose from.
 
 **Changed**
 - The game no longer checks its files against the release when it starts (it warned about a language installed through Steam, and about harmless changes). Settings > Check game files still does the check when you ask for it.

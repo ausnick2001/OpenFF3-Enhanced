@@ -103,8 +103,16 @@ namespace OpenFF.Client
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>The white screen flash on a critical hit; false skips it (for those it bothers).</summary>
 			[JsonPropertyName("criticalFlash")] public bool CriticalFlash { get; set; } = true;
-			/// <summary>FF3-NES / FF6-style staggered bouncy damage, hit, critical and miss popups; false uses the original DS sprites.</summary>
+			/// <summary>The damage, hit, critical and miss popups are drawn in our font (FF3-NES / FF6 style); false uses the game's own DS sprites.</summary>
 			[JsonPropertyName("bouncyDamagePopups")] public bool BouncyDamagePopups { get; set; } = true;
+			/// <summary>With our font: true uses the bouncy per-digit animation, false moves them as the game's own do ("Original (upscaled)", the default).</summary>
+			[JsonPropertyName("damagePopupAnimated")] public bool DamagePopupAnimated { get; set; } = false;
+			/// <summary>The damage popups' number colour: 0 the game's red-pink, 1 white, 2 gold (heals stay green).</summary>
+			[JsonPropertyName("damagePopupColour")] public int DamagePopupColour { get; set; } = 0;
+			/// <summary>The damage popups' number size: 0 small, 1 medium, 2 large.</summary>
+			[JsonPropertyName("damagePopupSize")] public int DamagePopupSize { get; set; } = 1;
+			/// <summary>The damage popups' shadow: 0 off, 1 light, 2 medium, 3 heavy (the retro look).</summary>
+			[JsonPropertyName("damagePopupShadow")] public int DamagePopupShadow { get; set; } = 2;
 			/// <summary>FF3's dialogue window with its text and the speaker's name, together (DialogueSizing): 0.6 to 1, 1 as the game draws it.</summary>
 			[JsonPropertyName("dialogueSize")] public double DialogueSize { get; set; } = 1;
 			/// <summary>The said lines' size on top of the window's: 0.7 to 1.3, 1 as set.</summary>

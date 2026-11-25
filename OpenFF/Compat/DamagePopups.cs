@@ -16,12 +16,35 @@ namespace OpenFF.Client
 			HealFloat,
 			CriticalScaleBounce,
 			MissDodge,
-			HitsSlideIn
+			HitsSlideIn,
+			OriginalPop
 		}
 
 		private const float TextSpaceWidth = 800f;
 		private const float TextSpaceHeight = 480f;
-		private const int DamageTextSize = 20;
+		private const int DamageTextSize = 14;
+
+		/// <summary>The damage number's size by the Size setting: small, medium (14), large.</summary>
+		/// <summary>The game's own popups' lift (480x320 units, up is negative) at these times (seconds after they appear), measured frame by frame from the game's own damage numbers and hit counts at 30 fps: a short rest, a jump up all at once, a hover, then back down to rest.</summary>
+		private static readonly float[] PopTimes = { 0f, 0.04f, 0.067f, 0.1f, 0.133f, 0.167f, 0.2f, 0.233f, 0.267f, 0.3f, 0.333f, 0.367f, 0.4f };
+		private static readonly float[] PopLift = { 0f, 0f, -5.8f, -22.9f, -22.9f, -23.8f, -26f, -26f, -25.1f, -23.1f, -23.1f, -17.1f, 0f };
+		/// <summary>How long the game's own popups last.</summary>
+		private const float OriginalPopLife = 0.70f;
+
+		private static float OriginalPopOffset(float t)
+		{
+			for (int k = 1; k < PopTimes.Length; k++)
+			{
+				if (t < PopTimes[k])
+				{
+					float u = (t - PopTimes[k - 1]) / (PopTimes[k] - PopTimes[k - 1]);
+					return PopLift[k - 1] + (PopLift[k] - PopLift[k - 1]) * u;
+				}
+			}
+			return 0f;
+		}
+
+		private static int DamageSize() => Qol.S.DamagePopupSize <= 0 ? 11 : Qol.S.DamagePopupSize == 1 ? DamageTextSize : 18;
 
 		// Timing (seconds) tuned for snappy FF3-NES / FF6 feel (no drift on disappear).
 		private const float Stagger = 0.045f;
@@ -57,22 +80,26 @@ namespace OpenFF.Client
 
 		public static void Attach(Microsoft.Xna.Framework.Game game) => game.Components.Add(new DamagePopups(game));
 
-		/// <summary>Spawns a damage (white double-bounce) or heal (green staggered float) popup at 480x320 virtual coordinates.</summary>
+		/// <summary>Spawns a damage (red-pink double-bounce) or heal (green staggered float) popup at 480x320 virtual coordinates.</summary>
 		public static int Spawn(int value, float x480, float y320, bool isHeal)
 		{
 			int clamped = Math.Clamp(Math.Abs(value), 0, 9999);
 			string text = clamped.ToString();
+			bool still = !Qol.S.DamagePopupAnimated;   // "Original (upscaled)": all the digits together, as the game's own number moves
+			int colour = Math.Clamp(Qol.S.DamagePopupColour, 0, 2);
+			byte ng = colour == 0 ? (byte)112 : colour == 1 ? (byte)255 : (byte)214;
+			byte nb = colour == 0 ? (byte)122 : colour == 1 ? (byte)255 : (byte)92;
 			return SpawnText(
 				text,
 				x480,
 				y320,
 				isHeal ? (byte)96 : (byte)255,
-				isHeal ? (byte)255 : (byte)255,
-				isHeal ? (byte)132 : (byte)255,
+				isHeal ? (byte)255 : ng,
+				isHeal ? (byte)132 : nb,
 				isHeal ? AnimStyle.HealFloat : AnimStyle.DamageBounce,
-				DamageTextSize,
-				Stagger,
-				DamageHoldEnd,
+				DamageSize(),
+				still ? 0f : Stagger,
+				still ? 0.74f : DamageHoldEnd,
 				extraTracking480: 1.2f,
 				centerX: true);
 		}
@@ -93,6 +120,12 @@ namespace OpenFF.Client
 			bool centerX = false)
 		{
 			if (string.IsNullOrEmpty(text)) return 0;
+			if (!Qol.S.DamagePopupAnimated)
+			{
+				// "Original (upscaled)": all the characters together, for as long as the game's own popups last.
+				staggerSec = 0f;
+				holdEnd = OriginalPopLife;
+			}
 
 			// Measure each glyph proportionally so wide letters (M, W, H) never overlap narrow ones (I, 1).
 			float[] offsets = new float[text.Length];
@@ -183,6 +216,8 @@ namespace OpenFF.Client
 			graphics.SetImageRotation(0f);
 			graphics.SetImageScale(1f, 1f);
 			graphics.DrawStringStart();
+			int shadow = Math.Clamp(Qol.S.DamagePopupShadow, 0, 3);
+			bool animated = Qol.S.DamagePopupAnimated;
 
 			for (int p = 0; p < Active.Count; p++)
 			{
@@ -193,7 +228,7 @@ namespace OpenFF.Client
 					char c = pop.Text[i];
 					if (c == ' ') continue;
 
-					float t = pop.Style == AnimStyle.HitsSlideIn
+					float t = pop.Style == AnimStyle.HitsSlideIn || !animated
 						? pop.Elapsed
 						: pop.Elapsed - i * pop.StaggerSec;
 					if (t < 0f) continue;
@@ -202,7 +237,8 @@ namespace OpenFF.Client
 					float dy = 0f;
 					int drawSize = pop.TextSize;
 
-					switch (pop.Style)
+					// Still popups ("Original (upscaled)") all move as the game's own do.
+					switch (animated ? pop.Style : AnimStyle.OriginalPop)
 					{
 						case AnimStyle.DamageBounce:
 							if (t < Hop1Duration)
@@ -242,6 +278,10 @@ namespace OpenFF.Client
 							break;
 						}
 
+						case AnimStyle.OriginalPop:
+							dy = OriginalPopOffset(t);
+							break;
+
 						case AnimStyle.HitsSlideIn:
 							break;
 					}
@@ -251,13 +291,23 @@ namespace OpenFF.Client
 					float ty = (pop.Y320 + dy - 12f) / 320f * TextSpaceHeight - sizeDeltaY;
 					string ch = c.ToString();
 
-					// Crisp dark outline + drop shadow for readability over any battle background.
-					graphics.SetColor(10, 12, 22, 235);
-					graphics.DrawString(ch, tx + 2f, ty + 2.5f, drawSize);
-					graphics.DrawString(ch, tx - 1.5f, ty, drawSize);
-					graphics.DrawString(ch, tx + 1.5f, ty, drawSize);
-					graphics.DrawString(ch, tx, ty - 1.5f, drawSize);
-					graphics.DrawString(ch, tx, ty + 1.5f, drawSize);
+					// Dark outline and drop shadow by the Shadow setting (Heavy is the retro look; Off draws none).
+					if (shadow > 0)
+					{
+						float o = shadow >= 3 ? 1.5f : shadow == 2 ? 0.8f : 0f;
+						float sx = shadow >= 3 ? 2f : shadow == 2 ? 1.2f : 1f;
+						float sy = shadow >= 3 ? 2.5f : shadow == 2 ? 1.5f : 1.2f;
+						byte a = (byte)(shadow >= 3 ? 235 : shadow == 2 ? 210 : 170);
+						graphics.SetColor(10, 12, 22, a);
+						graphics.DrawString(ch, tx + sx, ty + sy, drawSize);
+						if (o > 0f)
+						{
+							graphics.DrawString(ch, tx - o, ty, drawSize);
+							graphics.DrawString(ch, tx + o, ty, drawSize);
+							graphics.DrawString(ch, tx, ty - o, drawSize);
+							graphics.DrawString(ch, tx, ty + o, drawSize);
+						}
+					}
 
 					// Main character fill.
 					graphics.SetColor(pop.R, pop.G, pop.B, 255);
