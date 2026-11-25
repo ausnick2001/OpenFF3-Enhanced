@@ -98,6 +98,7 @@ internal static partial class GlobalScope
 			public static int pudnFIGURES_MAX = 4;
 
 			private sys2d.Sprite3d[] m_Number = new sys2d.Sprite3d[pudnFIGURES_MAX];
+			private int m_PopupId;
 
 			public PopUpDamageNumber()
 			{
@@ -109,6 +110,14 @@ internal static partial class GlobalScope
 
 			public bool pudnCreate(int no, NNSG2dFVec2 pos, int damage)
 			{
+				if (OpenFF.Client.Qol.BouncyDamagePopups)
+				{
+					float x480 = pos.x / 4096f;
+					float y320 = pos.y / 4096f;
+					m_PopupId = OpenFF.Client.DamagePopups.Spawn(no, x480, y320, isHeal: damage != 0);
+					return true;
+				}
+				m_PopupId = 0;
 				int num = no;
 				if (num < 0)
 				{
@@ -152,6 +161,10 @@ internal static partial class GlobalScope
 
 			public bool pudnIsExist()
 			{
+				if (m_PopupId != 0)
+				{
+					return OpenFF.Client.DamagePopups.IsAlive(m_PopupId);
+				}
 				if (sys2d.DS2DManager.d2dGetInstance().d2dGetEntriedSpriteIndex(m_Number[pudnFIGURES_MAX - 1]) == -1)
 				{
 					return false;
@@ -161,6 +174,8 @@ internal static partial class GlobalScope
 
 			public override void Release()
 			{
+				OpenFF.Client.DamagePopups.Cancel(m_PopupId);
+				m_PopupId = 0;
 				for (int i = 0; i < pudnFIGURES_MAX; i++)
 				{
 					m_Number[i].Release();
@@ -217,6 +232,7 @@ internal static partial class GlobalScope
 			private sys2d.Sprite3d m_Critical = new sys2d.Sprite3d();
 
 			private sys2d.Sprite3d m_Miss = new sys2d.Sprite3d();
+			private int m_PopupId;
 
 			private sys2d.Sprite3d startBar_ = new sys2d.Sprite3d();
 
@@ -232,6 +248,27 @@ internal static partial class GlobalScope
 
 			public bool puhnCreate(int no, NNSG2dFVec2 pos, puhnKIND kind)
 			{
+				if (OpenFF.Client.Qol.BouncyDamagePopups && (kind == puhnKIND.puhnkNORMAL || kind == puhnKIND.puhnkCRITICAL || kind == puhnKIND.puhnkMISS))
+				{
+					float x480 = pos.x / 4096f;
+					float y320 = pos.y / 4096f;
+					if (kind == puhnKIND.puhnkNORMAL)
+					{
+						int hits = ds.clamp(abs(no), 1, 99);
+						string label = hits == 1 ? "1 HIT" : hits + " HITS";
+						m_PopupId = OpenFF.Client.DamagePopups.SpawnText(label, x480, y320, 255, 178, 72, OpenFF.Client.DamagePopups.AnimStyle.HitsSlideIn, textSize: 13, staggerSec: 0f, holdEnd: 0.52f, extraTracking480: 0.8f, centerX: true);
+					}
+					else if (kind == puhnKIND.puhnkCRITICAL)
+					{
+						m_PopupId = OpenFF.Client.DamagePopups.SpawnText("CRITICAL!", x480, y320 - 4f, 255, 220, 70, OpenFF.Client.DamagePopups.AnimStyle.CriticalScaleBounce, textSize: 9, staggerSec: 0.022f, holdEnd: 0.62f, extraTracking480: 0.6f, centerX: true);
+					}
+					else
+					{
+						m_PopupId = OpenFF.Client.DamagePopups.SpawnText("MISS", x480, y320, 210, 226, 255, OpenFF.Client.DamagePopups.AnimStyle.MissDodge, textSize: 14, staggerSec: 0.032f, holdEnd: 0.56f, extraTracking480: 0.8f, centerX: true);
+					}
+					return true;
+				}
+				m_PopupId = 0;
 				bool flag = false;
 				int num = ds.clamp(abs(no), 0, 9999);
 				int num2 = 1;
@@ -339,6 +376,10 @@ internal static partial class GlobalScope
 
 			public bool puhnIsExist()
 			{
+				if (m_PopupId != 0)
+				{
+					return OpenFF.Client.DamagePopups.IsAlive(m_PopupId);
+				}
 				bool flag = false;
 				if (!flag)
 				{
@@ -365,6 +406,8 @@ internal static partial class GlobalScope
 
 			public override void Release()
 			{
+				OpenFF.Client.DamagePopups.Cancel(m_PopupId);
+				m_PopupId = 0;
 				for (int i = 0; i < puhnFIGURES_MAX; i++)
 				{
 					sys2d.DS2DManager.d2dGetInstance().d2dDeleteSprite(m_Number[i]);

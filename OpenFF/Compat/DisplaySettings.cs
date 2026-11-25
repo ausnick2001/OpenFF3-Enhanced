@@ -103,6 +103,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("turnBased")] public bool TurnBased { get; set; } = true;
 			/// <summary>The white screen flash on a critical hit; false skips it (for those it bothers).</summary>
 			[JsonPropertyName("criticalFlash")] public bool CriticalFlash { get; set; } = true;
+			/// <summary>FF3-NES / FF6-style staggered bouncy damage, hit, critical and miss popups; false uses the original DS sprites.</summary>
+			[JsonPropertyName("bouncyDamagePopups")] public bool BouncyDamagePopups { get; set; } = true;
 			/// <summary>FF3's dialogue window with its text and the speaker's name, together (DialogueSizing): 0.6 to 1, 1 as the game draws it.</summary>
 			[JsonPropertyName("dialogueSize")] public double DialogueSize { get; set; } = 1;
 			/// <summary>The said lines' size on top of the window's: 0.7 to 1.3, 1 as set.</summary>

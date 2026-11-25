@@ -54,10 +54,13 @@ internal static partial class GlobalScope
 				NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
 				nNSG2dFVec.x = ds.S32toFX32(px);
 				nNSG2dFVec.y = ds.S32toFX32(py);
-				nNSG2dFVec.x -= 49152;
-				if (hit / 10 != 0)
+				if (!OpenFF.Client.Qol.BouncyDamagePopups)
 				{
-					nNSG2dFVec.x -= 24576;
+					nNSG2dFVec.x -= 49152;
+					if (hit / 10 != 0)
+					{
+						nNSG2dFVec.x -= 24576;
+					}
 				}
 				return create(hit, nNSG2dFVec, kind);
 			}

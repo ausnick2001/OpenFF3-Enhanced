@@ -59,6 +59,9 @@ namespace OpenFF.Client
 		/// <summary>Whether a critical hit flashes the screen white, as the game does.</summary>
 		public static bool CriticalFlash => S.CriticalFlash;
 
+		/// <summary>Whether battle damage, hit, critical and miss popups use the FF3-NES / FF6-style staggered bounce.</summary>
+		public static bool BouncyDamagePopups => S.BouncyDamagePopups;
+
 		/// <summary>The dungeon minimap is on.</summary>
 		public static bool Minimap => S.Minimap;
 		public static bool MinimapFog => S.MinimapFog;

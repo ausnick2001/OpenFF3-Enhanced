@@ -51,7 +51,7 @@ namespace OpenFF.Client
 				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 32, 516, 444), 94, 26, 23.5f, true);
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -626,8 +626,8 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Back.
-		private const int QolRows = 10;
+		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Bouncy damage popups, Indicator, Back.
+		private const int QolRows = 11;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -669,13 +669,17 @@ namespace OpenFF.Client
 					Qol.Changed("critical hit flash " + (q.CriticalFlash ? "on" : "off"));
 					break;
 				case 8:
+					q.BouncyDamagePopups = !q.BouncyDamagePopups;
+					Qol.Changed("bouncy damage popups " + (q.BouncyDamagePopups ? "on" : "off"));
+					break;
+				case 9:
 					// Off, then speed and encounters only, then everything that is changed.
 					int level = !q.Indicator ? 0 : q.IndicatorSimple ? 1 : 2;
 					level = ((level + by) % 3 + 3) % 3;
 					q.Indicator = level != 0; q.IndicatorSimple = level == 1;
 					Qol.Changed("indicator " + (level == 0 ? "off" : level == 1 ? "speed and encounters" : "all"));
 					break;
-				case 9:
+				case 10:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -695,7 +699,8 @@ namespace OpenFF.Client
 				case 5: return "Off: no lowered stats after a job change. On: the game's default";
 				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
 				case 7: return "Off: no white screen flash when a hit is critical";
-				case 8: return "Text overlay in top-left corner indicating what features are on";
+				case 8: return "On: FF3 NES / FF6-style staggered bouncy damage, hit, critical and miss popups";
+				case 9: return "Text overlay in top-left corner indicating what features are on";
 				default: return "";
 			}
 		}
@@ -796,7 +801,8 @@ namespace OpenFF.Client
 						case 5: icon = UiTheme.Icon.Adjustment; on = q.JobAdjustment; return Kind.Switch;
 						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Quality; on = q.CriticalFlash; return Kind.Switch;
-						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
+						case 8: icon = UiTheme.Icon.Quality; on = q.BouncyDamagePopups; return Kind.Switch;
+						case 9: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -1177,7 +1183,8 @@ namespace OpenFF.Client
 						case 5: label = "Job change adjustment"; value = q.JobAdjustment ? "On" : "Off"; return;
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
 						case 7: label = "Critical hit flash"; value = q.CriticalFlash ? "On" : "Off"; return;
-						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						case 8: label = "Bouncy damage popups"; value = q.BouncyDamagePopups ? "On" : "Off"; return;
+						case 9: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
 						default: label = "Back"; return;
 					}
 				}
