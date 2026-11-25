@@ -149,6 +149,27 @@ public class AppShell
 		{
 			OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.General, "language resource unreadable: " + ex.Message);
 		}
+		// PORT: the install's own language (Steam's FF3 ships one language's files, chosen by the game's Steam language
+		// setting, and its files\language.dat says which: 0 Japanese, 1 English, 2 French, 3 German, 4 Italian, 5 Spanish,
+		// 6 Simplified Chinese, 7 Traditional Chinese, 8 Korean). It decides the text's decoding and the client's own words.
+		// A missing file, or a value the game has no table for (Thai), leaves English.
+		if (!OpenFF.Client.GameProfile.IsFf4)
+		{
+			try
+			{
+				byte[] installed = loadFileEntry("files/language.dat");
+				if (installed != null && installed.Length > 0 && installed[0] <= 8)
+				{
+					language = installed[0];
+					GlobalScope.setResourceCulture(language);
+				}
+				OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.General, "language: " + (new[] { "Japanese", "English", "French", "German", "Italian", "Spanish", "Simplified Chinese", "Traditional Chinese", "Korean" })[language >= 0 && language <= 8 ? language : 1] + (installed == null ? " (no language.dat in the install)" : ""));
+			}
+			catch (Exception ex)
+			{
+				OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.General, "language.dat unreadable: " + ex.Message);
+			}
+		}
 		// The surface is the game window; report its size so the touch mapping and
 		// the renderer agree on the 800x480 view the game was authored against.
 		onSurfaceCreated();

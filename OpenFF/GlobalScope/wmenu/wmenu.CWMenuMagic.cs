@@ -214,7 +214,8 @@ internal static partial class GlobalScope
 										}
 										return;
 									}
-									switch (myProcess)
+									bool padTabNow = PadTabsStep();
+									switch (padTabNow ? -1 : myProcess)
 									{
 									case 0:
 										MagicUse();
@@ -231,7 +232,7 @@ internal static partial class GlobalScope
 									}
 									// PORT: X / Y turn the Use / Learn / Remove / Change tabs for a pad or a keyboard (L / R
 									// turn the character here, as on the DS), in the states where a tap on a tab is taken.
-									if (!m_state && (myProcess == 0 || myProcess == 2 || (myProcess == 1 && localState == 3) || (myProcess == 3 && localState == 2)))
+									if (!padTabNow && !m_state && (myProcess == 0 || myProcess == 2 || (myProcess == 1 && localState == 3) || (myProcess == 3 && localState == 2)))
 									{
 										TurnTabs(myProcess, TAB_PREV_BUTTON, TAB_NEXT_BUTTON);
 									}
@@ -475,9 +476,16 @@ internal static partial class GlobalScope
 									case 0:
 										if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											}
+											else
+											{
+												BeginPadTabs(myProcess);
+											}
 										}
 										else
 										{
@@ -783,9 +791,16 @@ internal static partial class GlobalScope
 										}
 										else if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											}
+											else
+											{
+												BeginPadTabs(myProcess);
+											}
 										}
 										break;
 									}
@@ -912,9 +927,16 @@ internal static partial class GlobalScope
 										}
 										else if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											}
+											else
+											{
+												BeginPadTabs(myProcess);
+											}
 										}
 										break;
 									case 2:
@@ -1008,9 +1030,16 @@ internal static partial class GlobalScope
 										}
 										else if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+											}
+											else
+											{
+												BeginPadTabs(myProcess);
+											}
 										}
 										break;
 									case 3:

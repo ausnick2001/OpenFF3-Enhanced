@@ -74,6 +74,9 @@ internal static partial class GlobalScope
 
 								private int sortCount;
 
+								// PORT: a Sort taken from the pad's tab row returns to that row, so Sort can be pressed again for the next order.
+								private bool padSort;
+
 								private int selectItemNo;
 
 								private int dummyInBoxNo;
@@ -210,7 +213,8 @@ internal static partial class GlobalScope
 								public override void run()
 								{
 									menu.MenuManager.getSingleton().execute();
-									switch (myProcess)
+									bool padTabNow = PadTabsStep();
+									switch (padTabNow ? -1 : myProcess)
 									{
 									case 0:
 										ItemUsing();
@@ -224,7 +228,7 @@ internal static partial class GlobalScope
 									}
 									// PORT: L / R (no character to turn here) and X / Y turn the Items / Key Items tabs for a
 									// pad or a keyboard; Sort (tag 1) is an action, not a page, so it is not turned to.
-									TurnTabs(prev_focus_group, 0x200 | TAB_PREV_BUTTON, 0x100 | TAB_NEXT_BUTTON, 1);
+									if (!padTabNow) TurnTabs(prev_focus_group, 0x200 | TAB_PREV_BUTTON, 0x100 | TAB_NEXT_BUTTON, 1);
 									if (menu.MenuManager.getSingleton().GetActivateButtonState() == 0 && menu.MenuManager.getSingleton().getFocuseMedget().parentNode()
 										._id(TRANSCODE("mm_command")))
 									{
@@ -419,9 +423,16 @@ internal static partial class GlobalScope
 										}
 										else if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+											}
+											else
+											{
+												BeginPadTabs(prev_focus_group);
+											}
 										}
 										break;
 									case 1:
@@ -477,6 +488,8 @@ internal static partial class GlobalScope
 									{
 									case 0:
 										sortCount = 0;
+										padSort = PadTabPicked == 1;
+										PadTabPicked = -1;
 										ProcessHelpWindowVerSeiton();
 										SeitonItemSort();
 										localState = 1;
@@ -510,6 +523,11 @@ internal static partial class GlobalScope
 											helpNo = 0;
 											m_state = false;
 											localState = 0;
+											if (padSort)
+											{
+												padSort = false;
+												BeginPadTabs(1);
+											}
 										}
 										break;
 									}
@@ -541,9 +559,16 @@ internal static partial class GlobalScope
 										}
 										else if (menu.MenuManager.getSingleton().GetCancelButtonState() == 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
 										{
-											menu.MenuManager.getSingleton().playSECancel();
-											CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
-											CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+											if (CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+											{
+												menu.MenuManager.getSingleton().playSECancel();
+												CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+												CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+											}
+											else
+											{
+												BeginPadTabs(prev_focus_group);
+											}
 										}
 										break;
 									case 3:

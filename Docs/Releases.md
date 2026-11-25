@@ -3,6 +3,17 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.10 - OpenFF3 Enhanced (2026-11-25)
+
+**Fixed**
+- Fixed multi-language support: The game was supposed to match the language of your vanilla FF3 3D install but it wasn't. To change the language, right click on FF3 3D in Steam and then click properties and select a language. Steam will then download the language files. OpenFF3 can then use them to display in that language. Unfortunately this only applies to in-game menus and dialogue. The OpenFF3 menus will still be in English. Players wishing to play in Japanese, Chinese or Korean may need to provide their own fonts to display correctly
+- Fixed Sort in the Item menu and the Magic menu tabs not being reachable with a gamepad.
+
+**Changed**
+- The game no longer checks its files against the release when it starts (it warned about a language installed through Steam, and about harmless changes). Settings > Check game files still does the check when you ask for it.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.9 - OpenFF3 Enhanced (2026-11-24)
 
 **Added**

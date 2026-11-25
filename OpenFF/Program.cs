@@ -188,8 +188,8 @@ namespace OpenFF.Client
 					+ (NativeRenderer.Enabled ? "native" : "emulated (legacy GL path)"));
 				RenderOverrides.LogState();
 				Log.Write(LogChannel.General, "content root: " + contentRoot);
-				// The game's files against the release's list, in the background (GameFileCheck): said over the title if they differ.
-				if (Launch.Source == "steam") GameFileCheck.Start(asked: false);
+				// The game's files are no longer checked against the release's list at start-up (it warned about a language Steam
+				// installed, and about harmless changes); Settings > Check game files still does it when asked (GameFileCheck).
 				Log.Write(LogChannel.General, "backbuffer: "
 					+ gdm.PreferredBackBufferWidth + "x" + gdm.PreferredBackBufferHeight
 					+ " fullscreen=" + gdm.IsFullScreen);

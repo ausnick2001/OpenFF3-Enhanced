@@ -209,6 +209,101 @@ internal static partial class GlobalScope
 									mgr.SetActivateButtonState(0);
 									return true;
 								}
+
+								// PORT: pad route to a menu's tab row (Use / Sort / Key Items, Use / Learn / Remove / Change): the touch build
+								// tapped them and a pad had no way there (the equipment menu had the same gap). Circle on the list steps up to
+								// the row; left / right (or up / down) move along it, Cross takes the tab as a tap on it does, Circle again
+								// leaves the menu.
+								private int padTabAt = -1;
+
+								private bool padTabSkip;
+
+								/// <summary>The tab Cross last took from the row (-1 none); a menu reads and clears it.</summary>
+								protected int PadTabPicked = -1;
+
+								private System.Collections.Generic.List<menu.Medget> padTabList;
+
+								protected void BeginPadTabs(int currentTag)
+								{
+									menu.MenuManager mgr = menu.MenuManager.getSingleton();
+									menu.Medget row = mgr.root()?.getNodeByID(TRANSCODE("mm_command"));
+									var tabs = new System.Collections.Generic.List<menu.Medget>();
+									if (row != null)
+									{
+										for (menu.Medget m = row.childNode(); m != null; m = m.nextSibling())
+										{
+											tabs.Add(m);
+										}
+									}
+									if (tabs.Count < 2)
+									{
+										mgr.playSECancel();
+										CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+										CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+										return;
+									}
+									padTabList = tabs;
+									padTabAt = System.Math.Max(0, tabs.FindIndex(m => m.myTag() == currentTag));
+									padTabSkip = true;
+									CWMenuManager.Instance().GetDummyCursor().SetShow(show: false);
+									mgr.inputPermission(b: false);
+									mgr.GetCursor2d().SetShow(show: true);
+									mgr.GetCursor2d().SetPositionI(tabs[padTabAt].cursorX(), tabs[padTabAt].cursorY());
+									mgr.playSEMoveCursor();
+								}
+
+								/// <summary>One frame of the tab row: true while it holds the menu (the list is not read then).</summary>
+								protected bool PadTabsStep()
+								{
+									if (padTabAt < 0)
+									{
+										return false;
+									}
+									if (padTabSkip)
+									{
+										padTabSkip = false;
+										return true;
+									}
+									menu.MenuManager mgr = menu.MenuManager.getSingleton();
+									int edge = ds.g_Pad.edge();
+									if ((edge & 2) != 0 || CWMenuManager.Instance().GetMenuButton().TouchButtonB())
+									{
+										padTabAt = -1;
+										mgr.inputPermission(b: true);
+										mgr.playSECancel();
+										CWMenuManager.Instance().SetNextKind(WMENU_KIND.WMENU_KIND_MAIN_MENU);
+										CWMenuManager.Instance().SetProcState(WMENU_PROCESS.WMENU_PROCESS_TERMINATE);
+										return true;
+									}
+									if ((edge & 1) != 0)
+									{
+										menu.Medget chosen = padTabList[padTabAt];
+										PadTabPicked = chosen.myTag();
+										padTabAt = -1;
+										mgr.inputPermission(b: true);
+										mgr.playSEDecide();
+										// By tag, as a tap does (and as TurnTabs does): the menu's own tap handling carries it out.
+										mgr.initFocus(chosen.myTag());
+										mgr.SetActivateButtonState(0);
+										return true;
+									}
+									int step = 0;
+									if ((edge & 0x30) != 0)
+									{
+										step = ((edge & 0x10) != 0) ? 1 : -1;
+									}
+									else if ((edge & 0xC0) != 0)
+									{
+										step = ((edge & 0x80) != 0) ? 1 : -1;
+									}
+									if (step != 0)
+									{
+										padTabAt = (padTabAt + step + padTabList.Count) % padTabList.Count;
+										mgr.GetCursor2d().SetPositionI(padTabList[padTabAt].cursorX(), padTabList[padTabAt].cursorY());
+										mgr.playSEMoveCursor();
+									}
+									return true;
+								}
 							}
 	}
 }
