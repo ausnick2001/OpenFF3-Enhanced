@@ -1208,6 +1208,13 @@ internal static partial class GlobalScope
 					Manager.GetInstance().SetResult(RESULT.RESULT_WRONG_VERSION);
 					return false;
 				}
+				// PORT: the Steam game's own saves carry the same codes and version but a different layout (a slot of 15160 bytes, not
+				// 13842); read as ours they gave heroes with impossible jobs and crashed the load list. Such a slot is a broken one here.
+				if (GetDataSize() != 13842u)
+				{
+					Manager.GetInstance().SetResult(RESULT.RESULT_WRONG_VERSION);
+					return false;
+				}
 				return true;
 			}
 

@@ -51,10 +51,13 @@ internal static partial class GlobalScope
 
 								private bool[] shown_ = new bool[4];
 
+								// PORT: the menu's Touch buttons off: the buttons are not drawn and take no touch (shown_ stays as the game set it, for IsButtonShown).
+								private static bool Off => !OpenFF.Client.Qol.TouchButtons;
+
 								private void Shown(int i, bool b)
 								{
 									shown_[i] = b;
-									OpenFF.Client.FieldHud.MenuButtonShown(i, b);
+									OpenFF.Client.FieldHud.MenuButtonShown(i, b && !Off);
 								}
 
 								public void initialize()
@@ -74,7 +77,7 @@ internal static partial class GlobalScope
 										OpenFF.Client.FieldHud.MenuButtonMade(i, button[i].cell);
 									}
 									button[0].cell.SetShow(show: false);
-									button[1].cell.SetShow(show: true);
+									button[1].cell.SetShow(show: !Off);
 									button[0].cell.SetAnimation(anm: false);
 									button[1].cell.SetAnimation(anm: false);
 									createXAndBMessage();
@@ -140,7 +143,7 @@ internal static partial class GlobalScope
 
 								public bool TouchButtonB()
 								{
-									if (!shown_[1])
+									if (!shown_[1] || Off)
 									{
 										return false;
 									}
@@ -175,7 +178,7 @@ internal static partial class GlobalScope
 
 								public bool TouchButtonL()
 								{
-									if (!shown_[2])
+									if (!shown_[2] || Off)
 									{
 										return false;
 									}
@@ -207,7 +210,7 @@ internal static partial class GlobalScope
 
 								public bool TouchButtonR()
 								{
-									if (!shown_[3])
+									if (!shown_[3] || Off)
 									{
 										return false;
 									}
@@ -266,6 +269,7 @@ internal static partial class GlobalScope
 										button[1].pos.vy = (short)(hit_[1].Y + Cell_Pos[1][1] - Hit_Y + 10);
 										pBString.get().setPosition(button[1].pos.vx, button[1].pos.vy, erase: true);
 										OpenFF.Client.FieldHud.MenuButtonText(1, pBString.get());
+										if (Off) pBString.get().setVisibility(b: false);
 									}
 								}
 
@@ -283,43 +287,43 @@ internal static partial class GlobalScope
 
 								public void SetButtonAActivity(bool b)
 								{
-									button[0].cell.SetShow(b);
+									button[0].cell.SetShow(b && !Off);
 									if (pAString != null)
 									{
 										pAString.get().setPosition(button[0].pos.vx, button[0].pos.vy, erase: true);
-										pAString.get().setVisibility(b);
+										pAString.get().setVisibility(b && !Off);
 									}
 									Shown(0, b);
 								}
 
 								public void SetButtonBActivity(bool b)
 								{
-									button[1].cell.SetShow(b);
+									button[1].cell.SetShow(b && !Off);
 									if (pBString != null)
 									{
 										pBString.get().setPosition(button[1].pos.vx, button[1].pos.vy, erase: true);
-										pBString.get().setVisibility(b);
+										pBString.get().setVisibility(b && !Off);
 									}
 									Shown(1, b);
 								}
 
 								public void SetButtonLActivity(bool b)
 								{
-									button[2].cell.SetShow(b);
+									button[2].cell.SetShow(b && !Off);
 									Shown(2, b);
 								}
 
 								public void SetButtonRActivity(bool b)
 								{
-									button[3].cell.SetShow(b);
+									button[3].cell.SetShow(b && !Off);
 									Shown(3, b);
 								}
 
 								public void SetUpNormalVer()
 								{
-									button[3].cell.SetShow(show: true);
+									button[3].cell.SetShow(show: !Off);
 									button[3].cell.SetAnimation(anm: false);
-									button[2].cell.SetShow(show: true);
+									button[2].cell.SetShow(show: !Off);
 									button[2].cell.SetAnimation(anm: false);
 									Shown(3, true);
 									Shown(2, true);

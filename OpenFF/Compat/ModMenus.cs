@@ -1210,7 +1210,8 @@ namespace OpenFF.Client
 					if (_arrows[i] == null)
 					{
 						GlobalScope.sys2d.Sprite3d s = new GlobalScope.sys2d.Sprite3d();
-						s.Load2(GlobalScope.sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, steam ? "icon_16dot" : i == 0 ? "icon_left" : "icon_right");
+						try { s.Load2(GlobalScope.sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, steam ? "icon_16dot" : i == 0 ? "icon_left" : "icon_right"); }
+						catch (Exception) { try { GlobalScope.NNS_G2dReleaseImageProxy(s.GetImageProxy()); } catch (Exception) { } throw; }
 						GlobalScope.sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(s);
 						s.SetCell(steam ? (ushort)(i == 0 ? 9 : 13) : (ushort)0);
 						if (steam) s.SetScaleF(GlobalScope.FX32_CONST(0.68f), GlobalScope.FX32_CONST(0.68f));
@@ -1243,7 +1244,9 @@ namespace OpenFF.Client
 			for (int i = 0; i < 2; i++)
 			{
 				if (_arrows[i] == null) continue;
-				try { GlobalScope.sys2d.DS2DManager.d2dGetInstance().d2dDeleteSprite(_arrows[i]); _arrows[i].Release(); } catch (Exception) { }
+				// The sprite's release frees its pictures, not its place in the game's table of 64 loaded images: that is given back here
+				// (as the game's own screens do for their cells), or every opening of a list screen used up two places until none were left.
+				try { GlobalScope.sys2d.DS2DManager.d2dGetInstance().d2dDeleteSprite(_arrows[i]); GlobalScope.NNS_G2dReleaseImageProxy(_arrows[i].GetImageProxy()); _arrows[i].Release(); } catch (Exception) { }
 				_arrows[i] = null;
 			}
 		}

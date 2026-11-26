@@ -151,6 +151,10 @@ internal static partial class GlobalScope
 					return false;
 				}
 				BattleSetupPlayer.forward_ = null;
+				if (turn_.isPlayerEscape())
+				{
+					return false;   // the party ran off with them: stepping back would put the hero on the empty field again as the battle ends
+				}
 				if (!forward.isEnable() || forward.condition().isDeath())
 				{
 					return false;

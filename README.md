@@ -115,6 +115,8 @@ Saves, settings and achievements are kept in a `userdata` folder next to `OpenFF
 > [!NOTE]
 > Back up the `userdata` folder before you delete or move the game's folder: your saves live in it.
 
+**Steam saves:** drop the Steam game's own `SAVE.BIN` into `userdata\saves` and the game converts it to its own format the next time it starts (the original is kept as `save.steam-backup.bin`). A `save.bin` of your own is never overwritten; the conversion is then written as `save.from-steam.bin`.
+
 If you prefer to keep your saves/user data somewhere else, start the game with `--data-dir=<folder>`.
 
 ## Fonts

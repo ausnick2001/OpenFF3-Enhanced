@@ -48,13 +48,13 @@ namespace OpenFF.Client
 				}
 				case Page.Map: return new Layout(new Rectangle(142, 40, 516, 430), 102, 29, 25, true);
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
-				// Nine rows now (Battle menus joined Damage popups): a little closer so the note under them still clears the hints.
-				case Page.Text: return new Layout(new Rectangle(142, 50, 516, 390), 114, 28, 25, true);
+				// Ten rows now (Touch buttons joined): the panel grows up and down, so the note under the rows (36 high) clears the hints (centred 22 above the panel's foot).
+				case Page.Text: return new Layout(new Rectangle(142, 36, 516, 434), 100, 28, 25, true);
 				case Page.BattleMenus: return new Layout(new Rectangle(142, 50, 516, 390), 114, 34, 30, true);
 				case Page.Popups: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
-				case Page.Qol: return new Layout(new Rectangle(142, 42, 516, 436), 104, 28, 25f, true);
+				case Page.Qol: return new Layout(new Rectangle(142, 12, 516, 466), 74, 28, 25f, true);   // eleven rows: grown up so the note under them clears the hints
 				default: return new Layout(new Rectangle(142, 50, 516, 414), 122, 31, 27, true);
 			}
 		}
@@ -543,7 +543,7 @@ namespace OpenFF.Client
 		// ---- font / dialogue ----
 
 		// Dialogue box size, Dialogue text size, Speaker name size, Dialogue shadow, Menu text shadow, Battle descriptions, Damage popups (a page), Battle menus (a page), Back.
-		private const int TextRows = 9;
+		private const int TextRows = 10;
 
 		private static string Percent(float v) => Math.Round(v * 100) + "%";
 
@@ -595,7 +595,8 @@ namespace OpenFF.Client
 				case 7:
 					if (confirm) { _page = Page.BattleMenus; _selected = 0; _note = BattleNote(0); }
 					return;
-				case 8:
+				case 8: q.TouchButtons = !q.TouchButtons; Qol.Changed("touch buttons " + (q.TouchButtons ? "on" : "off")); break;
+				case 9:
 					if (confirm) { _page = Page.Main; _selected = MainRow("text"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -683,7 +684,7 @@ namespace OpenFF.Client
 		}
 
 		// Only the battle descriptions row has a note; the others explain themselves.
-		private static string TextNote(int row) => row == 5 ? "Minimal skips the obvious commands, like Attack and Guard" : "";
+		private static string TextNote(int row) => row == 5 ? "Minimal skips the obvious commands, like Attack and Guard" : row == 8 ? "Off: hides the on-screen touch buttons; the pad and keys still work" : "";
 
 		/// <summary>The main page's row: what is changed, in a few words.</summary>
 		private static string TextSummary()
@@ -747,8 +748,8 @@ namespace OpenFF.Client
 
 		// ---- quality of life ----
 
-		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Back.
-		private const int QolRows = 10;
+		// Speed, Encounter rate, Battle EXP, Job EXP, Save anywhere, Job change adjustment, Turn-based battles, Critical hit flash, Indicator, Transition sounds, Back.
+		private const int QolRows = 11;
 
 		/// <summary>One quality-of-life row turned: left/right go through its values, confirm forward (or back, on Back).</summary>
 		private void ChangeQol(int row, int by, bool confirm)
@@ -797,6 +798,10 @@ namespace OpenFF.Client
 					Qol.Changed("indicator " + (level == 0 ? "off" : level == 1 ? "speed and encounters" : "all"));
 					break;
 				case 9:
+					q.TransitionSounds = !q.TransitionSounds;
+					Qol.Changed("transition sounds " + (q.TransitionSounds ? "on" : "off"));
+					break;
+				case 10:
 					if (confirm) { _page = Page.Main; _selected = MainRow("qol"); DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -817,6 +822,7 @@ namespace OpenFF.Client
 				case 6: return "on: similar to FFX - heroes act as soon as a command is input";
 				case 7: return "Off: no white screen flash when a hit is critical";
 				case 8: return "Text overlay in top-left corner indicating what features are on";
+				case 9: return "Off: silences the swoosh as an area loads and as the menu opens and closes";
 				default: return "";
 			}
 		}
@@ -834,6 +840,7 @@ namespace OpenFF.Client
 			if (!q.JobAdjustment) on.Add("no adjustment");
 			if (!q.TurnBased) on.Add("classic battles");
 			if (!q.CriticalFlash) on.Add("no critical flash");
+			if (!q.TransitionSounds) on.Add("no transition sounds");
 			if (q.BattleDescriptions == 0) on.Add("no battle descriptions"); else if (q.BattleDescriptions == 1) on.Add("minimal battle descriptions");
 			if (on.Count == 0) return "as the game plays";
 			string all = string.Join(", ", on);
@@ -919,6 +926,7 @@ namespace OpenFF.Client
 						case 6: icon = UiTheme.Icon.Encounters; on = q.TurnBased; return Kind.Switch;
 						case 7: icon = UiTheme.Icon.Quality; on = q.CriticalFlash; return Kind.Switch;
 						case 8: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
+						case 9: icon = UiTheme.Icon.Quality; on = q.TransitionSounds; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				}
@@ -933,6 +941,7 @@ namespace OpenFF.Client
 						case 5: icon = UiTheme.Icon.Window; return Kind.Stepper;
 						case 6: icon = UiTheme.Icon.Quality; return Kind.Page;
 						case 7: icon = UiTheme.Icon.WindowSize; return Kind.Page;
+						case 8: icon = UiTheme.Icon.Window; on = Qol.S.TouchButtons; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.BattleMenus:
@@ -1322,6 +1331,7 @@ namespace OpenFF.Client
 						case 6: label = "Turn-based battles"; value = q.TurnBased ? "On" : "Off"; return;
 						case 7: label = "Critical hit flash"; value = q.CriticalFlash ? "On" : "Off"; return;
 						case 8: label = "Indicator"; value = !q.Indicator ? "Off" : q.IndicatorSimple ? "Speed and encounters" : "All"; return;
+						case 9: label = "Transition sounds"; value = q.TransitionSounds ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}
@@ -1349,6 +1359,7 @@ namespace OpenFF.Client
 						case 5: label = "Battle descriptions"; value = DescriptionNames[Math.Clamp(Qol.S.BattleDescriptions, 0, 2)]; return;
 						case 6: label = "Damage popups"; value = PopupStyleNames[PopupStyle(Qol.S)]; return;
 						case 7: label = "Battle menus"; value = Percent(BattleSizing.Box); return;
+						case 8: label = "Touch buttons"; value = Qol.S.TouchButtons ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}

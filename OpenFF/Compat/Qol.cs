@@ -59,6 +59,18 @@ namespace OpenFF.Client
 		/// <summary>Whether a critical hit flashes the screen white, as the game does.</summary>
 		public static bool CriticalFlash => S.CriticalFlash;
 
+		/// <summary>Whether the swoosh of a field, town or menu starting or ending plays (the menu's Transition sounds).</summary>
+		public static bool TransitionSounds => S.TransitionSounds;
+
+		/// <summary>Whether the touch screen's on-screen buttons are drawn and answer a touch (the menu's Touch buttons).</summary>
+		public static bool TouchButtons => S.TouchButtons;
+
+		/// <summary>The game's transition sound (sound bank 1, sounds 0 and 1) - played unless the player has turned it off.</summary>
+		public static void TransitionSound(int bank, int sound)
+		{
+			if (TransitionSounds) GlobalScope.MatrixSound.MtxSENDS_Play(bank, sound, 192, 127);
+		}
+
 		/// <summary>The battle descriptions at the top of the screen: 0 off, 1 minimal, 2 on.</summary>
 		public static int BattleDescriptions => S.BattleDescriptions;
 

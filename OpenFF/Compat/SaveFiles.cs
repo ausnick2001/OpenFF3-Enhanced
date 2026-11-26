@@ -28,6 +28,8 @@ namespace OpenFF.Client
 					Log.Write(LogChannel.File, "save directory: " + _directory + (Override != null ? " (--save-dir)" : ""));
 					// A folder of the run's own has no older saves to bring over.
 					if (Override == null) Recover();
+					// PORT: a Steam game's own SAVE.BIN dropped in as save.bin is converted to ours (the original kept beside it).
+					SteamSaveImport.ConvertIfSteam(Path.Combine(_directory, "save.bin"));
 				}
 				return _directory;
 			}

@@ -190,6 +190,20 @@ namespace OpenFF.Client
 			_heroes[hero] = list;
 		}
 
+		/// <summary>The rules as they stand, to put back after a read of the save file that is not a game being loaded.</summary>
+		public static Dictionary<int, List<Gambit>> Snapshot()
+		{
+			Dictionary<int, List<Gambit>> copy = new Dictionary<int, List<Gambit>>();
+			foreach (KeyValuePair<int, List<Gambit>> hero in _heroes) copy[hero.Key] = hero.Value.Select(r => r.Copy()).ToList();
+			return copy;
+		}
+
+		public static void Restore(Dictionary<int, List<Gambit>> rules)
+		{
+			_heroes.Clear();
+			foreach (KeyValuePair<int, List<Gambit>> hero in rules) _heroes[hero.Key] = hero.Value;
+		}
+
 		/// <summary>Everyone back to the defaults: the title (a new game follows), or a save about to be read (its own rules, if any, come next).</summary>
 		public static void Reset()
 		{

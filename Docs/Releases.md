@@ -3,6 +3,21 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.12 - OpenFF3 Enhanced (in progress)
+
+**Added**
+- **Touch buttons** switch (Esc > Text and Menus): takes down the touch screen's on-screen buttons - the menus' Back and player switch, and the battle's Back, Player / Enemy, All and Group - for those who play with a pad. On by default; the pad and keys do everything either way.
+- **Transition sounds** switch (Esc > Quality of Life): turn off the swoosh the game plays as an area loads and as the menu opens and closes, for those it grates on. On by default.
+- Steam saves now come over. Copy the Steam game's own `SAVE.BIN` into `userdata\saves` (as `save.bin`) and the game converts it to its own format the first time it starts, party, items, gil, job levels, position and story progress included. The Steam file is kept beside it as `save.steam-backup.bin`. If you already have a `save.bin` of your own there, it is left alone and the conversion is written as `save.from-steam.bin`.
+
+**Fixed**
+- Auto-battle rules (gambits) no longer fall back to "Foe (any) > Attack" once you are playing: the game's reads of the save file (options, slot headers, the save menu) used to wipe them, most of all before a first save was made.
+- On the Gambits screen, coming back from choosing a target or action returns to the hero you switched to with L / R, not the one you first opened the screen with.
+- Opening and closing the list screens (the Gambits screen's scroll arrows) no longer uses up the game's image slots, which crashed the world map after about two dozen openings.
+- Gambits may now be set across sides: Attack on an ally (to cure a confused hero, say), and spells and items at the other side where the game lets them be aimed (Cure at the undead, a Potion at a foe). Those are listed after the ones that suit the condition's side.
+- Running from a fight: the hero whose turn it was no longer pops back onto the empty field for a moment as the screen fades out.
+- A Steam save that was copied over `save.bin` no longer crashes the load list; before the importer, such a slot showed as corrupted instead.
+
 ## 0.9.11 - OpenFF3 Enhanced (2026-11-25)
 
 **Added**
@@ -179,4 +194,4 @@ Saves, settings and achievements live in a `userdata` folder beside the exe, so 
 - Select on the gamepad now changes the party leader on the field, as on the DS. The game's code for it was never connected.
 - Controller configuration (was "Pad buttons", Settings menu): lists every function with its button (Start, Select, Y for the map, auto battle, speed up...) so you can see what is assigned and rebind it. Auto battle (R3) was missing from it.
 - The Equipment menu on a gamepad: Previously it was impossible to select "unequip" from the equipment menu on a controller as pressing circle would back you out into the main menu. Pressing circle now backs up to the command menu above where "Remove" and "Remove all" can now be selected.
-- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.
+- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.

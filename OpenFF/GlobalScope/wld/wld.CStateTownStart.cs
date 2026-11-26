@@ -118,7 +118,7 @@ internal static partial class GlobalScope
 										int soundFlag = CWorldOutSideData.getInstance().SoundData().getSoundFlag();
 										if ((soundFlag & 1) != 0)
 										{
-											MatrixSound.MtxSENDS_Play(1, 0, 192, 127);
+											OpenFF.Client.Qol.TransitionSound(1, 0);   // PORT: the menu's Transition sounds
 											return;
 										}
 										soundFlag |= 1;

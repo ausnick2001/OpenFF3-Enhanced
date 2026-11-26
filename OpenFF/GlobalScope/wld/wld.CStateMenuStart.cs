@@ -40,7 +40,7 @@ internal static partial class GlobalScope
 									ds.g_Pad.disable();
 									ds.g_TouchPanel.disable();
 									_sys.resetSite();
-									MatrixSound.MtxSENDS_Play(1, 1, 192, 127);
+									OpenFF.Client.Qol.TransitionSound(1, 1);   // PORT: the menu's Transition sounds
 								}
 
 								public override void update(CBaseSystem _sys)

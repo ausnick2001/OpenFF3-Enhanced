@@ -348,6 +348,9 @@ namespace OpenFF.Client
 			}
 			// The auto-battle rules start from the defaults; the save's own, if it has them, come in with its chunks.
 			if (GameProfile.IsFf4 && offset == OptionDataAddress) return;
+			// Once the game is under way the rules in play are the player's: the game reads the save file for the options, the slots' headers
+			// and the save menu's list, and none of that is a load - the rules are put back after it (a load comes through ApplyRead).
+			Dictionary<int, List<Gambit>> inPlay = TitleEntries.Showing ? null : Gambits.Snapshot();
 			Gambits.Reset();
 			// A slot's data (not a header or the options): the explored floors start empty and the save's own, if it has them, come in with its chunk.
 			bool slotData = length >= 1024 && offset != OptionDataAddress;
@@ -362,6 +365,7 @@ namespace OpenFF.Client
 				_lastReadOffset = offset;
 				_readLength[offset] = length;
 			}
+			if (inPlay != null) Gambits.Restore(inPlay);
 		}
 
 		// The game reads every slot (and the suspend save) at the title and applies one of them only when it is chosen. The mods' chunks

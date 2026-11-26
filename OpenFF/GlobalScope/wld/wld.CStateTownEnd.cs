@@ -113,7 +113,7 @@ internal static partial class GlobalScope
 					{
 						if (strcmp(sceneMng.getStage(), "d01_02_e01") != 0)
 						{
-							MatrixSound.MtxSENDS_Play(1, 1, 192, 127);
+							OpenFF.Client.Qol.TransitionSound(1, 1);   // PORT: the menu's Transition sounds
 						}
 					}
 					else

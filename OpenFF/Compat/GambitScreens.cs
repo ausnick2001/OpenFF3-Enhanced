@@ -56,6 +56,8 @@ namespace OpenFF.Client
 			public string Help;
 			public MenuColour Colour = MenuColour.White;
 			public bool Remove;
+			/// <summary>A spell or item the target's side is not the natural one of (Cure at a foe, Fire at an ally): listed after the others.</summary>
+			public bool Cross;
 			/// <summary>An entry that opens a list of its own ("magic", "item") instead of being chosen.</summary>
 			public string Opens;
 		}
@@ -122,7 +124,7 @@ namespace OpenFF.Client
 			if (list == null)
 			{
 				List<Choice> first = new List<Choice> { new Choice { Name = "Remove", Help = "Empties this gambit's slot.", Remove = true, Colour = MenuColour.PaleYellow } };
-				if (side == null || side == GambitSide.Foe) first.Add(new Choice { Key = "attack", Name = "Attack", Help = "Attack the target with what is in hand." });
+				first.Add(new Choice { Key = "attack", Name = "Attack", Help = "Attack the target with what is in hand (an ally too, to cure its confusion, say)." });
 				first.Add(new Choice { Key = "guard", Name = "Guard", Help = "Guard for the round; the target does not matter." });
 				first.Add(new Choice { Key = "run", Name = "Run Away", Help = "Flee the battle." });
 				first.Add(new Choice { Opens = "magic", Name = "Use Magic", Help = "Cast a spell on the target - the ones " + name + " has not set shown greyed." });
@@ -142,10 +144,10 @@ namespace OpenFF.Client
 					bool have = known.Contains(spell.Id);
 					if (onlyUsable && !have) continue;
 					GlobalScope.itm.MagicParameter p = GlobalScope.itm.ItemManager.instance().magicParameter((short)spell.Id);
-					if (p == null || !Fits(side, p.targetPosition())) continue;
+					if (p == null || !Fits(side, p.targetPosition(), p.targetPossible())) continue;
 					(have ? spellsUsable : spellsNot).Add(new Choice
 					{
-						Key = "magic", Param = spell.Id, Name = spell.Name,
+						Key = "magic", Param = spell.Id, Name = spell.Name, Cross = !Natural(side, p.targetPosition()),
 						Help = (spell.Caption ?? "") + (have ? "" : "   (" + name + " has not set it)"),
 						Colour = have ? MenuColour.White : MenuColour.Disabled
 					});
@@ -161,20 +163,21 @@ namespace OpenFF.Client
 					int id = item.Id;
 					if (!use.isUseInBattle(id) || GlobalScope.itm.ItemManager.instance().consumptionParameter((short)id) == null) continue;
 					GlobalScope.itm.ItemBaseParameter p = GlobalScope.itm.ItemManager.instance().itemParameter((short)id);
-					if (p == null || !Fits(side, p.targetPosition())) continue;
+					if (p == null || !Fits(side, p.targetPosition(), p.targetPossible())) continue;
 					int count = Held(id);
 					if (onlyUsable && count <= 0) continue;
 					(count > 0 ? itemsUsable : itemsNot).Add(new Choice
 					{
-						Key = "item", Param = id, Name = item.Name + (count > 0 ? "  x" + count : ""),
+						Key = "item", Param = id, Cross = !Natural(side, p.targetPosition()), Name = item.Name + (count > 0 ? "  x" + count : ""),
 						Help = (item.Caption ?? "") + (count > 0 ? "" : "   (none in the bag)"),
 						Colour = count > 0 ? MenuColour.PaleYellow : MenuColour.Disabled
 					});
 				}
 			}
 			catch (Exception) { }
-			if (list == "magic") { result.AddRange(spellsUsable); result.AddRange(spellsNot); }
-			else { result.AddRange(itemsUsable); result.AddRange(itemsNot); }
+			// The ones that suit the side first, then those that can be aimed at it as well; what the hero can use before what is greyed.
+			if (list == "magic") { result.AddRange(spellsUsable.OrderBy(c => c.Cross)); result.AddRange(spellsNot.OrderBy(c => c.Cross)); }
+			else { result.AddRange(itemsUsable.OrderBy(c => c.Cross)); result.AddRange(itemsNot.OrderBy(c => c.Cross)); }
 			return result;
 		}
 
@@ -190,13 +193,30 @@ namespace OpenFF.Client
 		/// (Potion, Cure: any ally). Its targetPossible would not do: most spells can be aimed either way (Cure at
 		/// the undead, Fire at a friend).
 		/// </summary>
-		private static bool Fits(GambitSide? side, short position)
+		private static bool Natural(GambitSide? side, short position)
 		{
 			switch (side)
 			{
 				case GambitSide.Foe: return position == 0 || position == 1;
 				case GambitSide.Ally:
 				case GambitSide.Self: return position >= 2 && position <= 4;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Whether a spell or item can be aimed at the condition's side at all: its natural side, or - as the game's own target window lets
+		/// the cursor move over - the other when its targetPossible has it (foes 2 / 4 / 8, allies 0x80 / 0x100 / 0x200): Cure at the undead,
+		/// a Potion thrown at a foe, Fire at a friend.
+		/// </summary>
+		private static bool Fits(GambitSide? side, short position, short possible)
+		{
+			if (Natural(side, position)) return true;
+			switch (side)
+			{
+				case GambitSide.Foe: return (possible & 0xE) != 0;
+				case GambitSide.Ally:
+				case GambitSide.Self: return (possible & 0x380) != 0;
 			}
 			return true;
 		}
@@ -254,7 +274,8 @@ namespace OpenFF.Client
 
 		public override void OnOpen()
 		{
-			if (Menu.Hero >= 0) GambitEditor.Hero = Menu.Hero;
+			// The hero the main menu chose, when the screen opens from it; coming back from the pick screen it is the hero the player switched to (L / R) that stays.
+			if (Menu.Hero >= 0 && GambitEditor.ReturnSlot < 0) GambitEditor.Hero = Menu.Hero;
 			if (GambitEditor.Hero < 0) GambitEditor.Hero = GambitEditor.Heroes().FirstOrDefault()?.Id ?? 0;
 			Menu.Portrait = GambitEditor.Hero;
 			string column = GambitEditor.ReturnColumn ?? "cond";

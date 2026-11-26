@@ -41,7 +41,12 @@ internal static partial class GlobalScope
 			/// <summary>PORT: one of the buttons along the top (Back, Player / Enemy, All, Group): its words go in the middle once the menus are scaled down.</summary>
 			public bool Button;
 
-			private bool Hidden => Names && OpenFF.Client.Qol.BattleDeclutter;
+			private bool Hidden => (Names && OpenFF.Client.Qol.BattleDeclutter) || ButtonsDown;
+
+			/// <summary>PORT: the menu's Touch buttons is off, and this is one of the buttons along the top: it is not drawn and takes no touch, but it still stands for the pad's and the keys' use of it (isShowTarget).</summary>
+			private bool ButtonsDown => Button && !OpenFF.Client.Qol.TouchButtons;
+
+			private bool shown_;
 
 			public TargetWindow()
 			{
@@ -125,6 +130,7 @@ internal static partial class GlobalScope
 
 			public void setShowTarget(bool show)
 			{
+				shown_ = show;
 				base.SetShow(show, user: true);
 				commandWindow_.SetShow(show && !Hidden, user: true);
 				if (!show)
@@ -188,6 +194,7 @@ internal static partial class GlobalScope
 
 			public override void SetShow(bool show, bool user)
 			{
+				if (!show) shown_ = false;
 				base.SetShow(show, user: true);
 				if (!show && m_MessageId != -1)
 				{
@@ -216,6 +223,7 @@ internal static partial class GlobalScope
 
 			public bool isTouch(int x, int y)
 			{
+				if (ButtonsDown) return false;
 				ds.Vector2<short> positionUL = commandWindow_.GetPositionUL();
 				ds.Vector2<short> size = commandWindow_.GetSize();
 				if (positionUL.vx <= x && x <= positionUL.vx + size.vx && positionUL.vy <= y)
@@ -227,6 +235,7 @@ internal static partial class GlobalScope
 
 			public bool isShowTarget()
 			{
+				if (ButtonsDown) return shown_;
 				return commandWindow_.IsShow();
 			}
 

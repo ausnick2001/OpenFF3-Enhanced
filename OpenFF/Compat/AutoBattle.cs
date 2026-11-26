@@ -243,8 +243,8 @@ namespace OpenFF.Client
 			switch (rule.Action)
 			{
 				case "attack":
-					// Foes only: a rule of an ally condition with Attack (the picker does not offer it, an older save may have one) never hits the party.
-					if (target == null || !target.Alive || target.Side != GambitSide.Foe) return false;
+					// A foe, or one of the party if the player set it so (to cure a confused hero, say): the target is aimed by its side.
+					if (target == null || !target.Alive) return false;
 					player.setActionId(1);
 					Aim(player, target);
 					return true;
@@ -343,17 +343,20 @@ namespace OpenFF.Client
 		private static bool Fits(btl.BattlePlayer player, short position, short possible, GambitTarget target)
 		{
 			if (target == null) return false;
+			// A foe: a use that starts on the foes, or one the game's target cursor can be moved to them with (Cure at the undead, a Potion thrown at one).
+			if (target.Side == GambitSide.Foe) return target.Alive && (position == 0 || position == 1 || (possible & 0xE) != 0);
 			switch (position)
 			{
 				case 0:
 				case 1:
-					return target.Side == GambitSide.Foe && target.Alive;
+					// Starts on the foes: an ally only when the use takes allies as well (Fire at a friend).
+					if ((possible & 0x380) == 0) return false;
+					goto case 3;
 				case 2:
 					if ((possible & 0x380) == 0) return target.Character == player && target.Alive;
 					goto case 3;
 				case 3:
 				case 4:
-					if (target.Side == GambitSide.Foe) return false;
 					if (target.Alive) return true;
 					return (target.Dead && player.isSelectDeadTarget()) || (target.Stone && player.isSelectStoneTarget());
 			}
@@ -375,13 +378,13 @@ namespace OpenFF.Client
 				manager.setPlayerAllTarget(player, 0);
 				player.setFlag(btl.PLAYER_FLAG.PF_TARGET_PLAYER);
 			}
-			else if (position == 2 && (possible & 0x380) == 0)
+			else if (target.Side != GambitSide.Foe && position == 2 && (possible & 0x380) == 0)
 			{
 				// The user only. Where an ally can take it too (Potion, Cure: the cursor only starts on the user) it is the target's, below.
 				player.setTargetIdMyself();
 				player.setFlag(btl.PLAYER_FLAG.PF_TARGET_PLAYER);
 			}
-			else if (position == 0 || position == 1)
+			else if (target.Side == GambitSide.Foe)
 			{
 				if ((possible & 2) != 0) player.setTargetId(0, target.Character.battleCharacterId());
 				else if ((possible & 8) != 0) manager.setMonsterAllTarget(player);
