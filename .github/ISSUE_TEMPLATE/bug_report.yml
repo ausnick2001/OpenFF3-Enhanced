@@ -59,4 +59,4 @@ body:
     id: log
     attributes:
       label: Log
-      description: Open the `logs` folder beside the game, and paste the newest file here (or drag it in). Screenshots help too (F12 takes one).
+      description: Open the `logs` folder beside the game, and paste the newest file here (or drag it in).
