@@ -536,7 +536,7 @@ internal static partial class GlobalScope
 						if (Navy)
 						{
 							m_pWindow1dArray[i].SetColor(NavyFill);
-							m_pWindow1dArray[i].SetAlpha((byte)Math.Round(29 * m_Opacity));
+							m_pWindow1dArray[i].SetAlpha((byte)Math.Round(OpenFF.Client.BattleFlow.PanelAlpha * m_Opacity));
 						}
 						if (m_Tint.HasValue) m_pWindow1dArray[i].SetColor(m_Tint.Value);   // a bar's fill (black) takes the tint's colour
 					}
@@ -589,6 +589,9 @@ internal static partial class GlobalScope
 					sys2d.DS2DManager.d2dGetInstance().d2dAddSprite(m_pBar);
 				}
 				m_pBar.SetCell((ushort)type);
+				// PORT: with the Battle Menu set to Clear the lines' pale blue edge is faded to grey (the sprite multiplies its art, so less blue and a little less green leave it grey; the dark core stays dark).
+				m_pBar.SetColor(OpenFF.Client.BattleFlow.Active && OpenFF.Client.Qol.S.BattleMenuClear ? 0x6BA3CCu : 0xFFFFFFu);
+				m_pBar.SetAlpha(OpenFF.Client.BattleFlow.Active && OpenFF.Client.Qol.S.BattleMenuClear ? (byte)14 : (byte)31);   // and fainter: under half the strength
 				PlaceBar();
 			}
 

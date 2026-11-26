@@ -221,6 +221,18 @@ namespace OpenFF.Client
 			_forgetGen++;
 		}
 
+		/// <summary>The floors in play, to be put back (Restore) after the game reads save data mid-play: a read replaces them with the slot's own.</summary>
+		public static object Snapshot() => Store;
+
+		public static void Restore(object snapshot)
+		{
+			if (snapshot is Dictionary<string, Dictionary<long, byte>> kept)
+			{
+				Store = kept;
+				_forgetGen++;   // the map on screen takes its floor from the floors in play again
+			}
+		}
+
 		/// <summary>A slot's data was read (and its chunk, if it has one, loaded): what it brought is kept under where it was read.</summary>
 		public static void Read(int offset)
 		{

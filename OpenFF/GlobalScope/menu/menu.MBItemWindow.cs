@@ -735,7 +735,7 @@ internal static partial class GlobalScope
 				pMsgItemNum[enableNo].getTextSize(vector);
 				if (MenuManager.getSingleton().battleMode())
 				{
-					pMsgItemNum[enableNo].setPosition((short)(pMy.x() + (RowK != 1f ? OpenFF.Client.BattleMagicRows.Sized(172) : 172) - (int)Math.Round(vector.vx * RowK)), (short)(pMy.y() + num), erase: true);
+					pMsgItemNum[enableNo].setPosition((short)(pMy.x() + (RowK != 1f ? OpenFF.Client.BattleMagicRows.SizedX(172) : 172) - (int)Math.Round(vector.vx * RowK)), (short)(pMy.y() + num), erase: true);
 					Letter(pMsgItemNum[enableNo]);
 				}
 				else

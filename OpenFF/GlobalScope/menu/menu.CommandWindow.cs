@@ -193,7 +193,7 @@ internal static partial class GlobalScope
 					size.vx = (short)(right - left + 4);
 					size.vy = (short)(bottom - top + 4);
 					panel_.bwCreateUL(sys2d.DS2D_OBJ_PLANE.DS2D_OBJ_PLANE_MAIN3D, at, size, 3);
-					panel_.SetPanelStyle(BasicWindow.NavyFill, 29);
+					panel_.SetPanelStyle(BasicWindow.NavyFill, OpenFF.Client.BattleFlow.PanelAlpha);
 					panel_.SetShow(show: true, user: true);
 					panelMade_ = true;
 					OpenFF.Client.Log.Write(OpenFF.Client.LogChannel.File, "command list: built at step " + OpenFF.Client.GameHost.StepsTaken + (IsShow() ? " (shown)" : " (not yet shown)"));

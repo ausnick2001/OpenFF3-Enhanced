@@ -74,6 +74,7 @@ I wanted to keep the changes as modular and adjustable as possible with the emph
 
 - **Sharper textures.** OpenFF3 Enhanced can use higher-quality textures and portraits. Some changes to the code were necessary for compatibility with my HD texture pack.
 - **Fonts.** The menus, dialogue, names and title screen each have their own font, and you can swap in your own. See *Fonts* below.
+- **Custom music.** Replace any of the game's tunes with your own music. See *Custom music* below.
 - **Story text is easier to read.** A pale glow sits behind the prologue and cutscene text so it reads more easily over the pictures.
 - **Smoother.** Frame pacing is smoothed, and there's a fix for the stutter that appeared with VSync on.
 
@@ -137,6 +138,12 @@ Open the menu with **Esc** (**Start** on a pad) and choose **Text and Menus**. T
 
 Prologue and cutscene text isn't affected by these, so the story scenes always look as they were meant to.
 
+
+## Custom music
+
+The `custom music` folder next to `OpenFF3 Enhanced.exe` (made the first time the game plays a tune) has a folder for each of the game's 59 tunes, `BGM00` to `BGM58`. To replace a tune, put one `.ogg` or plain 16-bit `.wav` file in its folder and start the game again; a folder left empty keeps the game's own music. A tune the game loops has your file looped from end to start, so trim it to loop cleanly; a jingle or fanfare the game plays once has your file played once. `.mp3` and `.flac` files are not read, so convert them first.
+
+Some folders are named for where the tune plays (`BGM55 - Battle`, `BGM56 - Boss battle`, `BGM57 - Final boss battle`, `BGM58 - Victory fanfare`, `BGM00 - Title screen` and a few towns and dungeons); the rest are just `BGM01`, `BGM02` and so on, and you will need to work out by ear which is which. The name hints come from the game's own data and may be wrong. The number at the start of a folder's name is what counts, so you can rename a folder as long as it keeps its number. Only use music you have the right to use.
 
 ## Controls
 

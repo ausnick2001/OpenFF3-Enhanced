@@ -229,7 +229,7 @@ namespace OpenFF.Client
 				lock (_cache) _missing.Add(name);
 				return;
 			}
-			byte[] data = GameArchive.Read(entry);
+			byte[] data = ReadEntry(entry);
 			int start = data == null || IsWav(data) ? -1 : OggStart(data);
 			if (start < 0)
 			{
@@ -303,7 +303,7 @@ namespace OpenFF.Client
 				}
 				else
 				{
-					byte[] data = GameArchive.Read(entry);
+					byte[] data = ReadEntry(entry);
 					if (data == null)
 					{
 						throw new IOException("the chain could not read it");
@@ -512,9 +512,20 @@ namespace OpenFF.Client
 			}
 		}
 
+		/// <summary>An entry's bytes: a player's own file (custom music folder) or the content chain's.</summary>
+		private static byte[] ReadEntry(string entry)
+		{
+			return entry.StartsWith(CustomMusic.Prefix, StringComparison.Ordinal) ? CustomMusic.Read(entry) : GameArchive.Read(entry);
+		}
+
 		/// <summary>The chain entry holding this sound, by the names the two games use, or null.</summary>
 		private static string Find(string name)
 		{
+			string custom = CustomMusic.Find(name);
+			if (custom != null)
+			{
+				return custom;
+			}
 			if (GameArchive.Chain == null)
 			{
 				return null;

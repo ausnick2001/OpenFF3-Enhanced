@@ -107,6 +107,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("transitionSounds")] public bool TransitionSounds { get; set; } = true;
 			/// <summary>The touch screen's on-screen buttons in the menus (Back, the player switch) and the battle's target windows (Back, Player / Enemy, All, Group); false takes them down, the pad and keys still do it all.</summary>
 			[JsonPropertyName("touchButtons")] public bool TouchButtons { get; set; } = true;
+			/// <summary>The Config screen's Battle Menu row: Clear lets the field show through the battle's windows, Opaque (the default) keeps them solid.</summary>
+			[JsonPropertyName("battleMenuClear")] public bool BattleMenuClear { get; set; }
 			/// <summary>The descriptions in the bar at the top of the battle screen (commands, spells, songs, items): 0 off, 1 minimal (the obvious commands, like Attack and Guard, show none), 2 on.</summary>
 			[JsonPropertyName("battleDescriptions")] public int BattleDescriptions { get; set; } = 2;
 			/// <summary>The damage, hit, critical and miss popups are drawn in our font (FF3-NES / FF6 style); false uses the game's own DS sprites.</summary>
@@ -131,6 +133,8 @@ namespace OpenFF.Client
 			[JsonPropertyName("battlePartySize")] public double BattlePartySize { get; set; } = 1;
 			/// <summary>Reduce clutter in battle: choosing a target has no list of names: the hand stands on the foe (its name in the help bar at the top) or on the hero's line of the party menu. On by default (switch it off to get the game's name lists back).</summary>
 			[JsonPropertyName("battleDeclutter")] public bool BattleDeclutter { get; set; } = true;
+			/// <summary>Compact mode for the battle's spell, item and equipment lists: off as the game has them, on with the columns and panels drawn in closer (the text the same size).</summary>
+			[JsonPropertyName("battleCompact")] public bool BattleCompact { get; set; }
 			/// <summary>The speaker's name size on top of the window's: 0.7 to 1.3, 1 as set. The prologue's and cutscenes' centred lines are not touched by any of these.</summary>
 			[JsonPropertyName("nameSize")] public double NameSize { get; set; } = 1;
 			/// <summary>The drop shadow behind the dialogue's lines (FF3); false draws them plain. Where the game's own script turns a message's shadow off it stays off.</summary>

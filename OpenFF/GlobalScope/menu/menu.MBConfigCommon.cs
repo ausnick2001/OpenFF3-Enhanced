@@ -86,6 +86,9 @@ internal static partial class GlobalScope
 				}
 			}
 
+			/// <summary>PORT: the Config screen's Battle Menu row (m_battle: 0 Opaque, 1 Clear) is the layout's line 11, past the game's OPTION_LINE list; the port keeps it with the mod's settings (Qol.S.BattleMenuClear).</summary>
+			private const OPTION_LINE BattleMenuLine = (OPTION_LINE)11;
+
 			public short GetNowMenu(OPTION_LINE ol)
 			{
 				return ol switch
@@ -97,6 +100,7 @@ internal static partial class GlobalScope
 					OPTION_LINE.OL_SMD => (short)opt.COptionManager.getSingleton().gameOption().summonsMagicDirect(), 
 					OPTION_LINE.OL_MOV => (short)opt.COptionManager.getSingleton().gameOption().worldMoveType(), 
 					OPTION_LINE.OL_MENU => (short)opt.COptionManager.getSingleton().gameOption().menuZoomSetting(), 
+					BattleMenuLine => (short)(OpenFF.Client.Qol.S.BattleMenuClear ? 1 : 0), 
 					_ => 0, 
 				};
 			}
@@ -122,6 +126,13 @@ internal static partial class GlobalScope
 					break;
 				case OPTION_LINE.OL_MOV:
 					opt.COptionManager.getSingleton().gameOption().setWorldMoveType((opt.WORLD_MOVE_TYPE)num);
+					break;
+				case BattleMenuLine:
+					if (OpenFF.Client.Qol.S.BattleMenuClear != (num != 0))
+					{
+						OpenFF.Client.Qol.S.BattleMenuClear = num != 0;
+						OpenFF.Client.Qol.Changed("battle menu " + (num != 0 ? "clear" : "opaque"));
+					}
 					break;
 				}
 				card.SaveOption();
@@ -168,6 +179,7 @@ internal static partial class GlobalScope
 			public void SetDefault()
 			{
 				opt.COptionManager.getSingleton().initialize();
+				if (OpenFF.Client.Qol.S.BattleMenuClear) { OpenFF.Client.Qol.S.BattleMenuClear = false; OpenFF.Client.Qol.Changed("battle menu opaque (defaults)"); }
 				card.SaveOption();
 				Medget nodeByID = MenuManager.getSingleton().root().getNodeByID(TRANSCODE("m_normal_mes"));
 				if (nodeByID != null)

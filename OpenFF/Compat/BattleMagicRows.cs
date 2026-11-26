@@ -22,6 +22,8 @@ namespace OpenFF.Client
 		/// <summary>The panel's size and the letters' size as the options set them when the layout was loaded (the lists are built from that layout, so they stay as it is until the next battle).</summary>
 		public static float ListBox = 1f;
 		public static float ListLetters = 1f;
+		/// <summary>The lists' width, side to side: the panel's size and the menu spacing together (the layout's x and width follow it, the letters do not).</summary>
+		public static float ListWide = 1f;
 
 		/// <summary>The letters and icons of a four-row list at the size in force.</summary>
 		public static float K => Scale * ListLetters;
@@ -30,7 +32,10 @@ namespace OpenFF.Client
 		public static int Sized(float units) => (int)Math.Round(units * ListBox);
 
 		/// <summary>A screen x (in the layout's 480) for a distance from the list panel's left edge, at the size in force: the panel shrinks about the screen's middle.</summary>
-		public static int PanelX(float units) => (int)Math.Round(240f * (1f - ListBox) + units * ListBox);
+		public static int PanelX(float units) => (int)Math.Round(240f * (1f - ListWide) + units * ListWide);
+
+		/// <summary>A distance along a row inside a list (where a number ends in its cell) at the size and spacing in force.</summary>
+		public static int SizedX(float units) => (int)Math.Round(units * ListWide);
 
 		/// <summary>The arrows' scale at the size in force.</summary>
 		public static float ArrowK => ArrowScale * ListBox;
@@ -48,16 +53,18 @@ namespace OpenFF.Client
 			if (!string.Equals(file, "BattleDefine.xbn", StringComparison.OrdinalIgnoreCase)) return false;
 			ListBox = BattleSizing.ListBox;
 			ListLetters = BattleSizing.ListLetters;
+			ListWide = BattleSizing.ListBox * BattleSizing.Wide;
+			bool scaled = Math.Abs(ListBox - 1f) > 0.001f || Math.Abs(ListWide - 1f) > 0.001f;
 			bool items = ItemRows(doc);
 			bool magic = MagicRows(doc);
-			if (Math.Abs(ListBox - 1f) > 0.001f)
+			if (scaled)
 			{
 				if (items) ScaleMenu(doc, "battle_item");
 				if (magic) ScaleMenu(doc, "battle_magic");
 			}
 			bool weapons = WeaponScreen(doc);
 			bool equip = EquipScreen(doc);
-			if (Math.Abs(ListBox - 1f) > 0.001f)
+			if (scaled)
 			{
 				if (equip) { ScaleMenu(doc, "battle_equip"); ScaleMenu(doc, "battle_item_e"); }
 				if (weapons) ScaleMenu(doc, "battle_use_weapon");
@@ -80,9 +87,10 @@ namespace OpenFF.Client
 		private static void ScaleFrame(XElement frame, bool absolute)
 		{
 			float s = ListBox;
-			if (int.TryParse((string)frame.Element("x"), out int x)) Set(frame, "x", (absolute ? (int)Math.Round(240f - (240f - x) * s) : (int)Math.Round(x * s)).ToString());
+			float sw = ListWide;   // side to side: the panel's size and the menu spacing
+			if (int.TryParse((string)frame.Element("x"), out int x)) Set(frame, "x", (absolute ? (int)Math.Round(240f - (240f - x) * sw) : (int)Math.Round(x * sw)).ToString());
 			if (int.TryParse((string)frame.Element("y"), out int y)) Set(frame, "y", (absolute ? (int)Math.Round(320f - (320f - y) * s) : (int)Math.Round(y * s)).ToString());
-			if (int.TryParse((string)frame.Element("width"), out int w)) Set(frame, "width", ((int)Math.Round(w * s)).ToString());
+			if (int.TryParse((string)frame.Element("width"), out int w)) Set(frame, "width", ((int)Math.Round(w * sw)).ToString());
 			if (int.TryParse((string)frame.Element("height"), out int h)) Set(frame, "height", ((int)Math.Round(h * s)).ToString());
 			foreach (XElement child in frame.Elements("frame")) ScaleFrame(child, absolute: false);
 		}
@@ -207,6 +215,9 @@ namespace OpenFF.Client
 		public static float ScreenK => (EquipActive || WeaponActive) ? ListLetters : 1f;
 
 		public static int ScreenSized(float units) => (EquipActive || WeaponActive) ? Sized(units) : (int)units;
+
+		/// <summary>The same along a row (where a number ends in its cell), at the spacing in force too.</summary>
+		public static int ScreenSizedX(float units) => (EquipActive || WeaponActive) ? SizedX(units) : (int)units;
 
 		/// <summary>How far down a row a line of letters at the screens' size starts, so it sits in the row's middle.</summary>
 		public static int ScreenLift(int height) => (int)((height - 12f * ScreenK) / 2f);

@@ -37,6 +37,9 @@ namespace OpenFF.Client
 		/// <summary>The battle's lists (magic, items), as the options set them when the battle's layout is loaded: how much of its size the panel keeps, and the letters' size.</summary>
 		public static float ListBox => Box;
 		public static float ListLetters => Letters;
+		/// <summary>Menu spacing: the lists' width as a share of the game's. Compact draws the spell, item and equipment lists' columns and panels in closer about the screen's middle (the letters keep their size); Normal is the game's.</summary>
+		public const float CompactWide = 0.75f;
+		public static float Wide => Qol.S.BattleCompact ? CompactWide : 1f;
 
 		private static bool Unchanged => Math.Abs(Box - 1f) < 0.001f;
 		private static bool PartyUnchanged => Math.Abs(PartyBox - 1f) < 0.001f;

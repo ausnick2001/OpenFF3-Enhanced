@@ -3,6 +3,19 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.13 - OpenFF3 Enhanced (2026-11-26)
+
+**Added**
+- **Battle Menu: Clear / Opaque** now works (Esc > Config, the row that was greyed out). Clear makes the battle windows see-through, with the list lines faded to a soft grey to match the window's outline.
+- **Compact mode** (Text and Menus > Battle menus): condenses the battle menus by reducing empty space either side of the spell, item and equipment lists. Off by default.
+- **Custom music**: a `custom music` folder beside the game (made the first time a tune plays) with a folder for each of the game's 59 tunes. Drop one `.ogg` or `.wav` in a tune's folder and it plays instead of the game's, looped for the tunes the game loops. Some folders are named for where the tune plays (Battle, Boss battle, Final boss battle, Victory fanfare and a few towns and dungeons); the rest are just `BGM01`, `BGM02`, and so on, for you to work out by ear. A `README.txt` in the folder explains it.
+
+**Fixed**
+- Minimaps now save: each dungeon's map is kept in every save slot and in the autosave, and survives quitting and loading. Before, opening the save menu in a dungeon could wipe the map you had filled in.
+- Choppy motion at 60 fps in caves (Altar Cave at two spots on the way round): the frame smoothing mistook the big cave floor pieces for a scene cut as the camera followed the hero, and drew those frames unblended. It now ignores large pieces whose middle is behind the camera or far off the screen. 30 fps was never affected.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.12 - OpenFF3 Enhanced (2026-11-26)
 
 **Added**
@@ -198,4 +211,4 @@ Saves, settings and achievements live in a `userdata` folder beside the exe, so 
 - Select on the gamepad now changes the party leader on the field, as on the DS. The game's code for it was never connected.
 - Controller configuration (was "Pad buttons", Settings menu): lists every function with its button (Start, Select, Y for the map, auto battle, speed up...) so you can see what is assigned and rebind it. Auto battle (R3) was missing from it.
 - The Equipment menu on a gamepad: Previously it was impossible to select "unequip" from the equipment menu on a controller as pressing circle would back you out into the main menu. Pressing circle now backs up to the command menu above where "Remove" and "Remove all" can now be selected.
-- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.
+- HD textures: a thin pale outline around trees and other cut-out sprites (most visible on the big pines in the goblin battle) is gone. The game tests see-through textures at a very low cut-off, so the almost invisible fringe round a sharp edge still blocked what was drawn behind it and showed the background colour as a line. Large textures are now cut off at the usual halfway point. If you ever need the old behaviour, launch with `--alpharef=game`.

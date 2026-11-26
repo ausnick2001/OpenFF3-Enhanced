@@ -70,3 +70,19 @@ like the game's.
 Nothing else in the game's audio code has been rewritten; the two PORT points are
 `SoundManager.playSound` (the parts a name the table lacks has) and
 `BGMInfoMng.getBGMInfo` (a number past the table when the chain has its files).
+
+## Custom music (OpenFF3 Enhanced)
+
+The game makes a `custom music` folder beside `OpenFF3 Enhanced.exe` the first time it plays a tune, with a folder for each of
+the 59 tunes (`BGM00` to `BGM58`) and a `README.txt`. Put one `.ogg` or plain 16-bit `.wav` file in a tune's folder and it plays in
+place of the game's, from the next start; an empty folder keeps the game's own.
+
+- The number at the start of the folder's name picks the tune (`BGM22 - Ur (town)`, `22` and `bgm22` all do), so a folder can be
+  renamed as long as that stays. The words after it are only hints, from where the game's own data plays the tune; a bare `BGMnn`
+  is a tune nobody has placed yet.
+- A tune the game loops has the file looped whole; one it plays once (a jingle, a fanfare) has it played once. The game's own
+  intro is dropped.
+- It rides the sound chain above: the file is read as that tune's loop half (`BGMnn_1`) - or its intro half for a tune played
+  once - before the chain's own `sound/BGMnn_*.ogg`, so a tune whose intro and loop come from a mod's `files/sound` is replaced
+  too. Code: `Compat/CustomMusic.cs`, with the hooks in `OggSound.Find` and `SoundManager.partsOf`.
+- Not read: `.mp3`, `.flac` (convert them first). Only use music you have the right to use.

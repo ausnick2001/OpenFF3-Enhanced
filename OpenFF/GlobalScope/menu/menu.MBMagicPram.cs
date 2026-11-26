@@ -837,8 +837,8 @@ internal static partial class GlobalScope
 				{
 					pMsgLv[lvCount] = pm.createMessage((uint)msg_number, dgs.INVALID_MSDHANDLE, (int)_msfHandle);
 					pMsgLvNo[lvCount] = pm.createMessage(after, (int)_msfHandle);
-					pMsgLv[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(16f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListBox), (short)y, erase: true);
-					pMsgLvNo[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(48f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListBox), (short)y, erase: true);
+					pMsgLv[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(16f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListWide), (short)y, erase: true);
+					pMsgLvNo[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(48f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListWide), (short)y, erase: true);
 					if (rowK != 1f)
 					{
 						pMsgLv[lvCount].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);

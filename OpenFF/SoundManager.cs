@@ -596,9 +596,18 @@ internal class SoundManager : MediaPlayer.OnCompletionListener
 	// PORT: a sound the table does not know - a mod's own tune under a free number
 	// (BGM30..BGM59: the BGM table has the numbers, the game ships no files), or its
 	// own effect - has whatever parts the content chain holds: _0 the intro, _1 the loop.
+	/// <summary>The parts the game's own table gives a tune (bit 0 intro, bit 1 loop), 0 if it has none.</summary>
+	public static int VanillaParts(string filename) => SoundAssignTable.TryGetValue(filename, out int p) ? p : 0;
+
 	private static int partsOf(string filename, out bool own)
 	{
 		own = false;
+		// PORT: a file in the player's custom music folder replaces the tune: only its one part plays.
+		int custom = OpenFF.Client.CustomMusic.Parts(filename);
+		if (custom >= 0)
+		{
+			return custom;
+		}
 		if (SoundAssignTable.TryGetValue(filename, out int parts))
 		{
 			return parts;

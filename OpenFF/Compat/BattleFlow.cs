@@ -36,6 +36,15 @@ namespace OpenFF.Client
 		/// <summary>The command list as one navy panel (the PSP's look) rather than a green box a row. `--classic-windows` keeps the game's.</summary>
 		public static bool PanelLook => !GameProfile.IsFf4 && Options.Get("classic-windows") == null;
 
+		/// <summary>How solid the battle's navy windows are, in the sprites' five bits: the Config screen's Battle Menu row (Qol.S.BattleMenuClear). Opaque (the default) is 29 of 31; Clear is 15, the game's own battle-menu alpha, so the field shows through.</summary>
+		public static byte PanelAlpha
+		{
+			get
+			{
+				return Qol.S.BattleMenuClear ? (byte)15 : (byte)29;
+			}
+		}
+
 		/// <summary>BattleMain.initialize: the battle's rounds begin; decide how they will be played.</summary>
 		public static void Begin()
 		{

@@ -182,7 +182,7 @@ internal static partial class GlobalScope
 							int side = (int)Math.Round(24f * OpenFF.Client.BattleMagicRows.ArrowK);
 							int inset = OpenFF.Client.BattleMagicRows.Sized(OpenFF.Client.BattleMagicRows.ArrowInset);
 							int fx = (int)Math.Round(4096f * OpenFF.Client.BattleMagicRows.ArrowK);
-							int right = OpenFF.Client.BattleMagicRows.Sized(480) - 4;   // the panel's right edge less the margin the scroll bar keeps
+							int right = OpenFF.Client.BattleMagicRows.SizedX(480) - 4;   // the panel's right edge less the margin the scroll bar keeps
 							int top = 320 - OpenFF.Client.BattleMagicRows.Sized(96);
 							triangle_[i].SetScaleF(fx, fx);
 							triangle_[i].SetPositionI(right - side, i == 0 ? top + inset : 320 - inset - side);

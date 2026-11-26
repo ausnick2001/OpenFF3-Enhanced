@@ -351,6 +351,8 @@ namespace OpenFF.Client
 			// Once the game is under way the rules in play are the player's: the game reads the save file for the options, the slots' headers
 			// and the save menu's list, and none of that is a load - the rules are put back after it (a load comes through ApplyRead).
 			Dictionary<int, List<Gambit>> inPlay = TitleEntries.Showing ? null : Gambits.Snapshot();
+			// The same for the explored floors: reading a slot's data (the save menu does, before a save is written) empties them and brings that slot's, so they are put back after it.
+			object mapsInPlay = TitleEntries.Showing ? null : Minimap.Snapshot();
 			Gambits.Reset();
 			// A slot's data (not a header or the options): the explored floors start empty and the save's own, if it has them, come in with its chunk.
 			bool slotData = length >= 1024 && offset != OptionDataAddress;
@@ -366,6 +368,7 @@ namespace OpenFF.Client
 				_readLength[offset] = length;
 			}
 			if (inPlay != null) Gambits.Restore(inPlay);
+			if (mapsInPlay != null) Minimap.Restore(mapsInPlay);
 		}
 
 		// The game reads every slot (and the suspend save) at the title and applies one of them only when it is chosen. The mods' chunks

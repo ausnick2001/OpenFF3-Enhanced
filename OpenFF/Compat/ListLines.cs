@@ -29,6 +29,10 @@ namespace OpenFF.Client
 
 		private static readonly Color Dark = new Color(0, 0, 4, 175);
 		private static readonly Color Light = new Color(190, 215, 255, 50);
+		/// <summary>The same edge in grey, for the Battle Menu set to Clear.</summary>
+		private static readonly Color LightGrey = new Color(205, 205, 205, 24);
+		/// <summary>The dark line, fainter, for the Battle Menu set to Clear.</summary>
+		private static readonly Color DarkFaint = new Color(0, 0, 0, 80);
 
 		private ListLines(Game game) : base(game)
 		{
@@ -73,8 +77,8 @@ namespace OpenFF.Client
 			foreach ((int x0, int x1, int y) in _lines)
 			{
 				int px = (int)System.Math.Round((x0 + Inset) * sx), pw = (int)System.Math.Round((x1 - x0 - 2f * Inset) * sx), py = (int)System.Math.Round(y * sy);
-				Ui.Fill(_batch, new Rectangle(px, py - thick, pw, thick), Dark);
-				Ui.Fill(_batch, new Rectangle(px, py, pw, thick), Light);
+				Ui.Fill(_batch, new Rectangle(px, py - thick, pw, thick), Qol.S.BattleMenuClear ? DarkFaint : Dark);
+				Ui.Fill(_batch, new Rectangle(px, py, pw, thick), Qol.S.BattleMenuClear ? LightGrey : Light);
 			}
 			_batch.End();
 		}

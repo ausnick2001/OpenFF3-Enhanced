@@ -250,7 +250,7 @@ private IEnumerator Talk(Npc npc)
 
 Positions are world units (the engine hides the game's 1/4096ths), yaw is in degrees, screen
 coordinates are the 800x480 the game was designed for. The field's own buttons are taken (X
-opens the menu, a shoulder button zooms, Select toggles encounters), so mods read keyboard
+opens the menu, a shoulder button zooms, Y opens the world map, Select changes the party leader, Start opens the client's menu), so mods read keyboard
 letters: `Game.Input.KeyPressed("T")`.
 
 ### Scenes without code: `scenes/<map>.json`

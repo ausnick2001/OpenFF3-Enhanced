@@ -595,6 +595,7 @@ namespace OpenFF.Client
 			// quarter of the scene moving: the rest of it goes as it is too, not a frame torn between two views.
 			if (_jumpedDraws >= 4 && _jumpedWeight * 4 >= _sceneWeight)
 			{
+				if (LogJumps && _jumpsLogged < 80) { _jumpsLogged++; Log.Write(LogChannel.General, "smooth: scene taken for a cut - " + _jumpedDraws + " draws jumped, " + _jumpedWeight + " of " + _sceneWeight + " vertices"); }
 				_cutScene = true;
 				for (int i = 0; i < cur.Count; i++)
 				{
@@ -609,11 +610,42 @@ namespace OpenFF.Client
 			int k = _chainFirst[chain];
 			while (k >= 0 && _prevToCur[k] >= 0) k = _link[k];
 			_chainFirst[chain] = k;
+			int first = -1;
 			for (; k >= 0; k = _link[k])
 			{
-				if (_prevToCur[k] < 0 && SameDraw(prev.Records[k], r)) return k;
+				if (_prevToCur[k] < 0 && SameDraw(prev.Records[k], r)) { first = k; break; }
 			}
-			return -1;
+			if (first < 0 || r.Projection.M34 == 0f) return first;   // none, or a 2D draw: the first in the queue, as ever
+			// A 3D draw: the first of its kind is the one when the same pieces were drawn in the same order, but a map drawn in
+			// pieces (a cave's) takes pieces in and out of view as the party walks, and from there every piece of the same size and
+			// texture would be paired with its neighbour - each seen to jump, the scene taken for a camera cut and drawn without
+			// blending for that step. So when the first is not near, the nearest of the next few is taken.
+			float best = ScreenGap(prev.Records[first], r);
+			if (best <= NearGap) return first;
+			int pick = first, seen = 0;
+			for (k = _link[first]; k >= 0 && seen < MatchLook; k = _link[k])
+			{
+				if (_prevToCur[k] >= 0 || !SameDraw(prev.Records[k], r)) continue;
+				seen++;
+				float gap = ScreenGap(prev.Records[k], r);
+				if (gap < best) { best = gap; pick = k; if (gap <= NearGap) break; }
+			}
+			return pick;
+		}
+
+		/// <summary>A move of the draw's middle small enough to be motion (a seventh of the screen's width, squared, in the projection's -1..1), and how many same-looking draws are looked at for a nearer one.</summary>
+		private const float NearGap = 0.15f * 0.15f;
+		private const int MatchLook = 48;
+
+		/// <summary>How far the draw's middle is, on the screen (squared, in the projection's -1..1), from where the step before's draw had it; huge when one is behind the eye.</summary>
+		private static float ScreenGap(in Record p, in Record r)
+		{
+			Vector4 a = Vector4.Transform(new Vector4(p.Centre, 1f), p.World * p.Projection);
+			Vector4 b = Vector4.Transform(new Vector4(r.Centre, 1f), r.World * r.Projection);
+			if (a.W <= 1e-5f || b.W <= 1e-5f) return float.MaxValue;
+			float dx = a.X / a.W - b.X / b.W, dy = a.Y / a.W - b.Y / b.W;
+			float gap = dx * dx + dy * dy;
+			return float.IsFinite(gap) ? gap : float.MaxValue;
 		}
 
 		private static bool SameDraw(in Record p, in Record r)
@@ -748,6 +780,11 @@ namespace OpenFF.Client
 				else fromWorld = p.World * toCur;
 			}
 			bool jumped = Jumped(from, fromWorld, p.Projection, r.Centre, r.World, r.Projection);
+			if (jumped && deep && LogJumps && _jumpsLogged < 80)
+			{
+				_jumpsLogged++;
+				Log.Write(LogChannel.General, "smooth: jumped " + r.Count + " vertices, texture " + (r.Texture == null ? "none" : r.Texture.Width + "x" + r.Texture.Height) + ", owner " + r.Owner + ", mode " + r.Mode + ", middle " + Where(from, fromWorld, p.Projection) + " -> " + Where(r.Centre, r.World, r.Projection) + ", the camera " + (p.Camera >= 0 && p.Camera < prev.CameraCount && r.Camera >= 0 && r.Camera < cur.CameraCount && prev.Cameras[p.Camera].Serial != cur.Cameras[r.Camera].Serial ? "changed" : "the same"));
+			}
 			if (deep)
 			{
 				_sceneWeight += r.Count;
@@ -786,13 +823,28 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>Whether the draw's middle crosses more than a third of the screen between the two steps (or goes behind the eye): a cut or a spawn, not motion.</summary>
+		/// <summary>--log-stalls also says which draws the smoothing sees jump (the first 80 lines), to find what trips it.</summary>
+		private static readonly bool LogJumps = Options.Get("log-stalls") != null;
+		private static int _jumpsLogged;
+
+		private static string Where(Vector3 c, in Matrix world, in Matrix projection)
+		{
+			Vector4 a = Vector4.Transform(new Vector4(c, 1f), world * projection);
+			return a.W <= 1e-5f ? "behind" : "(" + (a.X / a.W).ToString("0.00") + "," + (a.Y / a.W).ToString("0.00") + ")";
+		}
+
 		private static bool Jumped(Vector3 pc, in Matrix pw, in Matrix pp, Vector3 rc, in Matrix rw, in Matrix rp)
 		{
 			Vector4 a = Vector4.Transform(new Vector4(pc, 1f), pw * pp);
 			Vector4 b = Vector4.Transform(new Vector4(rc, 1f), rw * rp);
 			bool behindA = a.W <= 1e-5f, behindB = b.W <= 1e-5f;
-			if (behindA || behindB) return behindA != behindB;
-			float dx = a.X / a.W - b.X / b.W, dy = a.Y / a.W - b.Y / b.W;
+			// A big mesh (a cave's map piece) has its middle near or behind the eye, or far off the screen, and that
+			// middle sweeps wildly as the camera follows the hero while the mesh itself moves smoothly: no verdict
+			// from it - only a middle seen on the screen at both ends can tell a cut from motion.
+			if (behindA || behindB) return false;
+			float ax = a.X / a.W, ay = a.Y / a.W, bx = b.X / b.W, by = b.Y / b.W;
+			if (Math.Abs(ax) > 2f || Math.Abs(ay) > 2f || Math.Abs(bx) > 2f || Math.Abs(by) > 2f) return false;
+			float dx = ax - bx, dy = ay - by;
 			return dx * dx + dy * dy > 0.66f * 0.66f;
 		}
 
