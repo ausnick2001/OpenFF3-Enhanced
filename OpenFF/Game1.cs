@@ -95,6 +95,7 @@ public class Game1 : Game
 		// Started from Steam's Big Picture mode the game can be left behind it: ask for the front for a few seconds.
 		OpenFF.Client.WindowFocus.Update(this);
 		OpenFF.Client.TestBard.Update();
+		OpenFF.Client.TestParty.Update();
 
 		if (!Guide.IsVisible)
 		{

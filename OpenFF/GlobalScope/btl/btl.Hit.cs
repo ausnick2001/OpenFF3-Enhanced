@@ -48,6 +48,16 @@ internal static partial class GlobalScope
 				return create(hit, nNSG2dFVec, kind);
 			}
 
+			/// <summary>PORT: the label at a world position with its screen position moved down, in 480x320 units (the hit count under the target's damage number).</summary>
+			public bool createBelow(int hit, VecFx32 pos, u2d.PopUpHitNumber.puhnKIND kind, float below480)
+			{
+				NNS_G3dWorldPosToScrPos(pos, out var px, out var py);
+				NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
+				nNSG2dFVec.x = ds.S32toFX32(px);
+				nNSG2dFVec.y = ds.S32toFX32(py) + (int)(below480 * 4096f);
+				return create(hit, nNSG2dFVec, kind);
+			}
+
 			public bool createPlayers(int hit, VecFx32 pos, u2d.PopUpHitNumber.puhnKIND kind)
 			{
 				NNS_G3dWorldPosToScrPos(pos, out var px, out var py);

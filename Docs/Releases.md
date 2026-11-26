@@ -3,6 +3,17 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.14 - OpenFF3 Enhanced (2026-11-26)
+
+**Added**
+- **Turn order bar**: a column down the right edge of the battle screen (in turn-by-turn battles) showing who acts next this round, as in Final Fantasy X. Heroes show their party-menu face in their current job, monsters are violet squares labelled E1, E2 and so on by their place in the fight, and a boss is a dark square with a pulsing ember border marked BOSS. The one acting now is highlighted and the bar empties as turns are taken, then fills again when the next round's order is rolled. When you choose a target, a small hand on the bar points at who the battle's hand is on (all of them, for an all-target spell). Turn it off under Text and Menus > Battle menus > Turn order bar.
+- **FAQ** (`Docs/FAQ.md`), linked from the bug report and feature request forms, answering the questions that come up most, with a reminder to attach the log to a bug report.
+
+**Fixed**
+- The "4 HITS" label now sits under the damage number of the monster you hit, not over the attacking hero, so it no longer lands on your own character from our camera angle. It also appears at once and stays still, as in the game, instead of lifting like the damage number (Original (upscaled) style).
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.13 - OpenFF3 Enhanced (2026-11-26)
 
 **Added**

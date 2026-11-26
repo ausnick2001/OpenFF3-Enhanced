@@ -135,6 +135,7 @@ namespace OpenFF.Client
 			[JsonPropertyName("battleDeclutter")] public bool BattleDeclutter { get; set; } = true;
 			/// <summary>Compact mode for the battle's spell, item and equipment lists: off as the game has them, on with the columns and panels drawn in closer (the text the same size).</summary>
 			[JsonPropertyName("battleCompact")] public bool BattleCompact { get; set; }
+			[JsonPropertyName("turnOrderBar")] public bool TurnOrderBar { get; set; } = true;
 			/// <summary>The speaker's name size on top of the window's: 0.7 to 1.3, 1 as set. The prologue's and cutscenes' centred lines are not touched by any of these.</summary>
 			[JsonPropertyName("nameSize")] public double NameSize { get; set; } = 1;
 			/// <summary>The drop shadow behind the dialogue's lines (FF3); false draws them plain. Where the game's own script turns a message's shadow off it stays off.</summary>

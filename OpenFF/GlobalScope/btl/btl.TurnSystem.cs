@@ -2720,7 +2720,23 @@ internal static partial class GlobalScope
 					vecFx.y += vecFx2.y;
 					if (!character.flag(PLAYER_FLAG.PF_JUMP) && !character.flag(PLAYER_FLAG.PF_OVERISSUE) && !character.flag(PLAYER_FLAG.PF_DARK) && !character.flag(PLAYER_FLAG.PF_EXPLOSION) && !character.flag(PLAYER_FLAG.PF_PITCH))
 					{
-						result = Battle2DManager.instance().hit(character.battleCharacterId()).createPlayers(character.attackNumber(), vecFx, puhnKIND);
+						if (OpenFF.Client.Qol.BouncyDamagePopups && target.breed() == 1)
+						{
+							// PORT: the game puts the count over the hero, which sits just under a monster only in its own camera:
+							// under the monster's damage number instead, wherever the camera is.
+							BattleMonster hitMonster = static_cast<BattleMonster>(target);
+							VecFx32 over = new VecFx32();
+							characterMng.getPosition(hitMonster.characterMngId(), over);
+							VecFx32 hitOffset = mon.MonsterManager.instance().offset(hitMonster.monsterId()).damagePosition();
+							over.x += 4096 * hitOffset.x;
+							over.y += 4096 * hitOffset.y;
+							over.z += 4096 * hitOffset.z;
+							result = Battle2DManager.instance().hit(character.battleCharacterId()).createBelow(character.attackNumber(), over, puhnKIND, OpenFF.Client.DamagePopups.HitsBelow);
+						}
+						else
+						{
+							result = Battle2DManager.instance().hit(character.battleCharacterId()).createPlayers(character.attackNumber(), vecFx, puhnKIND);
+						}
 					}
 					character.setFlag(PLAYER_FLAG.PF_CREATE_2D);
 				}

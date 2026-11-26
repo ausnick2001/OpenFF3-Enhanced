@@ -84,6 +84,8 @@ namespace OpenFF.Client
 			("gil", "FF3_GIL", "<n>", "Gil for a test start (FF3 and FF4)"),
 			("jobs", "FF3_JOBS", "all", "FF3: every job open and the menu's Job with them at a test start - for the job screens without playing to the Wind Crystal"),
 			("test-bard", "FF3_TEST_BARD", "", "FF3: the first hero a Bard with a harp in hand once the world is up - for trying the battle's Song list (use with --save-dir)"),
+			("opening", "FF3_OPENING", "back|pre", "FF3 test: every battle opens as a back attack (back) or a pre-emptive strike (pre), whatever the odds - for trying the turn order bar"),
+			("full-party", "FF3_FULL_PARTY", "", "FF3 test: the party filled to four heroes once the world is up (use with --save-dir)"),
 			("set-ability", "FF3_SET_ABILITY", "<hero>:<slot>:<word>[,...]", "FF3: a mastery hero's free slot filled at the start, learned or not (0:0:zeninage) - for test drives"),
 			("equip", "FF3_EQUIP", "<hero>:<itemId>[,...]", "FF3: an item put in the bag and on the hero at the start (0:1001 is a Knife on the first hero) - for test drives"),
 			("trace-menu", "FF3_TRACE_MENU", "", "Log every menu focus move with its caller (following a layout's focus ring)"),

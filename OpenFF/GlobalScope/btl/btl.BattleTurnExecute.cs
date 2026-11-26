@@ -101,6 +101,7 @@ internal static partial class GlobalScope
 				turnPhase_ = TURN_PHASE.TURN_SORT_PHASE;
 				actionCharacterNumber_ = 0;
 				nowActionCharacter_ = 0;
+				OpenFF.Client.TurnOrder.Clear();
 				startCounter_ = 10;
 				playerSubWindowCreate_ = false;
 				turn_.setPhase(TurnSystem.Phase.Initialize);
@@ -373,6 +374,7 @@ internal static partial class GlobalScope
 				{
 					OS_Printf("リストのサイズと actionCharacterNumber_ が違う値です\n");
 				}
+				OpenFF.Client.TurnOrder.Roll(BCM, actionCharacterNumber_, roundOpening_);   // PORT: the turn order bar
 			}
 
 			public void actNpc(BattleSystem B)
@@ -436,6 +438,7 @@ internal static partial class GlobalScope
 						if (turn_.nowCharacter().isActionEnd())
 						{
 							nowActionCharacter_++;
+							OpenFF.Client.TurnOrder.Advance();
 							decidedFor_ = null;   // PORT: turn by turn: the next in the order is asked afresh
 						}
 						else if (turn_.nowCharacter().breed() == 1)
@@ -448,6 +451,7 @@ internal static partial class GlobalScope
 					else
 					{
 						nowActionCharacter_++;
+						OpenFF.Client.TurnOrder.Advance();
 						decidedFor_ = null;
 					}
 					if (turn_.isPlayerEscape())

@@ -138,6 +138,8 @@ internal static partial class GlobalScope
 				{
 					type_ = OpenFF.Client.ProgressionLayer.AdjustOpening(type_);
 				}
+				// OpenFF test switch: --opening=back|pre forces every battle's opening.
+				type_ = OpenFF.Client.TestParty.ForcedOpening(type_);
 				OutsideToBattle.getInstance().setBattleOpeningType(type_);
 			}
 

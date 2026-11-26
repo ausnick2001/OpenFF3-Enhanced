@@ -386,6 +386,14 @@ namespace OpenFF.Client
 			b.Draw(_hand, Px(tipX - size * 45f / 48f, r.Y + r.Height / 2f - 3.5f - size * 12.5f / 48f, size, size, v), new Rectangle(0, 0, _hand.Width / 2, _hand.Height), Color.White);
 		}
 
+		/// <summary>The same hand at any size, in screen pixels: its fingertip at (tipX, middleY), no bob. False when the game's hand is not loaded.</summary>
+		public static bool HandAt(SpriteBatch b, float tipX, float middleY, float size)
+		{
+			if (_hand == null) return false;
+			b.Draw(_hand, new Rectangle((int)(tipX - size * 45f / 48f), (int)(middleY - size * 12.5f / 48f), (int)size, (int)size), new Rectangle(0, 0, _hand.Width / 2, _hand.Height), Color.White);
+			return true;
+		}
+
 		/// <summary>A soft glow of a colour round a text-space box, spread by the given text-space distance.</summary>
 		public static void Glow(SpriteBatch b, Rectangle r, Color colour, float spread, Viewport v)
 		{

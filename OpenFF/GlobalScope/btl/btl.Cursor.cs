@@ -199,6 +199,7 @@ internal static partial class GlobalScope
 
 			public void setPositionTargetMonster(int type, BattleMonster monster)
 			{
+				OpenFF.Client.TurnOrder.Aim(type, monster);   // PORT: the turn order bar points at who the hand is on
 				if (OpenFF.Client.Qol.BattleDeclutter)
 				{
 					quiet_[type] = true;
@@ -214,6 +215,7 @@ internal static partial class GlobalScope
 
 			public void setPositionTargetPlayer(int type, BaseBattleCharacter player)
 			{
+				OpenFF.Client.TurnOrder.Aim(type, player);
 				BattlePlayer battlePlayer = static_cast<BattlePlayer>(player);
 				quiet_[type] = false;
 				if (OpenFF.Client.Qol.BattleDeclutter)
@@ -383,6 +385,7 @@ internal static partial class GlobalScope
 
 			public void hidden(int type)
 			{
+				OpenFF.Client.TurnOrder.Unaim(type);
 				cursor_[type].SetCell(MOVE_CURSOR);
 				cursor_[type].SetAlpha(31);
 				setAnimation(type, flag: false);

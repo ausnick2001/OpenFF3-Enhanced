@@ -2,6 +2,10 @@ name: Feature request
 description: An idea for OpenFF3 Enhanced
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Before you ask, please look through the [FAQ](https://github.com/ausnick2001/OpenFF3-Enhanced/blob/ff3-merge-main/Docs/FAQ.md): the game may already do this, and the FAQ says where.
   - type: textarea
     id: idea
     attributes:

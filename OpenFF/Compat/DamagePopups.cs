@@ -55,6 +55,12 @@ namespace OpenFF.Client
 		private const float DamageHoldEnd = 0.78f;
 		private const float HitTextHoldEnd = 0.56f;
 
+		/// <summary>How long the game's own "N HITS" label stays (measured from its video at 15 fps: 9 frames), appearing at once and not moving.</summary>
+		private const float OriginalHitsLife = 0.60f;
+
+		/// <summary>How far below the target's damage number the "N HITS" label sits, in 480x320 units (the game's own: about 40 under the number at rest, as measured from its video).</summary>
+		public const float HitsBelow = 16f;
+
 		private sealed class Popup
 		{
 			public int Id;
@@ -124,7 +130,7 @@ namespace OpenFF.Client
 			{
 				// "Original (upscaled)": all the characters together, for as long as the game's own popups last.
 				staggerSec = 0f;
-				holdEnd = OriginalPopLife;
+				holdEnd = style == AnimStyle.HitsSlideIn ? OriginalHitsLife : OriginalPopLife;
 			}
 
 			// Measure each glyph proportionally so wide letters (M, W, H) never overlap narrow ones (I, 1).
@@ -238,7 +244,8 @@ namespace OpenFF.Client
 					int drawSize = pop.TextSize;
 
 					// Still popups ("Original (upscaled)") all move as the game's own do.
-					switch (animated ? pop.Style : AnimStyle.OriginalPop)
+					// The hit count just appears, where the game's own does: it never lifts, whatever the style.
+					switch (pop.Style == AnimStyle.HitsSlideIn ? AnimStyle.HitsSlideIn : animated ? pop.Style : AnimStyle.OriginalPop)
 					{
 						case AnimStyle.DamageBounce:
 							if (t < Hop1Duration)

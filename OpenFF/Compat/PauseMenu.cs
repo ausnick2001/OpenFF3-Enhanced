@@ -395,7 +395,7 @@ namespace OpenFF.Client
 				case Page.Map: return MapRows;
 				case Page.Text: return TextRows;
 				case Page.Popups: return PopupRows;
-				case Page.BattleMenus: return 6;
+				case Page.BattleMenus: return 7;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -606,7 +606,7 @@ namespace OpenFF.Client
 		// ---- battle menus ----
 
 		// Menu size, Party menu size, Text size, Back. The note under them is always the one warning: the windows are made as a battle begins.
-		private static string BattleNote(int row) => row == 4 ? "No name lists when choosing a target: the hand points at them instead" : row == 3 ? "Condenses battle menus by reducing empty space" : "Changing size mid-battle will lead to visual glitches until the next battle";
+		private static string BattleNote(int row) => row == 5 ? "Shows who acts next down the right side of the battle screen" : row == 4 ? "No name lists when choosing a target: the hand points at them instead" : row == 3 ? "Condenses battle menus by reducing empty space" : "Changing size mid-battle will lead to visual glitches until the next battle";
 
 		private void ChangeBattle(int row, int by, bool confirm)
 		{
@@ -618,7 +618,8 @@ namespace OpenFF.Client
 				case 2: q.BattleTextSize = Math.Round(Math.Clamp(BattleSizing.Text + 0.05 * by, BattleSizing.TextMin, BattleSizing.TextMax), 2); Qol.Changed("battle text size " + Percent(BattleSizing.Text)); break;
 				case 3: q.BattleCompact = !q.BattleCompact; Qol.Changed("battle compact mode " + (q.BattleCompact ? "on" : "off")); break;
 				case 4: q.BattleDeclutter = !q.BattleDeclutter; Qol.Changed("reduce clutter in battle " + (q.BattleDeclutter ? "on" : "off")); break;
-				case 5:
+				case 5: q.TurnOrderBar = !q.TurnOrderBar; Qol.Changed("turn order bar " + (q.TurnOrderBar ? "on" : "off")); break;
+				case 6:
 					if (confirm) { _page = Page.Text; _selected = 7; _note = ""; DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -953,6 +954,7 @@ namespace OpenFF.Client
 						case 2: icon = UiTheme.Icon.Adjustment; return Kind.Stepper;
 						case 3: icon = UiTheme.Icon.WindowSize; on = Qol.S.BattleCompact; return Kind.Switch;
 						case 4: icon = UiTheme.Icon.Indicator; on = Qol.S.BattleDeclutter; return Kind.Switch;
+						case 5: icon = UiTheme.Icon.Indicator; on = Qol.S.TurnOrderBar; return Kind.Switch;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Popups:
@@ -1374,6 +1376,7 @@ namespace OpenFF.Client
 						case 2: label = "Text size"; value = Percent(BattleSizing.Text); return;
 						case 3: label = "Compact mode"; value = Qol.S.BattleCompact ? "On" : "Off"; return;
 						case 4: label = "Reduce clutter in battle"; value = Qol.S.BattleDeclutter ? "On" : "Off"; return;
+						case 5: label = "Turn order bar"; value = Qol.S.TurnOrderBar ? "On" : "Off"; return;
 						default: label = "Back"; return;
 					}
 				}
