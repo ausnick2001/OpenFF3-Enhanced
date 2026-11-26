@@ -3,20 +3,24 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
-## 0.9.12 - OpenFF3 Enhanced (in progress)
+## 0.9.12 - OpenFF3 Enhanced (2026-11-26)
 
 **Added**
 - **Touch buttons** switch (Esc > Text and Menus): takes down the touch screen's on-screen buttons - the menus' Back and player switch, and the battle's Back, Player / Enemy, All and Group - for those who play with a pad. On by default; the pad and keys do everything either way.
 - **Transition sounds** switch (Esc > Quality of Life): turn off the swoosh the game plays as an area loads and as the menu opens and closes, for those it grates on. On by default.
 - Steam saves now come over. Copy the Steam game's own `SAVE.BIN` into `userdata\saves` (as `save.bin`) and the game converts it to its own format the first time it starts, party, items, gil, job levels, position and story progress included. The Steam file is kept beside it as `save.steam-backup.bin`. If you already have a `save.bin` of your own there, it is left alone and the conversion is written as `save.from-steam.bin`.
 
+**Changed**
+- Gambits may now be set across sides: Attack on an ally (to cure a confused hero, say), and spells and items at the other side where the game lets them be aimed (Cure at the undead, a Potion at a foe). Those are listed after the ones that suit the condition's side.
+- A save the game cannot read now shows as a broken slot in the load list instead of crashing it.
+
 **Fixed**
 - Auto-battle rules (gambits) no longer fall back to "Foe (any) > Attack" once you are playing: the game's reads of the save file (options, slot headers, the save menu) used to wipe them, most of all before a first save was made.
 - On the Gambits screen, coming back from choosing a target or action returns to the hero you switched to with L / R, not the one you first opened the screen with.
 - Opening and closing the list screens (the Gambits screen's scroll arrows) no longer uses up the game's image slots, which crashed the world map after about two dozen openings.
-- Gambits may now be set across sides: Attack on an ally (to cure a confused hero, say), and spells and items at the other side where the game lets them be aimed (Cure at the undead, a Potion at a foe). Those are listed after the ones that suit the condition's side.
 - Running from a fight: the hero whose turn it was no longer pops back onto the empty field for a moment as the screen fades out.
-- A Steam save that was copied over `save.bin` no longer crashes the load list; before the importer, such a slot showed as corrupted instead.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
 
 ## 0.9.11 - OpenFF3 Enhanced (2026-11-25)
 
