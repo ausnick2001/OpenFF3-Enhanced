@@ -3,6 +3,14 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 0.9.15 - OpenFF3 Enhanced (2026-11-27)
+
+**Fixed**
+- A picture flashing up for a frame or two every few seconds at 60 fps while walking around Ur's forest and lake (the map seen from ground level under a blue sky, or a close-up of wood): the smoothing blended a big piece of the ground with another piece. Found by [3122380113Linh Vu Nhat](https://github.com/3122380113).
+- After a game over, pressing A on the blank Continue row at the title screen locked the menu up (only restarting the game got out). The pad now ignores it, as touch already did. Found and fixed by [3122380113Linh Vu Nhat](https://github.com/3122380113).
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.14 - OpenFF3 Enhanced (2026-11-26)
 
 **Added**

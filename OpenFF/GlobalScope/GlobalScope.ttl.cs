@@ -955,6 +955,11 @@ internal static partial class GlobalScope
                     }
                     if ((ds.g_Pad.edge() & 9) != 0)
                     {
+                        // a dimmed Continue (no suspend save, e.g. after a game over) is no part to go to
+                        if (titleCommands[cIndexNo].next_part < 0)
+                        {
+                            return false;
+                        }
                         if (titleCommands[cIndexNo].next_part == 200)
                         {
                             MatrixSound.MtxSENDS_Play(0, 1, 192, 127);

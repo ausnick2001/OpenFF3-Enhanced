@@ -622,6 +622,10 @@ namespace OpenFF.Client
 			// blending for that step. So when the first is not near, the nearest of the next few is taken.
 			float best = ScreenGap(prev.Records[first], r);
 			if (best <= NearGap) return first;
+			// A middle behind the eye or off the screen (the ground, a lake - one big piece) says nothing about which piece it is: its gap
+			// is huge for every candidate that is, and the nearest of the rest is then some other piece of the same size and texture,
+			// whose vertices the real one is blended into for a frame (the forest's ground tilted, the sky showing over it). Order it is.
+			if (best == float.MaxValue) return first;
 			int pick = first, seen = 0;
 			for (k = _link[first]; k >= 0 && seen < MatchLook; k = _link[k])
 			{
@@ -630,7 +634,8 @@ namespace OpenFF.Client
 				float gap = ScreenGap(prev.Records[k], r);
 				if (gap < best) { best = gap; pick = k; if (gap <= NearGap) break; }
 			}
-			return pick;
+			// And a nearest that is itself not motion (a third of the screen and more, as Jumped has it) is no match either.
+			return best <= 0.66f * 0.66f ? pick : first;
 		}
 
 		/// <summary>A move of the draw's middle small enough to be motion (a seventh of the screen's width, squared, in the projection's -1..1), and how many same-looking draws are looked at for a nearer one.</summary>

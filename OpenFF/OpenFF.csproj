@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
-    <Version>0.9.14</Version>
+    <Version>0.9.15</Version>
     <Authors>OpenFF contributors</Authors>
     <Copyright>Final Fantasy III is Square Enix's; this is a fan-made client that reads the copy you own</Copyright>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
