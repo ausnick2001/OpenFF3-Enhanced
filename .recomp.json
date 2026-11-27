@@ -1,0 +1,20 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Final Fantasy III (3D remake)",
+  "system": ["PC (Windows)"],
+  "type": "port",
+  "project": "OpenFF3 Enhanced",
+  "status": "released",
+  "approach": "A native desktop build of the 3D remake, from your own Steam or GOG copy, on zerratar's OpenFF, with 60 fps smoothing, HD textures and new menus.",
+  "targets": ["Windows", "Linux", "Steam Deck"],
+  "maintainers": [{ "name": "ausnick2001", "link": "https://github.com/ausnick2001" }],
+  "links": [
+    { "label": "RecompLauncher", "url": "https://recomplauncher.com/game/openff3-enhanced" },
+    { "label": "Showcase video", "url": "https://www.youtube.com/watch?v=cnKPI1xDIpE" },
+    { "label": "Upstream OpenFF", "url": "https://github.com/zerratar/openff" }
+  ],
+  "launchers": [{ "path": "recomplauncher.json", "in": "repo" }],
+  "help": ["Steam Deck and Linux testing", "Android handheld port"],
+  "tags": ["Final Fantasy", "JRPG", "HD textures", "60 fps", "turn order bar", "quality of life"],
+  "notes": "FFX style turn-based battles, a customisable dungeon minimap, upscaled textures, battle menu options, custom music and more. Needs your own copy of the game."
+}
