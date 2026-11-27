@@ -17,7 +17,7 @@ internal static partial class GlobalScope
 {
 	public static partial class ds
 	{
-		public class OrderSavedErasePolicy<T>
+		public class OrderSavedErasePolicy<T> : IErasePolicy<T>
 		{
 			public void erase(int pos, T[] vector, int size)
 			{

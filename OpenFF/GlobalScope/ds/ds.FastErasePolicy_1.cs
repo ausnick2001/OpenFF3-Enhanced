@@ -17,7 +17,13 @@ internal static partial class GlobalScope
 {
 	public static partial class ds
 	{
-		public class FastErasePolicy<T>
+		/// <summary>PORT: how a ds.Vector takes an element out (the game's own policies are classes with an erase method; Vector used to find it by reflection on every removal).</summary>
+		public interface IErasePolicy<T>
+		{
+			void erase(int pos, T[] vector, int size);
+		}
+
+		public class FastErasePolicy<T> : IErasePolicy<T>
 		{
 			public void erase(int pos, T[] vector, int size)
 			{

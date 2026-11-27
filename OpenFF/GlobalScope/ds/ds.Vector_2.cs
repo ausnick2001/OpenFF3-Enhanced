@@ -25,6 +25,8 @@ internal static partial class GlobalScope
 
 			private int numElements_;
 
+			private static readonly ErasePolicy _policy = new ErasePolicy();
+
 			public value_type this[int pos]
 			{
 				get
@@ -79,7 +81,10 @@ internal static partial class GlobalScope
 			{
 				if (pos < numElements_)
 				{
-					typeof(ErasePolicy).GetMethod("erase").Invoke(new ErasePolicy(), new object[3] { pos, elements_, numElements_ });
+					// PORT: a direct call (the policies are stateless), not reflection: the reflection call on every removal was slow, and on one
+					// Linux arm64 build it crashed with an access violation as a monster left the battle (issue #13).
+					if (_policy is IErasePolicy<value_type> direct) direct.erase(pos, elements_, numElements_);
+					else typeof(ErasePolicy).GetMethod("erase").Invoke(_policy, new object[3] { pos, elements_, numElements_ });
 					numElements_--;
 				}
 			}
