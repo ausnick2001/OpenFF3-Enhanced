@@ -34,6 +34,10 @@ namespace OpenFF.Client
 		/// <summary>The party's letters: its own size, with the text option on top.</summary>
 		public static float PartyLetters => PartyBox * Text;
 
+		/// <summary>The HP numbers' size: the party's, a little smaller (the game's are large for the row; it also leaves room for the Short bar under them).</summary>
+		public const float HpShrink = 0.82f;
+		public static float HpLetters => PartyLetters * HpShrink;
+
 		/// <summary>The battle's lists (magic, items), as the options set them when the battle's layout is loaded: how much of its size the panel keeps, and the letters' size.</summary>
 		public static float ListBox => Box;
 		public static float ListLetters => Letters;
@@ -154,6 +158,18 @@ namespace OpenFF.Client
 			_party ??= new MenuText { AlignScaled = true };
 			_party.Scale = k;
 			return _party;
+		}
+
+		private static MenuText _hp;
+
+		/// <summary>The HP numbers' lettering; null when it is as the game draws it.</summary>
+		public static MenuText HpLettering()
+		{
+			float k = HpLetters;
+			if (Math.Abs(k - 1f) < 0.001f) return null;
+			_hp ??= new MenuText { AlignScaled = true };
+			_hp.Scale = k;
+			return _hp;
 		}
 
 		/// <summary>The party's names' face (a copy) at the party's size.</summary>

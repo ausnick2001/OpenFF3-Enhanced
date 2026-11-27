@@ -548,7 +548,7 @@ internal static partial class GlobalScope
 				}
 			}
 
-			private int LineLift(Medget m) => (int)((m.height() - 12f * RowK) / 2f);
+			private int LineLift(Medget m) => (int)((m.height() - 12f * RowK) / 2f) + (RowK != 1f && OpenFF.Client.BattleMagicRows.ItemActive ? OpenFF.Client.BattleMagicRows.EdgeNudge(m, 2) : 0);
 
 			private void Letter(dgs.DGSMessage m)
 			{

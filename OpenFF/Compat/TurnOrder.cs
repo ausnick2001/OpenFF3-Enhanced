@@ -6,7 +6,7 @@
 // the one acting now first and a little proud of the rest, and fills again when the next round rolls its order.
 //
 // A hero is the same face the party menu shows for the hero in their job (pcN_JJ.NCGR, read as the menu reads it, so
-// a replaced face shows here too); a monster is "E1", "E2" ... by its place in the monster party; in a boss battle the
+// a replaced face shows here too); a monster is "E1", "E2" ... from the top of the screen down; in a boss battle the
 // monster with the most hit points is BOSS, in red. Heroes and monsters that have fallen, or run, since the order was
 // made drop out. The Battle menus page has a switch for it (Turn order bar).
 
@@ -64,6 +64,34 @@ namespace OpenFF.Client
 			Aims.Clear();
 		}
 
+		/// <summary>Each monster slot's number on the bar (0 for E1, up): the monsters taken from the top of the screen down, ties
+		/// by slot. Falls back to the slot itself when a position can't be read.</summary>
+		private static int[] ScreenPlaces(btl.BattleMonsterParty monsters)
+		{
+			int[] place = { 0, 1, 2, 3, 4, 5 };
+			try
+			{
+				List<KeyValuePair<int, int>> rows = new List<KeyValuePair<int, int>>();   // slot, screen y
+				for (int i = 0; i < 6; i++)
+				{
+					btl.BattleMonster m = monsters.battleMonster(i);
+					if (m == null || !m.isEnable()) continue;
+					GlobalScope.VecFx32 where = new GlobalScope.VecFx32();
+					GlobalScope.characterMng.getPosition(m.characterMngId(), where);
+					GlobalScope.NNS_G3dWorldPosToScrPos(where, out int px, out int py);
+					rows.Add(new KeyValuePair<int, int>(i, py));
+				}
+				rows.Sort((x, y) => x.Value != y.Value ? x.Value.CompareTo(y.Value) : x.Key.CompareTo(y.Key));
+				for (int n = 0; n < rows.Count; n++) place[rows[n].Key] = n;
+			}
+			catch (Exception ex)
+			{
+				place = new[] { 0, 1, 2, 3, 4, 5 };
+				Log.Write(LogChannel.General, "turn order: numbering: " + ex.Message);
+			}
+			return place;
+		}
+
 		/// <summary>The round's order has just been made: the characters in BCM.order(0..count-1).</summary>
 		public static void Roll(btl.BattleCharacterManager bcm, int count, btl.BATTLE_OPENING_TYPE opening)
 		{
@@ -85,6 +113,7 @@ namespace OpenFF.Client
 						if (hp > bossHp) { bossHp = hp; boss = i; }
 					}
 				}
+				int[] place = ScreenPlaces(monsters);   // each monster's number: E1 is the one highest on the screen
 				for (int i = 0; i < count && i < 12; i++)
 				{
 					btl.BaseBattleCharacter c = bcm.order(i);
@@ -95,9 +124,9 @@ namespace OpenFF.Client
 					}
 					else if (c is btl.BattleMonster monster)
 					{
-						int index = 0;
-						for (int k = 0; k < 6; k++) if (monsters.battleMonster(k) == monster) { index = k; break; }
-						Round.Add(new Entry { Who = c, Hero = false, Index = index, Boss = index == boss, Skipped = opening == btl.BATTLE_OPENING_TYPE.INITIATLVE_ATTACK });
+						int slot = 0;
+						for (int k = 0; k < 6; k++) if (monsters.battleMonster(k) == monster) { slot = k; break; }
+						Round.Add(new Entry { Who = c, Hero = false, Index = place[slot], Boss = slot == boss, Skipped = opening == btl.BATTLE_OPENING_TYPE.INITIATLVE_ATTACK });
 					}
 				}
 			}

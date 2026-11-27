@@ -192,18 +192,19 @@ internal static partial class GlobalScope
 				}
 				ds.Vector2<short> vector3 = new ds.Vector2<short>(base.GetSize());
 				ds.Vector2<short>[] array = BW_FRAME_SIZE[(m_DispState != BW_STATE.BWS_OFF) ? 1 : 0];
+				int half = FrameHalf(vector3.h);   // PORT: half the corners' height: 8, less in a window under 24 high (see FrameSquash)
 				if (m_DispState == BW_STATE.BWS_OFF)
 				{
-					m_pFrame[0].SetPositionI(vector.vx + 8, vector.vy + 8);
-					m_pFrame[6].SetPositionI(vector.vx + vector3.vx - 16 + 8, vector.vy + 8);
-					m_pFrame[12].SetPositionI(vector.vx + 8, vector.vy + vector3.vy - 16 + 8);
-					m_pFrame[17].SetPositionI(vector.vx + vector3.vx - 16 + 8, vector.vy + vector3.vy - 16 + 8);
+					m_pFrame[0].SetPositionI(vector.vx + 8, vector.vy + half);
+					m_pFrame[6].SetPositionI(vector.vx + vector3.vx - 16 + 8, vector.vy + half);
+					m_pFrame[12].SetPositionI(vector.vx + 8, vector.vy + vector3.vy - half);
+					m_pFrame[17].SetPositionI(vector.vx + vector3.vx - 16 + 8, vector.vy + vector3.vy - half);
 					NNSG2dFVec2 nNSG2dFVec = new NNSG2dFVec2();
 					if (vector3.w > 32)
 					{
 						short num = (short)(vector3.w - 16 - 16);
 						nNSG2dFVec.x = ((num > array[5].w) ? ds.S32toFX32(vector.vx + vector3.w - 16 - array[5].w + 32) : FX32_CONST((float)vector.vx + (float)vector3.w * 0.5f));
-						nNSG2dFVec.y = ds.S32toFX32(vector.vy + 8);
+						nNSG2dFVec.y = ds.S32toFX32(vector.vy + half);
 						m_pFrame[5].SetPosition(nNSG2dFVec);
 						short num2 = (short)(num - array[5].w);
 						if (num2 > 0)
@@ -213,7 +214,7 @@ internal static partial class GlobalScope
 						}
 						if (num > 0)
 						{
-							nNSG2dFVec.y = ds.S32toFX32(vector.vy + vector3.h - 16 + 8);
+							nNSG2dFVec.y = ds.S32toFX32(vector.vy + vector3.h - half);
 							nNSG2dFVec.x = FX32_CONST((float)(vector.vx + vector.vx + vector3.w) * 0.5f);
 							m_pFrame[13].SetPosition(nNSG2dFVec);
 						}
@@ -239,16 +240,16 @@ internal static partial class GlobalScope
 					}
 					return;
 				}
-				m_pFrame[0].SetPositionI(vector.vx + vector3.w - 16 + 8, vector.vy + vector3.h - 16 + 8);
-				m_pFrame[6].SetPositionI(vector.vx + 8, vector.vy + vector3.h - 16 + 8);
-				m_pFrame[12].SetPositionI(vector.vx + vector3.w - 16 + 8, vector.vy + 8);
-				m_pFrame[17].SetPositionI(vector.vx + 8, vector.vy + 8);
+				m_pFrame[0].SetPositionI(vector.vx + vector3.w - 16 + 8, vector.vy + vector3.h - half);
+				m_pFrame[6].SetPositionI(vector.vx + 8, vector.vy + vector3.h - half);
+				m_pFrame[12].SetPositionI(vector.vx + vector3.w - 16 + 8, vector.vy + half);
+				m_pFrame[17].SetPositionI(vector.vx + 8, vector.vy + half);
 				NNSG2dFVec2 nNSG2dFVec2 = new NNSG2dFVec2();
 				if (vector3.w > 32)
 				{
 					short num5 = (short)(vector3.w - 16 - 16);
 					nNSG2dFVec2.x = ((num5 > array[5].w) ? ds.S32toFX32(vector.vx + 16 + array[5].w / 2) : FX32_CONST((float)(vector.vx + 16) + (float)num5 * 0.5f));
-					nNSG2dFVec2.y = ds.S32toFX32(vector.vy + vector3.h - 16 + 8);
+					nNSG2dFVec2.y = ds.S32toFX32(vector.vy + vector3.h - half);
 					m_pFrame[5].SetPosition(nNSG2dFVec2);
 					short num6 = (short)(num5 - array[5].w);
 					if (num6 > 0)
@@ -258,7 +259,7 @@ internal static partial class GlobalScope
 					}
 					if (num5 > 0)
 					{
-						nNSG2dFVec2.y = ds.S32toFX32(vector.vy + 8);
+						nNSG2dFVec2.y = ds.S32toFX32(vector.vy + half);
 						nNSG2dFVec2.x = FX32_CONST((float)(vector.vx + vector.vx + vector3.w) * 0.5f);
 						m_pFrame[13].SetPosition(nNSG2dFVec2);
 					}
@@ -283,6 +284,13 @@ internal static partial class GlobalScope
 					}
 				}
 			}
+
+			/// <summary>PORT: a window under 24 units high (the help bar and the foe name box at 85% or smaller) has its frame's top and bottom pieces overlap by more than the 8 units they do at 24, and the overlap shows as a break in the border.
+			/// Their height is cut down so they overlap by 8 as at the game's size: (h + 8) / 2 of the 16, from 24 high (1) down.</summary>
+			private static float FrameSquash(int h) => h >= 24 ? 1f : Math.Max(0.25f, (h + 8) / 32f);
+
+			/// <summary>Where the centre of the frame's top (or from the bottom, its bottom) pieces sits: 8 as the pieces are 16 high, less when squashed.</summary>
+			private static int FrameHalf(int h) => h >= 24 ? 8 : (int)Math.Round((h + 8) / 4f, MidpointRounding.AwayFromZero);
 
 			public override void SetSize(ds.Vector2<short> size, bool update)
 			{
@@ -389,6 +397,16 @@ internal static partial class GlobalScope
 					{
 						m_pFrame[7 + num3].SetShow(show: false);
 						m_pFrame[10 + num3].SetShow(show: false);
+					}
+				}
+				if (size.h < 24)
+				{
+					int fy = FX32_CONST(FrameSquash(size.h));
+					foreach (int k in new[] { 0, 6, 12, 17, 1, 5, 13 })
+					{
+						if (m_pFrame[k] == null) continue;
+						NNSG2dFVec2 sc = m_pFrame[k].GetScale();
+						m_pFrame[k].SetScaleF((int)sc.x, fy);
 					}
 				}
 				SetPositionCC(base.GetPositionCC());

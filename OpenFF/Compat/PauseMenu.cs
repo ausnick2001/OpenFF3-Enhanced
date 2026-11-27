@@ -50,7 +50,8 @@ namespace OpenFF.Client
 				case Page.Quit: return new Layout(new Rectangle(190, 146, 420, 200), 222, 41, 34, false);
 				// Ten rows now (Touch buttons joined): the panel grows up and down, so the note under the rows (36 high) clears the hints (centred 22 above the panel's foot).
 				case Page.Text: return new Layout(new Rectangle(142, 36, 516, 434), 100, 28, 25, true);
-				case Page.BattleMenus: return new Layout(new Rectangle(142, 50, 516, 390), 114, 34, 30, true);
+				// Nine rows (Health bars and their colour scheme joined): the panel grows up and down as the Text page does, so the note under the rows clears the hints.
+				case Page.BattleMenus: return new Layout(new Rectangle(142, 36, 516, 434), 100, 31, 27, true);
 				case Page.Popups: return new Layout(new Rectangle(142, 50, 516, 390), 114, 38, 33, true);
 				case Page.Buttons: return new Layout(new Rectangle(142, 24, 516, 440), 92, 22, 19.5f, true);
 				case Page.Settings: return new Layout(new Rectangle(142, 8, 516, 470), 74, 26, 25f, true);
@@ -383,7 +384,7 @@ namespace OpenFF.Client
 		}
 
 		/// <summary>A row shown greyed and passed over: the window size while the window is borderless (it draws at the desktop's size).</summary>
-		private bool RowDisabled(int row) => (_page == Page.Settings && row == 1 && DisplaySettings.Current.Mode == "borderless") || (_page == Page.Popups && row >= 1 && row <= 3 && !Qol.S.BouncyDamagePopups);
+		private bool RowDisabled(int row) => (_page == Page.Settings && row == 1 && DisplaySettings.Current.Mode == "borderless") || (_page == Page.Popups && row >= 1 && row <= 3 && !Qol.S.BouncyDamagePopups) || (_page == Page.BattleMenus && row == 7 && HealthBars.Mode == HealthBars.Off);
 
 		private int Rows()
 		{
@@ -395,7 +396,7 @@ namespace OpenFF.Client
 				case Page.Map: return MapRows;
 				case Page.Text: return TextRows;
 				case Page.Popups: return PopupRows;
-				case Page.BattleMenus: return 7;
+				case Page.BattleMenus: return 9;
 				case Page.Buttons: return DsButtons.Length + 2;
 				case Page.Quit: return 2;
 				default: return 1;
@@ -567,6 +568,8 @@ namespace OpenFF.Client
 			else if (_page == Page.BattleMenus && row == 0) { canLeft = BattleSizing.Box > BattleSizing.BoxMin + 0.001; canRight = BattleSizing.Box < BattleSizing.BoxMax - 0.001; }
 			else if (_page == Page.BattleMenus && row == 1) { canLeft = BattleSizing.PartyBox > BattleSizing.BoxMin + 0.001; canRight = BattleSizing.PartyBox < BattleSizing.BoxMax - 0.001; }
 			else if (_page == Page.BattleMenus && row == 2) { canLeft = BattleSizing.Text > BattleSizing.TextMin + 0.001; canRight = BattleSizing.Text < BattleSizing.TextMax - 0.001; }
+			else if (_page == Page.BattleMenus && row == 6) { canLeft = HealthBars.Mode > HealthBars.Off; canRight = HealthBars.Mode < HealthBars.Long; }
+			else if (_page == Page.BattleMenus && row == 7) { canLeft = HealthBars.Mode != HealthBars.Off && HealthBars.Scheme > 0; canRight = HealthBars.Mode != HealthBars.Off && HealthBars.Scheme < HealthBars.SchemeNames.Length - 1; }
 			else if (_page == Page.Popups && row == 3) ShadowEnds(q.DamagePopupShadow > 0, q.DamagePopupShadow, out canLeft, out canRight);
 			else if (_page == Page.Map && row == 3) { canLeft = q.MinimapZoom > 0; canRight = q.MinimapZoom < MapZooms.Length - 1; }
 			else if (_page == Page.Map && row == 4) { canLeft = q.MinimapSee > 0; canRight = q.MinimapSee < MapAreas.Length - 1; }
@@ -606,7 +609,7 @@ namespace OpenFF.Client
 		// ---- battle menus ----
 
 		// Menu size, Party menu size, Text size, Back. The note under them is always the one warning: the windows are made as a battle begins.
-		private static string BattleNote(int row) => row == 5 ? "Shows who acts next down the right side of the battle screen" : row == 4 ? "No name lists when choosing a target: the hand points at them instead" : row == 3 ? "Condenses battle menus by reducing empty space" : "Changing size mid-battle will lead to visual glitches until the next battle";
+		private static string BattleNote(int row) => row == 7 ? "Colour scheme for health bars" : row == 6 ? "A bar for each hero's health on the party panel" : row == 5 ? "Shows who acts next down the right side of the battle screen" : row == 4 ? "No name lists when choosing a target: the hand points at them instead" : row == 3 ? "Condenses battle menus by reducing empty space" : "Changing size mid-battle will lead to visual glitches until the next battle";
 
 		private void ChangeBattle(int row, int by, bool confirm)
 		{
@@ -619,7 +622,15 @@ namespace OpenFF.Client
 				case 3: q.BattleCompact = !q.BattleCompact; Qol.Changed("battle compact mode " + (q.BattleCompact ? "on" : "off")); break;
 				case 4: q.BattleDeclutter = !q.BattleDeclutter; Qol.Changed("reduce clutter in battle " + (q.BattleDeclutter ? "on" : "off")); break;
 				case 5: q.TurnOrderBar = !q.TurnOrderBar; Qol.Changed("turn order bar " + (q.TurnOrderBar ? "on" : "off")); break;
-				case 6:
+				case 6: { int m = HealthBars.Mode + by; if (m > HealthBars.Long) m = confirm ? HealthBars.Off : HealthBars.Long; q.HealthBars = Math.Clamp(m, HealthBars.Off, HealthBars.Long); Qol.Changed("health bars " + HealthBars.Names[q.HealthBars].ToLowerInvariant()); break; }
+				case 7:
+				{
+					if (HealthBars.Mode == HealthBars.Off) break;   // greyed out while the bars are off
+					int m = HealthBars.Scheme + by; int last = HealthBars.SchemeNames.Length - 1;
+					if (m > last) m = confirm ? 0 : last;
+					q.HealthBarColours = Math.Clamp(m, 0, last); Qol.Changed("health bar colour scheme " + HealthBars.SchemeNames[q.HealthBarColours].ToLowerInvariant()); break;
+				}
+				case 8:
 					if (confirm) { _page = Page.Text; _selected = 7; _note = ""; DisplaySettings.Current.Save(); }
 					return;
 			}
@@ -955,6 +966,8 @@ namespace OpenFF.Client
 						case 3: icon = UiTheme.Icon.WindowSize; on = Qol.S.BattleCompact; return Kind.Switch;
 						case 4: icon = UiTheme.Icon.Indicator; on = Qol.S.BattleDeclutter; return Kind.Switch;
 						case 5: icon = UiTheme.Icon.Indicator; on = Qol.S.TurnOrderBar; return Kind.Switch;
+						case 6: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
+						case 7: icon = UiTheme.Icon.Indicator; return Kind.Stepper;
 						default: icon = UiTheme.Icon.Back; return Kind.None;
 					}
 				case Page.Popups:
@@ -1377,6 +1390,8 @@ namespace OpenFF.Client
 						case 3: label = "Compact mode"; value = Qol.S.BattleCompact ? "On" : "Off"; return;
 						case 4: label = "Reduce clutter in battle"; value = Qol.S.BattleDeclutter ? "On" : "Off"; return;
 						case 5: label = "Turn order bar"; value = Qol.S.TurnOrderBar ? "On" : "Off"; return;
+						case 6: label = "Health bars"; value = HealthBars.Names[HealthBars.Mode]; return;
+						case 7: label = "Colour scheme"; value = HealthBars.SchemeNames[HealthBars.Scheme]; return;
 						default: label = "Back"; return;
 					}
 				}

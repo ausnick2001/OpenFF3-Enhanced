@@ -3,6 +3,28 @@
 Unzip anywhere and run `OpenFF3 Enhanced.exe` to play. The Crystal editor is a separate download (the "Crystal editing tools" release), only for those who wish to edit the game or make mods. It needs the Steam or GOG copies of the games on the machine (Final Fantasy III the 3D remake); none of this data is in the zip or in this
 repository. Windows 10/11, x64; the .NET runtime is inside, nothing to install. The game keeps its saves and settings in a `userdata` folder beside `OpenFF3 Enhanced.exe`.
 
+## 1.0.0 - OpenFF3 Enhanced (2026-11-30)
+
+**Added**
+- **Health bars** (Text and Menus > Battle menus > Health bars): a bar for each hero's health on the battle party panel, beside the numbers. Off, Short bar (under the numbers), Full row (the whole row fills from the left as health drops) or Long bar (a thin line along the bottom of the row). The bar is green while the hero is well, amber at half or less, red at a quarter or less. Short bar by default. A Colour scheme row under it (greyed out while the bars are off) picks the greens: Forest (the default), Emerald, Mint, Lime, Teal or Jade, each with a deeper shade at full health. Numbers take the bar's colours. The HP numbers on the party panel are a little smaller than the game's in every setting, including with health bars off.
+
+**Changed**
+- The battle magic and item lists: the top row's text and icons sat a little high in its box and the bottom row's a little low (the panel's border covers the edges of those rows); they now sit in the middle of the visible row. The spell level number also sits closer to its "LV." lettering.
+
+**Fixed**
+- The turn order bar numbered the monsters by their place in the monster party, so E1 was often not the one at the top. They are now numbered from the top of the screen down: E1 is the highest, then E2, and so on.
+- The border of the help bar at the top of the battle screen (and the foe name box) broke in a spot at the smaller battle menu sizes (85% and below). Its frame pieces overlapped more than they do at full size; they now overlap as they do at 100%.
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
+## 0.9.15 - OpenFF3 Enhanced (2026-11-27)
+
+**Fixed**
+- A picture flashing up for a frame or two every few seconds at 60 fps while walking around Ur's forest and lake (the map seen from ground level under a blue sky, or a close-up of wood): the smoothing blended a big piece of the ground with another piece. Found by [3122380113Linh Vu Nhat](https://github.com/3122380113).
+- After a game over, pressing A on the blank Continue row at the title screen locked the menu up (only restarting the game got out). The pad now ignores it, as touch already did. Found and fixed by [3122380113Linh Vu Nhat](https://github.com/3122380113).
+
+**Instructions:** make sure you have Final Fantasy III 3D installed from either Steam or GOG (GOG is untested but should work). Download the zip below, unzip it anywhere, run `OpenFF3 Enhanced.exe` and play. If you already have 0.9.7 or later, the game offers this update itself; your saves and settings in `userdata` are kept.
+
 ## 0.9.14 - OpenFF3 Enhanced (2026-11-26)
 
 **Added**

@@ -37,6 +37,23 @@ namespace OpenFF.Client
 		/// <summary>A distance along a row inside a list (where a number ends in its cell) at the size and spacing in force.</summary>
 		public static int SizedX(float units) => (int)Math.Round(units * ListWide);
 
+		/// <summary>The panel's border covers a little of the top and bottom rows' cells, so a line centred in the whole cell sits high in the top row and low in the bottom one
+		/// (the middle rows are right). The top row's lines move down and the bottom row's up by these (game units), at the size in force.</summary>
+		public static int EdgeTop => ListBox >= 0.999f ? 1 : 2;
+		public static int EdgeBottom => 1;
+
+		/// <summary>How far a line in this cell moves for its row's place in a four-row list (perRow cells a row): down in the top row, up in the bottom, 0 between.</summary>
+		public static int EdgeNudge(GlobalScope.menu.Medget m, int perRow)
+		{
+			if (m == null || perRow < 1) return 0;
+			int index = 0, total = 1;
+			for (GlobalScope.menu.Medget c = m.prevSibling(); c != null; c = c.prevSibling()) { index++; total++; }
+			for (GlobalScope.menu.Medget c = m.nextSibling(); c != null; c = c.nextSibling()) total++;
+			if (total / perRow != 4) return 0;
+			int row = index / perRow;
+			return row == 0 ? EdgeTop : row == 3 ? -EdgeBottom : 0;
+		}
+
 		/// <summary>The arrows' scale at the size in force.</summary>
 		public static float ArrowK => ArrowScale * ListBox;
 

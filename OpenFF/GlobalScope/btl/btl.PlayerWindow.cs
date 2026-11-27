@@ -35,6 +35,7 @@ internal static partial class GlobalScope
 				clearAllNameMngId();
 				clearAllHpMngId();
 				clearAllMaxHpMngId();
+				OpenFF.Client.HealthBars.Reset();
 				created_ = false;
 				show(flag: true);
 				nowPlayer_ = -1;
@@ -61,10 +62,11 @@ internal static partial class GlobalScope
 							ds.Vector2<short> origin = CoasterPosition(i, 0);
 							ds.Vector2<short> to = CoasterPosition(i, 1);
 							bool active = i == nowPlayer_;
+							bool gold = active && !OpenFF.Client.HealthBars.OutlinesTurn;   // under Full row the turn is an outline round the bar, not a gold band
 							int total = to.vx - origin.vx;
 							int edge = Math.Max(4, total / 14);   // how far in each fade reaches
-							float top = active ? 21f : 12f;
-							ushort tone = active ? ds.setGXRgb(24, 17, 1) : ds.setGXRgb(0, 0, 4);   // a deep amber: white lettering reads on it
+							float top = gold ? 21f : 12f;
+							ushort tone = gold ? ds.setGXRgb(24, 17, 1) : ds.setGXRgb(0, 0, 4);   // a deep amber: white lettering reads on it
 							for (int x = 0; x < total; x += 2)
 							{
 								int fromEdge = Math.Min(x, total - 2 - x);
@@ -82,12 +84,13 @@ internal static partial class GlobalScope
 								soft.setAlpha((byte)alpha);
 								soft.draw();
 							}
+							drawHealthBar(i, origin, to, active);   // PORT: the health bar, after the row's band
 							continue;
 						}
 						sys2d.PrimitiveQuadDraw primitiveQuadDraw = new sys2d.PrimitiveQuadDraw();
 						primitiveQuadDraw.setPosition(CoasterPosition(i, 0), CoasterPosition(i, 1));
 						primitiveQuadDraw.setDepth(0);
-						if (i == nowPlayer_)
+						if (i == nowPlayer_ && !OpenFF.Client.HealthBars.OutlinesTurn)
 						{
 							primitiveQuadDraw.setColor(ds.setGXRgb(24, 24, 0), ds.setGXRgb(24, 24, 0), ds.setGXRgb(31, 31, 0), ds.setGXRgb(31, 31, 0));
 						}
@@ -97,8 +100,34 @@ internal static partial class GlobalScope
 						}
 						primitiveQuadDraw.setAlpha(15);
 						primitiveQuadDraw.draw();
+						drawHealthBar(i, CoasterPosition(i, 0), CoasterPosition(i, 1), i == nowPlayer_);
 					}
 				}
+			}
+
+			/// <summary>PORT: a hero's health bar on the row from <paramref name="from"/> to <paramref name="to"/>; the numbers' extent (under the Short bar) and the name's start (the Long bar) come from here.</summary>
+			private void drawHealthBar(int i, ds.Vector2<short> from, ds.Vector2<short> to, bool active)
+			{
+				// Every row's bar spans the party's widest group of numbers (so they line up down the panel, and 4-digit HP fits), a little past it each side.
+				int left = int.MaxValue, right = int.MinValue;
+				try
+				{
+					float k = OpenFF.Client.BattleSizing.HpLetters;
+					for (int j = 0; j < 4; j++)
+					{
+						pl.Player player = pl.PlayerParty.instance().player((byte)j);
+						if (!player.isEnable()) continue;
+						string hp = "", max = "";
+						dgs.msg.CMessageSys.getInstance().changeValueFont(OpenFF.Client.HealthBars.Shown(j, player.hp().getNow()), out hp);
+						dgs.msg.CMessageSys.getInstance().changeValueFont(player.hp().getLimit(), out max);
+						sprintf(out max, " / %s", max);
+						left = Math.Min(left, PlayerHpPosition(j).vx - (int)Math.Round(getStringWidth(hp, 12) * k));
+						right = Math.Max(right, PlayerMaxHpPosition(j).vx + (int)Math.Round(getStringWidth(max, 12) * k));
+					}
+				}
+				catch (Exception) { }
+				if (left > right) { left = 0; right = 0; }
+				OpenFF.Client.HealthBars.Draw(i, from, to, active, left, right + 2, PlayerNamePosition(i).vx);
 			}
 
 			public void clearNameMngId(int i)
@@ -144,7 +173,7 @@ internal static partial class GlobalScope
 			{
 				if (pl.PlayerParty.instance().player((byte)i).isEnable())
 				{
-					dgs.TXT_COLOR messageColor = static_cast<dgs.TXT_COLOR>(pl.PlayerParty.instance().player((byte)i).checkHpColor());
+					dgs.TXT_COLOR messageColor = OpenFF.Client.HealthBars.NumberColor(i, static_cast<dgs.TXT_COLOR>(pl.PlayerParty.instance().player((byte)i).checkHpColor()));   // PORT: with a bar on, the numbers take its colours
 					dgs.DGSMessage dGSMessage = (dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(HpMngId_[i]));
 					dGSMessage.setMessageColor(messageColor);
 					dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(maxHpMngId_[i]);
@@ -235,13 +264,14 @@ internal static partial class GlobalScope
 						sprintf(out after, "%s", after);
 						ushort num = 0;
 						sprintf(out arg, "%s", after);
-						num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.PartyLetters));
+						num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.HpLetters));
 						HpMngId_[i] = dgs.msg.CMessageSys.getInstance().Main().createMessage(arg, (ushort)(PlayerHpPosition(i).vx + num), (ushort)PlayerHpPosition(i).vy, dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 						dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(HpMngId_[i]);
 						dGSMessage.setDisplaySpeed(byte.MaxValue);
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
-						dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
+						dGSMessage.Lettering = OpenFF.Client.BattleSizing.HpLettering();
+						OpenFF.Client.HealthBars.Set(i, pl.PlayerParty.instance().player((byte)i).hp().getNow());
 					}
 				}
 			}
@@ -280,13 +310,14 @@ internal static partial class GlobalScope
 					sprintf(out after, "%s", after);
 					ushort num = 0;
 					sprintf(out arg, "%s", after);
-					num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.PartyLetters));
+					num = (ushort)(-(int)Math.Round(getStringWidth(after, 12) * OpenFF.Client.BattleSizing.HpLetters));
 					HpMngId_[i] = dgs.msg.CMessageSys.getInstance().Main().createMessage(arg, (ushort)(PlayerHpPosition(i).vx + num), (ushort)PlayerHpPosition(i).vy, dgs.msg.CMessageMng.MSD_HANDLE_KIND.MSD_HANDLE_KIND_COMMON, dgs.msg.CMessageMng.MSF_HANDLE_KIND.MSF_HANDLE_KIND_8x8);
 					dgs.DGSMessage dGSMessage = dgs.msg.CMessageSys.getInstance().Main().Message(HpMngId_[i]);
 					dGSMessage.setDisplaySpeed(byte.MaxValue);
 					dGSMessage.setDisplayWait(0);
 					dGSMessage.setShadow(b: true);
-					dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
+					dGSMessage.Lettering = OpenFF.Client.BattleSizing.HpLettering();
+					OpenFF.Client.HealthBars.Set(i, pl.PlayerParty.instance().player((byte)i).hp().getNow());   // PORT: the bar follows the number
 					changeColor(i);
 				}
 			}
@@ -308,7 +339,7 @@ internal static partial class GlobalScope
 						dGSMessage.setDisplayWait(0);
 						dGSMessage.setShadow(b: true);
 						dGSMessage.setStyle(520u);
-						dGSMessage.Lettering = OpenFF.Client.BattleSizing.PartyLettering();
+						dGSMessage.Lettering = OpenFF.Client.BattleSizing.HpLettering();
 					}
 				}
 			}

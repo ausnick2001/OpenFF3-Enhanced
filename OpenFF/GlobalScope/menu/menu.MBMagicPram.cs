@@ -231,7 +231,7 @@ internal static partial class GlobalScope
 			/// <summary>PORT: 0.75 when the battle list has four rows in the room of three (its letters and icons a quarter smaller); 1 as the game draws it.</summary>
 			private float rowK = 1f;
 
-			private int LineLift(Medget m) => (int)((m.height() - 12f * rowK) / 2f);
+			private int LineLift(Medget m) => (int)((m.height() - 12f * rowK) / 2f) + (rowK != 1f ? OpenFF.Client.BattleMagicRows.EdgeNudge(m, 3) : 0);
 
 			private static int ListRows(Medget list)
 			{
@@ -838,7 +838,7 @@ internal static partial class GlobalScope
 					pMsgLv[lvCount] = pm.createMessage((uint)msg_number, dgs.INVALID_MSDHANDLE, (int)_msfHandle);
 					pMsgLvNo[lvCount] = pm.createMessage(after, (int)_msfHandle);
 					pMsgLv[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(16f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListWide), (short)y, erase: true);
-					pMsgLvNo[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(48f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListWide), (short)y, erase: true);
+					pMsgLvNo[lvCount].setPosition((short)OpenFF.Client.BattleMagicRows.PanelX(34f * 0.75f * OpenFF.Client.BattleMagicRows.ListLetters / OpenFF.Client.BattleMagicRows.ListWide), (short)y, erase: true);
 					if (rowK != 1f)
 					{
 						pMsgLv[lvCount].Lettering = OpenFF.Client.BattleSizing.Scaled(rowK);
